@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#d97736" />
+    <title>DATN — Tin tức y tế</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=warm1" />
+  </head>
+  <body>
+    <div class="mesh" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/ui/" aria-label="Trang chủ">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-text">
+            <span class="brand-name">DATN</span>
+            <span class="brand-tag">Tin tức · tham khảo</span>
+          </span>
+        </a>
+
+        <nav class="tabs" role="navigation" aria-label="Điều hướng">
+          <a class="tab" href="/ui/">Trang chủ</a>
+          <a class="tab" href="/ui/dashboard.html">Dashboard</a>
+          <a class="tab" href="/ui/agent.html">Nhân viên y tế</a>
+          <a class="tab" href="/ui/lich-nhac.html">Lịch thuốc</a>
+          <a class="tab" href="/ui/nhap-tai-lieu.html">Nhập tài liệu</a>
+          <span class="tab is-active" aria-current="page">Tin tức y tế</span>
+        </nav>
+
+        <span class="auth-user" id="authUserLabel"></span>
+        <a class="btn ghost btn-auth" id="loginLink" href="/ui/login.html">Đăng nhập</a>
+        <button type="button" class="btn secondary btn-auth hidden" id="logoutBtn">Đăng xuất</button>
+        <button type="button" class="theme-btn" id="themeToggle" aria-label="Đổi giao diện sáng/tối">
+          <span class="icon-moon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </span>
+          <span class="icon-sun hidden" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main home-main news-main">
+      <figure class="news-page-banner">
+        <img
+          src="/ui/img/visual-stethoscope.jpg"
+          width="1200"
+          height="420"
+          alt=""
+          loading="eager"
+          decoding="async"
+        />
+      </figure>
+      <section class="home-hero" aria-labelledby="news-title">
+        <h1 id="news-title" class="home-title">Tin tức &amp; nguồn tham khảo y tế</h1>
+        <p class="home-lead">
+          Trang tổng hợp <strong>liên kết đến các nguồn chính thống</strong> (trong và ngoài nước) để bạn theo dõi thông tin
+          sức khỏe cộng đồng, phòng bệnh và khuyến cáo mới nhất. Nội dung do bên thứ ba cung cấp; ứng dụng chỉ giúp truy
+          cập nhanh, <strong>không</strong> thay thế tư vấn của cơ sở y tế.
+        </p>
+      </section>
+
+      <section class="news-section" aria-labelledby="news-domestic">
+        <h2 id="news-domestic" class="home-section-title">Trong nước</h2>
+        <ul class="news-grid">
+          <li class="news-card">
+            <a class="news-card-link" href="https://moh.gov.vn/" target="_blank" rel="noopener noreferrer">
+              <span class="news-card-kicker">Cổng thông tin</span>
+              <span class="news-card-title">Bộ Y tế Việt Nam</span>
+              <span class="news-card-desc">Thông cáo, hướng dẫn chuyên môn và các chương trình sức khỏe quốc gia.</span>
+              <span class="news-card-cta">Mở moh.gov.vn →</span>
+            </a>
+          </li>
+          <li class="news-card">
+            <a class="news-card-link" href="https://ncdc.gov.vn/" target="_blank" rel="noopener noreferrer">
+              <span class="news-card-kicker">Dịch bệnh</span>
+              <span class="news-card-title">Cục Y tế dự phòng</span>
+              <span class="news-card-desc">Cập nhật phòng chống dịch, tiêm chủng và các khuyến cáo cho người dân.</span>
+              <span class="news-card-cta">Mở ncdc.gov.vn →</span>
+            </a>
+          </li>
+          <li class="news-card">
+            <a class="news-card-link" href="https://suckhoedoisong.vn/" target="_blank" rel="noopener noreferrer">
+              <span class="news-card-kicker">Báo chí</span>
+              <span class="news-card-title">Sức khỏe &amp; Đời sống</span>
+              <span class="news-card-desc">Tin sức khỏe, dinh dưỡng và đời sống — đối chiếu với khuyến cáo chính thống khi cần.</span>
+              <span class="news-card-cta">Mở suckhoedoisong.vn →</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="news-section" aria-labelledby="news-global">
+        <h2 id="news-global" class="home-section-title">Quốc tế</h2>
+        <ul class="news-grid">
+          <li class="news-card">
+            <a class="news-card-link" href="https://www.who.int/vi/news" target="_blank" rel="noopener noreferrer">
+              <span class="news-card-kicker">WHO · Tiếng Việt</span>
+              <span class="news-card-title">Tin tức Tổ chức Y tế Thế giới</span>
+              <span class="news-card-desc">Thông báo toàn cầu về bệnh truyền nhiễm, vaccine và an toàn sức khỏe.</span>
+              <span class="news-card-cta">Mở who.int →</span>
+            </a>
+          </li>
+          <li class="news-card">
+            <a class="news-card-link" href="https://www.cdc.gov/health-topics.html" target="_blank" rel="noopener noreferrer">
+              <span class="news-card-kicker">Hoa Kỳ · CDC</span>
+              <span class="news-card-title">Chủ đề sức khỏe</span>
+              <span class="news-card-desc">Tài liệu tham khảo bằng tiếng Anh về bệnh mãn tính, tiêm chủng và phòng ngừa.</span>
+              <span class="news-card-cta">Mở cdc.gov →</span>
+            </a>
+          </li>
+          <li class="news-card">
+            <a class="news-card-link" href="https://www.ecdc.europa.eu/en/all-topics-z" target="_blank" rel="noopener noreferrer">
+              <span class="news-card-kicker">Châu Âu · ECDC</span>
+              <span class="news-card-title">Các chủ đề y tế công cộng</span>
+              <span class="news-card-desc">Dữ liệu và khuyến cáo liên quan dịch bệnh tại khu vực châu Âu.</span>
+              <span class="news-card-cta">Mở ecdc.europa.eu →</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <aside class="home-disclaimer card news-footnote" role="note">
+        <p class="home-disclaimer-text">
+          <strong>Lưu ý:</strong> Liên kết mở tab mới. Luôn kiểm tra ngày cập nhật và nguồn gốc bài viết. Thông tin trên
+          mạng có thể lỗi thời hoặc không phù hợp cá nhân; khám và điều trị theo chỉ định của bác sĩ / cơ sở được cấp phép.
+        </p>
+      </aside>
+    </main>
+
+    <script src="auth.js?v=auth1"></script>
+    <script src="app.js?v=warm1"></script>
+  </body>
+</html>

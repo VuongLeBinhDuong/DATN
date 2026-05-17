@@ -1,0 +1,15 @@
+{"id": "q_001", "question": "tiểu đường tuýp 2", "expected_entities": ["tiểu đường", "đái tháo đường"], "expected_types": ["Disease"], "expected_chunk_count": 5}
+{"id": "q_002", "question": "paracetamol hạ sốt", "expected_entities": ["paracetamol", "sốt"], "expected_types": ["Drug", "Symptom"], "expected_chunk_count": 3}
+{"id": "q_003", "question": "metformin điều trị tiểu đường", "expected_entities": ["metformin", "tiểu đường"], "expected_types": ["Drug", "Disease"], "expected_chunk_count": 4}
+{"id": "q_004", "question": "huyết áp cao nguy hiểm", "expected_entities": ["huyết áp cao", "tăng huyết áp"], "expected_types": ["Disease"], "expected_chunk_count": 3}
+{"id": "q_005", "question": "viêm gan B chữa trị", "expected_entities": ["viêm gan", "viêm gan B"], "expected_types": ["Disease"], "expected_chunk_count": 3}
+{"id": "q_006", "question": "hen suyễn dùng salbutamol", "expected_entities": ["hen suyễn", "salbutamol"], "expected_types": ["Disease", "Drug"], "expected_chunk_count": 4}
+{"id": "q_007", "question": "sỏi thận đau", "expected_entities": ["sỏi thận", "thận"], "expected_types": ["Disease", "Anatomy"], "expected_chunk_count": 3}
+{"id": "q_008", "question": "amoxicillin kháng sinh", "expected_entities": ["amoxicillin", "kháng sinh"], "expected_types": ["Drug"], "expected_chunk_count": 3}
+{"id": "q_009", "question": "covid-19 triệu chứng", "expected_entities": ["covid-19", "cúm"], "expected_types": ["Disease"], "expected_chunk_count": 4}
+{"id": "q_010", "question": "nhồi máu cơ tim cấp cứu", "expected_entities": ["nhồi máu cơ tim", "đau tim"], "expected_types": ["Disease"], "expected_chunk_count": 3}
+{"id": "q_011", "question": "insulin tiểu đường type 1", "expected_entities": ["insulin", "tiểu đường"], "expected_types": ["Drug", "Disease"], "expected_chunk_count": 4}
+{"id": "q_012", "question": "losartan huyết áp", "expected_entities": ["losartan", "huyết áp"], "expected_types": ["Drug", "Disease"], "expected_chunk_count": 3}
+{"id": "q_013", "question": "đau đầu chóng mặt", "expected_entities": ["đau đầu", "chóng mặt"], "expected_types": ["Symptom"], "expected_chunk_count": 3}
+{"id": "q_014", "question": "omeprazole dạ dày", "expected_entities": ["omeprazole", "dạ dày"], "expected_types": ["Drug", "Anatomy"], "expected_chunk_count": 3}
+{"id": "q_015", "question": "warfarin chống đông", "expected_entities": ["warfarin"], "expected_types": ["Drug"], "expected_chunk_count": 2}

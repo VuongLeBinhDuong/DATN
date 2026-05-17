@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#d97736" />
+    <title>DATN — Dashboard AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=warm1" />
+  </head>
+  <body data-protected="true">
+    <div class="mesh" aria-hidden="true"></div>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/ui/" aria-label="Trang chủ">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-text">
+            <span class="brand-name">DATN</span>
+            <span class="brand-tag">Dashboard AI demo</span>
+          </span>
+        </a>
+        <nav class="tabs" role="navigation" aria-label="Điều hướng">
+          <a class="tab" href="/ui/">Trang chủ</a>
+          <span class="tab is-active" aria-current="page">Dashboard</span>
+          <a class="tab" href="/ui/agent.html">Nhân viên y tế</a>
+          <a class="tab" href="/ui/lich-nhac.html">Lịch thuốc</a>
+          <a class="tab" href="/ui/nhap-tai-lieu.html">Nhập tài liệu</a>
+          <a class="tab" href="/ui/tin-tuc-y-te.html">Tin tức y tế</a>
+        </nav>
+        <span class="auth-user" id="authUserLabel"></span>
+        <a class="btn ghost btn-auth" id="loginLink" href="/ui/login.html">Đăng nhập</a>
+        <button type="button" class="btn secondary btn-auth hidden" id="logoutBtn">Đăng xuất</button>
+        <button type="button" class="theme-btn" id="themeToggle" aria-label="Đổi giao diện sáng/tối">
+          <span class="icon-moon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </span>
+          <span class="icon-sun hidden" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+          </span>
+        </button>
+      </div>
+    </header>
+    <main class="main home-main">
+      <section class="home-hero">
+        <h1 class="home-title">Điểm vào chính cho demo AI y khoa</h1>
+        <p class="home-lead">Chọn nhanh một luồng để trình bày đồ án: hỏi đáp với trợ lý AI hoặc phân tích hồ sơ xét nghiệm.</p>
+      </section>
+      <section class="home-features" aria-label="Luồng thao tác chính">
+        <ul class="home-feature-list">
+          <li class="home-feature">
+            <h3 class="home-feature-title">Trò chuyện với nhân viên y tế</h3>
+            <p>Hỏi đáp triệu chứng, thuốc, và tri thức y khoa theo ngữ cảnh hệ thống.</p>
+            <div class="row-actions"><a class="btn primary" href="/ui/agent.html">Mở chat AI</a></div>
+          </li>
+          <li class="home-feature">
+            <h3 class="home-feature-title">Phân tích tài liệu bệnh án</h3>
+            <p>Tải PDF/Excel, so khớp chỉ số và xem tóm tắt tự động để demo pipeline AI.</p>
+            <div class="row-actions"><a class="btn primary" href="/ui/nhap-tai-lieu.html">Mở phân tích</a></div>
+          </li>
+        </ul>
+      </section>
+    </main>
+    <script src="auth.js?v=auth1"></script>
+    <script src="app.js?v=warm1"></script>
+  </body>
+</html>

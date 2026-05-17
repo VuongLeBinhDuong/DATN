@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#d97736" />
+    <title>DATN — Nhập tài liệu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=warm1" />
+  </head>
+  <body data-protected="true">
+    <div class="mesh" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/ui/" aria-label="Trang chủ">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-text">
+            <span class="brand-name">DATN</span>
+            <span class="brand-tag">Phân tích hồ sơ · xét nghiệm</span>
+          </span>
+        </a>
+
+        <nav class="tabs" role="navigation" aria-label="Điều hướng">
+          <a class="tab" href="/ui/">Trang chủ</a>
+          <a class="tab" href="/ui/dashboard.html">Dashboard</a>
+          <a class="tab" href="/ui/agent.html">Nhân viên y tế</a>
+          <a class="tab" href="/ui/lich-nhac.html">Lịch thuốc</a>
+          <span class="tab is-active" aria-current="page">Nhập tài liệu</span>
+          <a class="tab" href="/ui/tin-tuc-y-te.html">Tin tức y tế</a>
+        </nav>
+
+        <span class="auth-user" id="authUserLabel"></span>
+        <a class="btn ghost btn-auth" id="loginLink" href="/ui/login.html">Đăng nhập</a>
+        <button type="button" class="btn secondary btn-auth hidden" id="logoutBtn">Đăng xuất</button>
+        <button type="button" class="theme-btn" id="themeToggle" aria-label="Đổi giao diện sáng/tối">
+          <span class="icon-moon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </span>
+          <span class="icon-sun hidden" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main main--with-hero">
+      <figure class="page-hero-banner page-hero-banner--narrow" aria-hidden="true">
+        <img src="/ui/img/visual-lab.jpg" width="1100" height="320" alt="" loading="eager" decoding="async" />
+      </figure>
+      <p class="lede">
+        Tải PDF hoặc Excel để so khớp chỉ số và xem gợi ý phân tích tự động. Chỉ mang tính minh họa; <strong>không thay thế</strong> bác sĩ, dược sĩ hay chẩn đoán lâm sàng.
+      </p>
+
+      <section class="tab-panel" id="panelMedical" aria-label="Phân tích hồ sơ" data-panel="medical">
+        <div class="card">
+          <h2 class="card-title">Tải hồ sơ</h2>
+          <p class="muted small">Định dạng: PDF, XLSX, XLSM · tối đa theo cấu hình server.</p>
+          <form id="medicalForm" class="medical-form">
+            <div class="field">
+              <label for="medicalFile">Tệp</label>
+              <input type="file" id="medicalFile" accept=".pdf,.xlsx,.xlsm,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            </div>
+            <div class="field-grid narrow">
+              <div class="field">
+                <label for="pages">Trang PDF <span class="optional">(vd. 1-3)</span></label>
+                <input type="text" id="pages" name="pages" placeholder="Để trống = toàn bộ" />
+              </div>
+              <div class="field">
+                <label for="sheetName">Tên sheet Excel</label>
+                <input type="text" id="sheetName" name="sheet_name" placeholder="Tùy chọn" />
+              </div>
+              <div class="field">
+                <label for="patientSex">Giới tính <span class="optional">(Hb)</span></label>
+                <select id="patientSex" name="patient_sex">
+                  <option value="">—</option>
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
+                </select>
+              </div>
+            </div>
+            <div class="row-actions">
+              <button type="submit" class="btn primary" id="analyzeBtn">Phân tích</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card card-output hidden" id="medicalResult" aria-live="polite">
+          <h2 class="card-title">Kết quả</h2>
+          <div id="medicalSummary" class="medical-summary"></div>
+          <h3 class="card-subtitle">So sánh chỉ số</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="comparisonsTable">
+              <thead>
+                <tr>
+                  <th>Chỉ số</th>
+                  <th>Giá trị</th>
+                  <th>Tham chiếu</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="comparisonsBody"></tbody>
+            </table>
+          </div>
+          <h3 class="card-subtitle hidden" id="narrativeTitle">Tóm tắt tự động</h3>
+          <div class="narrative narrative-md hidden" id="narrativeBlock"></div>
+          <h3 class="card-subtitle hidden" id="reportCompareTitle">So sánh với tham chiếu trên phiếu</h3>
+          <div class="narrative narrative-md hidden" id="reportCompareBlock"></div>
+          <h3 class="card-subtitle hidden" id="analysisAdviceTitle">Gợi ý phân tích</h3>
+          <div class="narrative narrative-md hidden" id="analysisAdviceBlock"></div>
+          <h3 class="card-subtitle hidden" id="suggestedMedsTitle">Thuốc được gợi ý</h3>
+          <p id="suggestedMedsHint" class="muted small hidden">
+            Trích từ đoạn gợi ý phía trên (minh họa). Không thay cho kê đơn hay hướng dẫn điều trị.
+          </p>
+          <div class="suggested-meds hidden" id="suggestedMedsBlock" aria-live="polite"></div>
+          <details class="raw-json">
+            <summary>Dữ liệu chi tiết</summary>
+            <pre id="rawJson"></pre>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <script src="auth.js?v=auth1"></script>
+    <script src="app.js?v=noconn9"></script>
+  </body>
+</html>

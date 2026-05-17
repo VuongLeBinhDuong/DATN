@@ -1,0 +1,86 @@
+# Environment files (API keys, secrets)
+.env
+config/.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Data
+graphrag/output/
+graphrag/input/
+upload/
+
+# SSH keys
+*.pem
+*.key
+id_ed25519*
+*.pub
+
+# Ollama models
+docker/ollama/models/
+*.bin
+*.gguf
+
+# Data
+data/
+backups/
+*.parquet
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Logs
+*.log
+
+# Ollama
+docker/ollama/models/
+docker/ollama/*.pub
+docker/ollama/id_ed25519*
+
+# Models
+*.bin
+*.gguf
+*.pt
+
+# Optional (nếu có)
+*.parquet

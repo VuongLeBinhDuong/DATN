@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#d97736" />
+    <title>DATN — Lịch thuốc</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=warm1" />
+  </head>
+  <body>
+    <div class="mesh" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/ui/" aria-label="Trang chủ">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-text">
+            <span class="brand-name">DATN</span>
+            <span class="brand-tag">Thời khóa biểu thuốc · nhắc lịch</span>
+          </span>
+        </a>
+
+        <nav class="tabs" role="navigation" aria-label="Điều hướng">
+          <a class="tab" href="/ui/">Trang chủ</a>
+          <a class="tab" href="/ui/dashboard.html">Dashboard</a>
+          <a class="tab" href="/ui/agent.html">Nhân viên y tế</a>
+          <span class="tab is-active" aria-current="page">Lịch thuốc</span>
+          <a class="tab" href="/ui/nhap-tai-lieu.html">Nhập tài liệu</a>
+          <a class="tab" href="/ui/tin-tuc-y-te.html">Tin tức y tế</a>
+        </nav>
+
+        <span class="auth-user" id="authUserLabel"></span>
+        <a class="btn ghost btn-auth" id="loginLink" href="/ui/login.html">Đăng nhập</a>
+        <button type="button" class="btn secondary btn-auth hidden" id="logoutBtn">Đăng xuất</button>
+        <button type="button" class="theme-btn" id="themeToggle" aria-label="Đổi giao diện sáng/tối">
+          <span class="icon-moon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </span>
+          <span class="icon-sun hidden" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="card schedule-card">
+        <div class="schedule-head">
+          <h1 class="card-title">Lịch thuốc tuần này</h1>
+          <div class="schedule-actions">
+            <button type="button" class="btn primary" id="openScheduleEditorBtn">+ Thêm lịch mới</button>
+            <button type="button" class="btn ghost" id="refreshScheduleBtn">Làm mới</button>
+          </div>
+        </div>
+        <p class="lede">
+          Hiển thị lịch như thời khóa biểu (theo 7 ngày tới). Dữ liệu lấy từ lịch đã lưu trên trình duyệt của bạn.
+        </p>
+        <div class="schedule-grid-wrap" id="scheduleGridWrap" aria-live="polite"></div>
+      </section>
+
+      <section class="card schedule-manager-card">
+        <h2 class="card-title">Quản lý lịch đã lưu</h2>
+        <p class="lede">Bạn có thể chỉnh sửa hoặc xóa từng lịch ngay tại đây.</p>
+        <div id="scheduleManagerList" class="schedule-manager-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <dialog class="chat-dialog" id="scheduleEditorDialog" aria-labelledby="scheduleEditorTitle">
+      <form class="chat-dialog-form" id="scheduleEditorForm">
+        <h2 class="chat-dialog-title" id="scheduleEditorTitle">Lịch nhắc thuốc</h2>
+        <input type="hidden" id="scheduleEditId" />
+        <div class="chat-dialog-field">
+          <label for="scheduleText">Nội dung</label>
+          <textarea id="scheduleText" rows="2" placeholder="Ví dụ: Paracetamol 500mg sau ăn" required></textarea>
+        </div>
+        <fieldset class="chat-dialog-field chat-dialog-fieldset">
+          <legend class="chat-dialog-legend">Kiểu lịch</legend>
+          <div class="chat-reminder-kind-row"><label class="chat-radio-label"><input type="radio" name="scheduleKind" value="once" checked /> Một lần</label></div>
+          <div class="chat-reminder-kind-row"><label class="chat-radio-label"><input type="radio" name="scheduleKind" value="daily" /> Hằng ngày</label></div>
+          <div class="chat-reminder-kind-row"><label class="chat-radio-label"><input type="radio" name="scheduleKind" value="interval" /> Cách mỗi vài giờ</label></div>
+        </fieldset>
+        <div class="chat-dialog-field schedule-kind-section" id="scheduleFieldsOnce">
+          <label for="scheduleWhen">Thời điểm</label>
+          <input type="datetime-local" id="scheduleWhen" />
+        </div>
+        <div class="chat-dialog-field schedule-kind-section hidden" id="scheduleFieldsDaily">
+          <label for="scheduleDailyTimes">Giờ trong ngày</label>
+          <input type="text" id="scheduleDailyTimes" placeholder="Ví dụ: 08:00, 20:00" autocomplete="off" />
+        </div>
+        <div class="chat-dialog-field schedule-kind-section hidden" id="scheduleFieldsInterval">
+          <label for="scheduleIntervalHours">Khoảng cách (giờ)</label>
+          <input type="number" id="scheduleIntervalHours" min="1" max="72" step="1" value="6" />
+          <label for="scheduleIntervalStart" class="chat-dialog-label-spaced">Bắt đầu từ</label>
+          <input type="datetime-local" id="scheduleIntervalStart" />
+        </div>
+        <div class="chat-dialog-actions">
+          <button type="button" class="btn secondary" id="closeScheduleEditorBtn">Hủy</button>
+          <button type="submit" class="btn primary">Lưu lịch</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="auth.js?v=auth1"></script>
+    <script src="schedule.js?v=warm1"></script>
+  </body>
+</html>

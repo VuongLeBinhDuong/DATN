@@ -1,0 +1,34 @@
+# Vector store chạy riêng; đặt STORE_URI / MILVUS_URI khi deploy.
+FROM python:3.11-slim-bookworm
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all application modules
+COPY agent/ ./agent/
+COPY api/ ./api/
+COPY core/ ./core/
+COPY services/ ./services/
+COPY repositories/ ./repositories/
+COPY medical_records/ ./medical_records/
+COPY llm_pipeline/ ./llm_pipeline/
+COPY rag_milvus/ ./rag_milvus/
+COPY prompts/ ./prompts/
+COPY config/ ./config/
+
+# Create necessary directories
+RUN mkdir -p data/uploads
+
+ENV STORE_CONFIG=config/store.json
+ENV HOST=0.0.0.0
+ENV PORT=8000
+
+EXPOSE 8000
+
+CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

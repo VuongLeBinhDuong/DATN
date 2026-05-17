@@ -1,0 +1,89 @@
+{
+  "_documentation": "Optional legacy table. The default pipeline does NOT use this file; lab reports already include reference ranges. Enable with use_internal_reference / --internal-reference when you want heuristic matching against this JSON.",
+  "version": "1",
+  "disclaimer": "These ranges are for education and illustration only (general adult population). They do not replace laboratory reference intervals or clinical decisions. Always use the reference limits printed on the patient’s report from the testing facility.",
+  "ranges": [
+    {
+      "id": "glucose_fasting_mmol",
+      "names": ["glucose", "glu", "blood glucose", "blood sugar"],
+      "low": 3.9,
+      "high": 6.0,
+      "unit": "mmol/L",
+      "alt_units": [{ "unit": "mg/dL", "scale_to_canonical": 0.0555 }]
+    },
+    {
+      "id": "hba1c_pct",
+      "names": ["hba1c", "hb a1c", "a1c", "glycated hemoglobin"],
+      "low": 4.0,
+      "high": 5.6,
+      "unit": "%",
+      "alt_units": []
+    },
+    {
+      "id": "wbc",
+      "names": ["wbc", "white blood cell", "leukocyte"],
+      "low": 4.0,
+      "high": 11.0,
+      "unit": "10^9/L",
+      "alt_units": [{ "unit": "/µL", "scale_to_canonical": 0.001 }, { "unit": "/uL", "scale_to_canonical": 0.001 }]
+    },
+    {
+      "id": "rbc",
+      "names": ["rbc", "red blood cell", "erythrocyte"],
+      "low": 4.5,
+      "high": 5.9,
+      "unit": "10^12/L",
+      "alt_units": []
+    },
+    {
+      "id": "hemoglobin_male",
+      "names": ["hb", "hgb", "hemoglobin"],
+      "low": 13.5,
+      "high": 17.5,
+      "unit": "g/dL",
+      "note_gender": "male",
+      "alt_units": [{ "unit": "g/L", "scale_to_canonical": 0.1 }]
+    },
+    {
+      "id": "hemoglobin_female",
+      "names": ["hb", "hgb", "hemoglobin"],
+      "low": 12.0,
+      "high": 15.5,
+      "unit": "g/dL",
+      "note_gender": "female",
+      "alt_units": [{ "unit": "g/L", "scale_to_canonical": 0.1 }]
+    },
+    {
+      "id": "platelet",
+      "names": ["platelet", "plt", "platelet count"],
+      "low": 150,
+      "high": 400,
+      "unit": "10^9/L",
+      "alt_units": []
+    },
+    {
+      "id": "creatinine_umol",
+      "names": ["creatinine", "creat", "creatinin"],
+      "low": 53,
+      "high": 115,
+      "unit": "µmol/L",
+      "alt_units": [{ "unit": "umol/L", "scale_to_canonical": 1.0 }, { "unit": "mg/dL", "scale_to_canonical": 88.4 }]
+    },
+    {
+      "id": "alt_u_l",
+      "names": ["alt", "gpt", "alanine aminotransferase"],
+      "low": 7,
+      "high": 56,
+      "unit": "U/L",
+      "alt_units": []
+    },
+    {
+      "id": "ast_u_l",
+      "names": ["ast", "got", "aspartate aminotransferase"],
+      "low": 10,
+      "high": 40,
+      "unit": "U/L",
+      "alt_units": []
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+# Nhieu hoat chat (tieng Anh + tieng Viet). Mot dong mot ten.
+# Chay it anh moi loai: --per-drug 2 --sleep-between-drugs 0.5
+acetaminophen
+ibuprofen
+aspirin
+naproxen
+diclofenac
+meloxicam
+celecoxib
+tramadol
+morphine
+codeine
+amoxicillin
+azithromycin
+ciprofloxacin
+doxycycline
+metronidazole
+cephalexin
+clarithromycin
+clindamycin
+nitrofurantoin
+trimethoprim
+omeprazole
+pantoprazole
+esomeprazole
+ranitidine
+famotidine
+metformin
+glibenclamide
+gliclazide
+insulin glargine
+sitagliptin
+empagliflozin
+amlodipine
+atenolol
+metoprolol
+bisoprolol
+carvedilol
+lisinopril
+enalapril
+losartan
+valsartan
+telmisartan
+hydrochlorothiazide
+furosemide
+spironolactone
+indapamide
+atorvastatin
+simvastatin
+rosuvastatin
+pravastatin
+ezetimibe
+levothyroxine
+prednisolone
+dexamethasone
+hydrocortisone
+sertraline
+fluoxetine
+escitalopram
+venlafaxine
+duloxetine
+amitriptyline
+diazepam
+lorazepam
+alprazolam
+zolpidem
+quetiapine
+olanzapine
+risperidone
+haloperidol
+salbutamol
+budesonide
+fluticasone
+montelukast
+theophylline
+tiotropium
+warfarin
+clopidogrel
+rivaroxaban
+apixaban
+dabigatran
+aspirin low dose
+isosorbide mononitrate
+glyceryl trinitrate
+digoxin
+amiodarone
+sotalol
+diltiazem
+verapamil
+finasteride
+tamsulosin
+sildenafil
+tadalafil
+phenoxymethylpenicillin
+flucloxacillin
+co-amoxiclav
+piperacillin tazobactam
+meropenem
+vancomycin
+gentamicin
+acyclovir
+valacyclovir
+oseltamivir
+ivermectin
+albendazole
+ibuprofen lysine
+ketoprofen
+indometacin
+allopurinol
+colchicine
+methotrexate
+sulfasalazine
+adalimumab
+levetiracetam
+carbamazepine
+sodium valproate
+gabapentin
+pregabalin
+baclofen
+cyclizine
+ondansetron
+metoclopramide
+loperamide
+lactulose
+senna
+bisacodyl
+insulin aspart
+glimepiride
+pioglitazone
+repaglinide
+dulaglutide
+liraglutide
+perindopril
+candesartan
+nebivolol
+ivabradine
+fenofibrate
+omega 3 acid ethyl esters
+cyanocobalamin
+ferrous sulfate
+calcium carbonate
+cholecalciferol
+folic acid
+ascorbic acid
+multivitamin tablet

@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "uri": "bolt://127.0.0.1:7687",
+  "user": "neo4j",
+  "password": "changeme",
+  "database": "neo4j",
+  "query_backend": "neo4j",
+  "fulltext_index_name": "graphEntityFulltext",
+  "community_fulltext_index_name": "communityFulltext",
+  "top_k_nodes": 8,
+  "neighbor_hops": 1,
+  "top_communities": 6,
+  "synthesis_num_predict": 1024,
+  "include_community_reports": true,
+  "community_fulltext_boost": true,
+  "synthesize_with_ollama": true,
+  "synthesis_prompt_basename": "agent_merged_context_prompt.txt",
+  "ollama_model": "llama3.1:8b",
+  "ollama_host": "http://127.0.0.1:11434",
+  "ollama_timeout": 120
+}
