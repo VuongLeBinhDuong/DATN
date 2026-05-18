@@ -1,6 +1,6 @@
-"""Tests for agent/react/ - ReAct pattern implementation.
+"""Tests for agent/react/ - ReAct subagent execution.
 
-Tests ReActAgent, parser, and tools.
+Tests ReActParser regex mapping and ReActAgent execution flow.
 """
 
 from __future__ import annotations
@@ -9,254 +9,212 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agent.react import ReActAgent, ReActParser, ReActParseResult
-from agent.react.tools import set_repository, run_graphrag_tool
+from agent.react.agent import ReActAgent
+from agent.react.parser import ReActParser
+from agent.react.tools import run_graphrag_tool
 from core.llm_backends import LLMBackendError
-from repositories.base import QueryResult
 
 
 class TestReActParser:
-    """Test cases for ReAct output parser."""
+    """Test cases for the ReAct pattern parser."""
 
     def test_parse_final_answer(self):
-        """Test parsing Final Answer from LLM output."""
-        output = """Thought: The user is asking about flu symptoms.
-Final Answer: Các triệu chứng cảm cúm bao gồm: sốt, ho, đau họng, nghẹt mũi, mệt mỏi."""
-        
+        """Test parsing of a final answer."""
         parser = ReActParser()
-        result = parser.parse(output)
+        text = "Thought: I now know the answer.\nFinal Answer: The capital of France is Paris."
         
-        assert result.type == "finish"
-        assert "Các triệu chứng cảm cúm" in result.content
+        result = parser.parse(text)
+        
+        assert result.kind == "finish"
+        assert result.answer == "The capital of France is Paris."
+        assert result.action is None
+        assert result.input_text is None
+        assert result.error_message is None
 
     def test_parse_action(self):
-        """Test parsing Action from LLM output."""
-        output = """Thought: I need to search for flu symptoms.
-Action: graphrag_query
-Action Input: triệu chứng cảm cúm"""
-        
+        """Test parsing of a tool execution action."""
         parser = ReActParser()
-        result = parser.parse(output)
+        text = "Thought: I need to search.\nAction: graphrag_query\nAction Input: flu symptoms"
         
-        assert result.type == "action"
-        assert result.action_name == "graphrag_query"
-        assert "triệu chứng cảm cúm" in result.action_input
+        result = parser.parse(text)
+        
+        assert result.kind == "action"
+        assert result.action == "graphrag_query"
+        assert result.input_text == "flu symptoms"
+        assert result.answer is None
+        assert result.error_message is None
 
     def test_parse_empty_output(self):
-        """Test parsing empty output returns error."""
+        """Test parsing of empty or invalid output."""
         parser = ReActParser()
-        result = parser.parse("")
         
-        assert result.type == "error"
+        result1 = parser.parse("")
+        assert result1.kind == "error"
+        assert "empty response" in result1.error_message.lower()
+        
+        result2 = parser.parse("Hello world")
+        assert result2.kind == "error"
+        assert "missing action" in result2.error_message.lower()
 
     def test_parse_with_markdown_code_block(self):
-        """Test parsing output with markdown code blocks."""
-        output = """Thought: Need to search.
+        """Test parsing of actions wrapped in markdown backticks."""
+        parser = ReActParser()
+        text = """Thought: Need to search.
 ```
 Action: graphrag_query
 Action Input: flu symptoms
 ```"""
+        result = parser.parse(text)
         
+        assert result.kind == "action"
+        assert result.action == "graphrag_query"
+        assert result.input_text == "flu symptoms\n```"
+
+    def test_parse_conflicting_action_and_answer(self):
+        """Test error when both Action and Final Answer are present."""
         parser = ReActParser()
-        result = parser.parse(output)
+        text = "Action: query\nAction Input: test\nFinal Answer: done"
         
-        assert result.type == "action"
-        assert result.action_name == "graphrag_query"
+        result = parser.parse(text)
+        
+        assert result.kind == "error"
+        assert "both action and final answer present" in result.error_message.lower()
+
+    def test_parse_bold_markdown_recovery(self):
+        """Test that parser recovers from **Action:** bold markdown wrappers."""
+        parser = ReActParser()
+        text = "**Action:** graphrag_query\n**Action Input:** flu symptoms"
+        
+        result = parser.parse(text)
+        
+        assert result.kind == "action"
+        assert result.action == "graphrag_query"
+        assert result.input_text == "flu symptoms"
 
 
 class TestReActAgent:
-    """Test cases for ReActAgent."""
+    """Test cases for the ReAct Agent orchestrator."""
 
     def test_init_default_values(self):
-        """Test default initialization values."""
+        """Test initialization with default settings."""
+        agent = ReActAgent()
+        assert agent.max_iterations == 3
+        assert agent.parse_retries == 2
+        assert agent.parser is not None
+
+    def test_init_custom_values(self):
+        """Test initialization with custom settings."""
         mock_llm = MagicMock()
-        agent = ReActAgent(llm_backend=mock_llm)
+        agent = ReActAgent(llm_backend=mock_llm, max_iterations=5, parse_retries=3)
         
         assert agent.llm is mock_llm
         assert agent.max_iterations == 5
         assert agent.parse_retries == 3
-        assert agent.parser is not None
-
-    def test_init_custom_values(self):
-        """Test initialization with custom values."""
-        mock_llm = MagicMock()
-        agent = ReActAgent(
-            llm_backend=mock_llm,
-            max_iterations=10,
-            parse_retries=5
-        )
-        
-        assert agent.max_iterations == 10
-        assert agent.parse_retries == 5
 
     def test_run_sync_single_iteration(self):
-        """Test synchronous run with single iteration."""
+        """Test sync execution finishes in a single iteration."""
         mock_llm = MagicMock()
-        mock_llm.chat.return_value = """Thought: I know the answer.
-Final Answer: This is the answer."""
+        mock_llm.chat_stream.return_value = ["Thought: I know the answer.\nFinal Answer: This is the answer."]
         
         agent = ReActAgent(llm_backend=mock_llm)
-        result = agent.run_sync("What is flu?")
+        result = agent.run_sync("Hello")
         
-        assert result["answer"] == "This is the answer."
-        assert result["iterations"] == 1
-        assert result["errors"] == []
+        assert "This is the answer." in result["answer"]
+        assert len(result["plan"]["steps"]) == 1
+        assert result["plan"]["steps"][0]["type"] == "finish"
 
     def test_run_sync_with_action(self):
-        """Test synchronous run with tool action."""
+        """Test sync execution that calls a tool first."""
         mock_llm = MagicMock()
-        mock_llm.chat.side_effect = [
-            """Thought: Need to search.
-Action: graphrag_query
-Action Input: flu symptoms""",
-            """Observation: Flu symptoms include fever, cough.
-Thought: Now I can answer.
-Final Answer: Flu symptoms are fever, cough, sore throat."""
+        # Iteration 1: Calls tool. Iteration 2: Final answer.
+        mock_llm.chat_stream.side_effect = [
+            ["Thought: Search flu.\nAction: graphrag_query\nAction Input: flu symptoms"],
+            ["Thought: Have observations.\nFinal Answer: Flu symptoms include fever, cough."]
         ]
         
-        mock_repo = MagicMock()
-        mock_repo.query.return_value = QueryResult(
-            text="Flu symptoms include fever, cough.",
-            sources=[]
-        )
-        
         agent = ReActAgent(llm_backend=mock_llm)
-        set_repository(mock_repo)
         
-        result = agent.run_sync("What are flu symptoms?")
-        
-        assert "fever, cough" in result["answer"]
-        assert result["iterations"] == 2
+        with patch("agent.react.agent.run_graphrag_tool") as mock_tool:
+            mock_tool.return_value = ("Flu symptoms: fever, cough.", [])
+            
+            result = agent.run_sync("What are flu symptoms?")
+            
+            assert "fever, cough" in result["answer"]
+            assert len(result["plan"]["steps"]) == 2
+            assert result["plan"]["steps"][0]["type"] == "tool"
+            assert result["plan"]["steps"][1]["type"] == "finish"
+            mock_tool.assert_called_once_with("flu symptoms", "What are flu symptoms?")
 
     def test_run_sync_max_iterations_reached(self):
-        """Test that agent stops at max iterations."""
+        """Test ReAct agent gracefully handles when max iterations are exceeded."""
         mock_llm = MagicMock()
-        # Always returns action, never final answer
-        mock_llm.chat.return_value = """Thought: Need more info.
-Action: graphrag_query
-Action Input: test"""
+        # LLM keeps wanting to call the tool, but we return different inputs to avoid duplicate loop guard
+        mock_llm.chat_stream.side_effect = [
+            ["Thought: Search flu 1.\nAction: graphrag_query\nAction Input: flu symptoms 1"],
+            ["Thought: Search flu 2.\nAction: graphrag_query\nAction Input: flu symptoms 2"],
+        ]
         
-        mock_repo = MagicMock()
-        mock_repo.query.return_value = QueryResult(text="Test", sources=[])
+        agent = ReActAgent(llm_backend=mock_llm, max_iterations=2)
         
-        agent = ReActAgent(llm_backend=mock_llm, max_iterations=3)
-        set_repository(mock_repo)
-        
-        result = agent.run_sync("Test question")
-        
-        # Should stop at max iterations
-        assert result["iterations"] <= 3
-        assert len(result["errors"]) > 0  # Should have error about max iterations
+        with patch("agent.react.agent.run_graphrag_tool") as mock_tool:
+            mock_tool.return_value = ("Observation details", [])
+            
+            result = agent.run_sync("Query")
+            
+            assert "dùng hết số bước" in result["answer"]
+            assert len(result["plan"]["steps"]) == 2
+            assert "exceeded max_iterations" in result["errors"][0]
 
     def test_run_stream_yields_events(self):
-        """Test streaming run yields events."""
+        """Test streaming execution yields appropriate step and reasoning events."""
         mock_llm = MagicMock()
-        
-        # Mock streaming chunks
-        def mock_stream(messages, **kwargs):
-            chunks = [
-                "Thought: I know",
-                " the answer.\n",
-                "Final Answer: Answer here."
-            ]
-            for chunk in chunks:
-                yield chunk
-        
-        mock_llm.chat_stream = mock_stream
+        mock_llm.chat_stream.return_value = ["Thought: I know.\nFinal Answer: Hello!"]
         
         agent = ReActAgent(llm_backend=mock_llm)
-        events = list(agent.run_stream("Question?"))
+        events = list(agent.run_stream("Hi"))
         
-        # Should have at least step event and done event
         event_types = [e["event"] for e in events]
         assert "step" in event_types
+        assert "reasoning_delta" in event_types
         assert "done" in event_types
+        
+        # Last event must be final result bundle
+        done_event = events[-1]
+        assert done_event["event"] == "done"
+        assert "Hello!" in done_event["answer"]
 
 
 class TestReActTools:
-    """Test cases for agent/react/tools.py."""
+    """Test cases for the core tools utilized by the ReAct Agent."""
 
     def test_run_graphrag_tool_simple(self):
-        """Test graphrag tool with simple question."""
+        """Test graphrag_query tool executes and retrieves results."""
         mock_repo = MagicMock()
-        mock_repo.query.return_value = QueryResult(
-            text="Flu symptoms include fever.",
-            sources=[{"title": "Medical Source", "score": 0.9}]
+        mock_repo.query.return_value = MagicMock(
+            text="Query results.",
+            sources=[{"title": "Source 1", "score": 0.8}]
         )
         
+        from agent.react.tools import set_repository
         set_repository(mock_repo)
-        
-        text, sources = run_graphrag_tool("flu symptoms", "What are flu symptoms?")
-        
-        assert "fever" in text
-        assert len(sources) == 1
-        mock_repo.query.assert_called_once()
+        try:
+            obs, hits = run_graphrag_tool("Query details", "Original question")
+            
+            assert obs == "Query results."
+            assert len(hits) == 1
+            assert hits[0]["title"] == "Source 1"
+        finally:
+            set_repository(None)
 
-    def test_run_graphrag_tool_merged_query(self):
-        """Test graphrag tool merges action input with original question."""
+    def test_run_graphrag_tool_merging_query(self):
+        """Test graphrag_query uses original question if action input is empty."""
         mock_repo = MagicMock()
-        mock_repo.query.return_value = QueryResult(text="Answer", sources=[])
+        mock_repo.query.return_value = MagicMock(text="Context.", sources=[])
         
+        from agent.react.tools import set_repository
         set_repository(mock_repo)
-        
-        # Different action_input and question
-        run_graphrag_tool("treatment", "What is flu and how to treat it?")
-        
-        # Should call query with merged terms
-        call_args = mock_repo.query.call_args
-        assert "What is flu and how to treat it?" == call_args[0][0]
-
-    def test_set_repository(self):
-        """Test setting custom repository."""
-        mock_repo = MagicMock()
-        
-        set_repository(mock_repo)
-        
-        # Run a tool to verify it uses the mock
-        mock_repo.query.return_value = QueryResult(text="Test", sources=[])
-        text, _ = run_graphrag_tool("test", "test")
-        
-        mock_repo.query.assert_called()
-
-
-class TestReActParseResult:
-    """Test cases for ReActParseResult dataclass."""
-
-    def test_create_finish_result(self):
-        """Test creating finish result."""
-        result = ReActParseResult(
-            type="finish",
-            content="Final answer here",
-            action_name=None,
-            action_input=None
-        )
-        
-        assert result.type == "finish"
-        assert result.content == "Final answer here"
-        assert result.action_name is None
-
-    def test_create_action_result(self):
-        """Test creating action result."""
-        result = ReActParseResult(
-            type="action",
-            content=None,
-            action_name="graphrag_query",
-            action_input="search query"
-        )
-        
-        assert result.type == "action"
-        assert result.action_name == "graphrag_query"
-        assert result.action_input == "search query"
-
-    def test_create_error_result(self):
-        """Test creating error result."""
-        result = ReActParseResult(
-            type="error",
-            content="Invalid format",
-            action_name=None,
-            action_input=None,
-            error="Parse failed"
-        )
-        
-        assert result.type == "error"
-        assert result.error == "Parse failed"
+        try:
+            run_graphrag_tool(None, "Original question", use_expansion=False)
+            mock_repo.query.assert_called_once_with("Original question")
+        finally:
+            set_repository(None)

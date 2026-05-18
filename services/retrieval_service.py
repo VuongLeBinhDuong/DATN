@@ -23,8 +23,12 @@ class RetrievalService:
         """Query knowledge base."""
         if self._repository is None:
             return "No knowledge repository configured."
-        result = await self._repository.query(question, k)
-        return result.response
+        import asyncio
+        if asyncio.iscoroutinefunction(self._repository.query):
+            result = await self._repository.query(question, top_k=k)
+        else:
+            result = self._repository.query(question, top_k=k)
+        return result.text
 
     async def query_langchain_graph(self, question: str) -> str:
         """Query using LangChain GraphRAG (for disease/symptom/drug entity graph).

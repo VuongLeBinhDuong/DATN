@@ -49,7 +49,7 @@ class SimpleCache:
         """Cache value with TTL."""
         # Evict oldest if at capacity (simple LRU)
         if len(self._cache) >= self._max_size and key not in self._cache:
-            oldest = min(self._cache, lambda k: self._cache[k][1])
+            oldest = min(self._cache, key=lambda k: self._cache[k][1])
             del self._cache[oldest]
 
         ttl = ttl_sec or self._default_ttl
