@@ -196,11 +196,12 @@ def run_single_eval(
     for entity in subgraph_entities:
         name = entity.get("canonical_name", "")
         entity_type = entity.get("type", "")
-        # Strict filter for realistic evaluation
+        # Strict filter for realistic evaluation (allows 1-word entities like Paracetamol)
         if (name and (entity_type in VALID_TYPES or OFFLINE_MODE) and 
-            2 <= len(name.split()) <= 6 and  # Entity names 2-6 words
+            1 <= len(name.split()) <= 6 and  # Entity names 1-6 words
             len(name) >= 3 and len(name) <= 100):  # Reasonable char length
             retrieved_entities.append(name)
+            entity_types[name] = entity_type
             entity_types[name.lower()] = entity_type
     
     # Calculate metrics

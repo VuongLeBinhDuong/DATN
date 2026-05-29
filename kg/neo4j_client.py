@@ -384,8 +384,7 @@ class Neo4jKGClient:
         # So we format the hops directly into the query string.
         cypher_nodes = (
             f"MATCH (s:Entity) WHERE s.entity_id IN $seed "
-            f"CALL {{ "
-            f"  WITH s "
+            f"CALL (s) {{ "
             f"  MATCH p=(s)-[:REL*0..{hops}]-(:Entity) "
             f"  UNWIND nodes(p) AS n "
             f"  RETURN DISTINCT n.entity_id AS entity_id "

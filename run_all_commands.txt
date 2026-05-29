@@ -1,0 +1,126 @@
+================================================================================
+HỆ THỐNG CDSS GRAPHRAG Y TẾ - DANH SÁCH TOÀN BỘ CÂU LỆNH VẬN HÀNH TỪ ĐẦU ĐẾN CUỐI
+================================================================================
+Tệp tin này tổng hợp toàn bộ các câu lệnh cần thiết để thiết lập môi trường, 
+chuẩn bị cơ sở dữ liệu đồ thị Neo4j, nạp tri thức (ingestion), chạy máy chủ API,
+chạy giao diện Web UI, kiểm thử hệ thống và thực hiện đánh giá chất lượng RAG.
+
+Nền tảng áp dụng: Windows (CMD hoặc PowerShell).
+Thực hiện chạy toàn bộ lệnh từ thư mục gốc của dự án (`d:\DATN`).
+
+--------------------------------------------------------------------------------
+1. THIẾT LẬP MÔI TRƯỜNG ẢO & CÀI ĐẶT THƯ VIỆN (MÁY CHỦ KHÁCH)
+--------------------------------------------------------------------------------
+# Tạo môi trường ảo Python mới (nếu chưa có)
+python -m venv .venv
+
+# Kích hoạt môi trường ảo (PowerShell)
+.\.venv\Scripts\Activate.ps1
+
+# Kích hoạt môi trường ảo (CMD thông thường)
+.\.venv\Scripts\activate.bat
+
+# Nâng cấp pip và cài đặt toàn bộ dependencies lõi của dự án
+pip install --upgrade pip
+pip install -r requirements.txt
+
+--------------------------------------------------------------------------------
+2. KHỞI CHẠY DỊCH VỤ NỀN (DOCKER STACK)
+--------------------------------------------------------------------------------
+# Khởi chạy cơ sở dữ liệu đồ thị Neo4j dưới dạng container ngầm
+docker-compose up -d
+
+# Kiểm tra trạng thái của các container đang hoạt động
+docker-compose ps
+
+# Xem log hoạt động của Neo4j để đảm bảo kết nối ổn định
+docker-compose logs neo4j
+
+# Địa chỉ truy cập bảng điều khiển Neo4j Browser: http://localhost:7474
+# Tài khoản mặc định: neo4j / changeme
+
+--------------------------------------------------------------------------------
+3. THIẾT LẬP LLM CHẠY LOCAL (OLLAMA)
+--------------------------------------------------------------------------------
+# Khởi chạy dịch vụ Ollama local trên máy tính (nếu chưa khởi động)
+# Tải và chạy mô hình Llama-3.1-8B (Mặc định được hệ thống CDSS sử dụng)
+ollama pull llama3.1:8b
+
+# Chạy thử mô hình trực tiếp qua CLI để kiểm tra hoạt động
+ollama run llama3.1:8b
+
+--------------------------------------------------------------------------------
+4. XỬ LÝ LÀM SẠCH VÀ CHUẨN BỊ DỮ LIỆU ĐỒ THỊ (INGESTION)
+--------------------------------------------------------------------------------
+# Bước 4.1: Làm sạch dữ liệu y tế tiếng Việt thô
+python scripts/clean_vi_medical_data.py
+python scripts/clean_vi_qa_data.py
+
+# Bước 4.2: Áp dụng ràng buộc Schema lên cơ sở dữ liệu Neo4j
+python scripts/kg_apply_schema.py
+
+# Bước 4.3: Nhập và đồng bộ các tài nguyên đồ thị thô vào Neo4j
+python scripts/kg_import_artifacts.py
+
+# Bước 4.4: (Nếu chạy Microsoft GraphRAG) Đồng bộ dữ liệu parquet đầu ra sang Neo4j
+python scripts/graphrag_parquet_to_neo4j.py
+
+--------------------------------------------------------------------------------
+5. KHỞI CHẠY MÁY CHỦ API BACKEND (FASTAPI + UVICORN)
+--------------------------------------------------------------------------------
+# Khởi chạy API server ở chế độ tự động tải lại khi đổi code (reload)
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
+
+# Đường dẫn tài liệu hướng dẫn API Swagger UI: http://127.0.0.1:8000/docs
+# Đường dẫn kiểm tra sức khỏe dịch vụ: http://127.0.0.1:8000/health
+
+--------------------------------------------------------------------------------
+6. TRUY CẬP GIAO DIỆN NGƯỜI DÙNG CHUYÊN NGHIỆP (WEB UI)
+--------------------------------------------------------------------------------
+Mở trình duyệt Web (Chrome/Edge) và truy cập vào địa chỉ cổng Web UI local:
+
+- Trang giao diện chat CDSS & Vis-Network:
+  http://127.0.0.1:8000/ui/agent.html
+
+- Trang tải lên & Phân tích so sánh bệnh án (PDF/Excel):
+  http://127.0.0.1:8000/ui/nhap-tai-lieu.html
+
+- Trang thiết lập nhắc lịch uống thuốc y tế:
+  http://127.0.0.1:8000/ui/lich-nhac.html
+
+--------------------------------------------------------------------------------
+7. KIỂM THỬ TỰ ĐỘNG TOÀN DIỆN HỆ THỐNG
+--------------------------------------------------------------------------------
+# Chạy toàn bộ 109 ca kiểm thử tích hợp tự động (Unit & Integration tests)
+python run_tests.py
+
+# (Hoặc chạy thủ công qua pytest trực tiếp)
+pytest -v
+
+--------------------------------------------------------------------------------
+8. ĐÁNH GIÁ CHẤT LƯỢNG HỆ THỐNG (EVALUATION)
+--------------------------------------------------------------------------------
+# Đánh giá chất lượng bộ trích xuất và lọc đồ thị Custom KG
+python eval/eval_custom_kg.py --dataset eval/test_queries.jsonl --out eval/report.md
+
+# Đánh giá chất lượng retrieval đa chiều (Precision, Recall, MRR, F1)
+python scripts/eval_retrieval_quality.py --dataset eval/graph_eval_set.jsonl --k 5
+
+# Đối chiếu tập dữ liệu dự kiến của đồ án với dữ liệu Neo4j thực tế
+python scripts/validate_eval_dataset_neo4j.py --dataset eval/graph_eval_set.jsonl
+================================================================================
+
+--------------------------------------------------------------------------------
+9. NGROK
+--------------------------------------------------------------------------------
+
+# Cài đặt ngrok
+winget install ngrok
+
+# Thêm token ngrok
+ngrok config add-authtoken [ENCRYPTION_KEY]
+
+# Tạo tunnel
+ngrok http 8000
+
+================================================================================

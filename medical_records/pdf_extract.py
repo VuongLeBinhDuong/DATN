@@ -28,6 +28,40 @@ def parse_page_spec(spec: str | None, n_pages: int) -> list[int]:
     return sorted(out) if out else list(range(n_pages))
 
 
+def run_ocr_on_page(page) -> str:
+    """Render page to an image and run OCR using pytesseract or easyocr if available."""
+    try:
+        import pytesseract  # type: ignore
+        from PIL import Image
+        import io
+        
+        pix = page.get_pixmap(dpi=150)
+        img_data = pix.tobytes("png")
+        img = Image.open(io.BytesIO(img_data))
+        text = pytesseract.image_to_string(img, lang="vie+eng")
+        return text
+    except ImportError:
+        try:
+            import easyocr  # type: ignore
+            import numpy as np
+            import io
+            from PIL import Image
+            
+            pix = page.get_pixmap(dpi=150)
+            img_data = pix.tobytes("png")
+            img = Image.open(io.BytesIO(img_data))
+            img_np = np.array(img)
+            
+            # Initialize reader (caches models for 'vi' and 'en')
+            reader = easyocr.Reader(['vi', 'en'], gpu=False)
+            results = reader.readtext(img_np, detail=0)
+            return "\n".join(results)
+        except Exception:
+            return ""
+    except Exception:
+        return ""
+
+
 def extract_text_from_pdf(
     path: Path | str,
     *,
@@ -36,7 +70,7 @@ def extract_text_from_pdf(
 ) -> tuple[str, dict]:
     """
     crop_norm: (x0, y0, x1, y1) in normalized 0–1 coordinates per page (top-left origin).
-    Returns (text, meta) with meta keys: n_pages, pages_used, crop_applied.
+    Returns (text, meta) with meta keys: n_pages, pages_used, crop_applied, ocr_fallback_applied.
     """
     p = Path(path)
     doc = fitz.open(p)
@@ -63,10 +97,33 @@ def extract_text_from_pdf(
             if t.strip():
                 parts.append(f"--- Page {idx + 1} ---\n{t.strip()}")
         text = "\n\n".join(parts)
+        
+        # Detect if PDF is likely scanned (empty text or extremely low density)
+        ocr_fallback_applied = False
+        is_scanned_pdf_warning = False
+        
+        if not text.strip() or len(text.strip()) < 15 * len(indices):
+            ocr_parts = []
+            ocr_success = False
+            for idx in indices:
+                page = doc.load_page(idx)
+                ocr_text = run_ocr_on_page(page)
+                if ocr_text.strip():
+                    ocr_parts.append(f"--- Page {idx + 1} (OCR Fallback) ---\n{ocr_text.strip()}")
+                    ocr_success = True
+            
+            if ocr_success:
+                text = "\n\n".join(ocr_parts)
+                ocr_fallback_applied = True
+            else:
+                is_scanned_pdf_warning = True
+                
         return text, {
             "n_pages": n,
             "pages_used": [i + 1 for i in indices],
             "crop_applied": crop_norm is not None,
+            "ocr_fallback_applied": ocr_fallback_applied,
+            "is_scanned_pdf_warning": is_scanned_pdf_warning,
         }
     finally:
         doc.close()

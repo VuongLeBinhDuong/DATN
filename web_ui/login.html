@@ -1,125 +1,303 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#d97736" />
-    <title>DATN — Đăng nhập</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css?v=warm1" />
-  </head>
-  <body>
-    <div class="mesh" aria-hidden="true"></div>
-    <header class="topbar">
-      <div class="topbar-inner">
-        <a class="brand" href="/ui/" aria-label="Trang chủ">
-          <span class="brand-mark" aria-hidden="true"></span>
-          <span class="brand-text">
-            <span class="brand-name">DATN</span>
-            <span class="brand-tag brand-tag--soft">Đăng nhập hệ thống</span>
-          </span>
-        </a>
-        <button type="button" class="theme-btn" id="themeToggle" aria-label="Đổi giao diện sáng/tối">
-          <span class="icon-moon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
-          </span>
-          <span class="icon-sun hidden" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-            </svg>
-          </span>
-        </button>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#d97736" />
+  <title>DATN — Đăng nhập</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=warm1" />
+</head>
+
+<body>
+  <div class="mesh" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/ui/" aria-label="Trang chủ">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">
+          <span class="brand-name">DATN</span>
+          <span class="brand-tag brand-tag--soft">Đăng nhập hệ thống</span>
+        </span>
+      </a>
+      <button type="button" class="theme-btn" id="themeToggle" aria-label="Đổi giao diện sáng/tối">
+        <span class="icon-moon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg>
+        </span>
+        <span class="icon-sun hidden" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+          </svg>
+        </span>
+      </button>
+    </div>
+  </header>
+
+  <main class="main auth-main">
+    <section class="card auth-card">
+      <h1 class="card-title" id="authTitle">Đăng nhập tài khoản</h1>
+      <p class="muted small">Đăng nhập tài khoản chính thức để lưu trữ thông tin sử dụng.</p>
+
+      <div class="auth-tabs"
+        style="display: flex; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+        <button type="button" id="tabLogin" class="tab-btn"
+          style="background: none; border: none; color: var(--color-text, #fff); font-size: 1.1rem; font-weight: 600; cursor: pointer; padding: 4px 8px; border-bottom: 2px solid var(--color-primary, #d97736);">Đăng
+          nhập</button>
+        <button type="button" id="tabRegister" class="tab-btn"
+          style="background: none; border: none; color: var(--color-text-muted, #888); font-size: 1.1rem; font-weight: 600; cursor: pointer; padding: 4px 8px;">Đăng
+          ký tài khoản</button>
       </div>
-    </header>
 
-    <main class="main auth-main">
-      <section class="card auth-card">
-        <h1 class="card-title">Đăng nhập để dùng tính năng AI</h1>
-        <p class="muted small">Luồng demo mặc định: Đăng nhập -> Nhân viên y tế -> Nhập tài liệu phân tích.</p>
-        <form id="loginForm" class="medical-form">
-          <div class="field">
-            <label for="username">Tài khoản</label>
-            <input id="username" name="username" type="text" placeholder="admin" autocomplete="username" required />
-          </div>
-          <div class="field">
-            <label for="password">Mật khẩu</label>
-            <input id="password" name="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
-          </div>
-          <div class="row-actions">
-            <button type="submit" class="btn primary" id="loginBtn">Đăng nhập</button>
-            <a class="btn ghost" href="/ui/">Về trang chủ</a>
-          </div>
-          <p id="loginStatus" class="pill-status"></p>
-        </form>
-      </section>
-    </main>
+      <form id="loginForm" class="medical-form" method="POST" onsubmit="event.preventDefault();">
+        <div class="field">
+          <label for="username">Tài khoản</label>
+          <input id="username" name="username" type="text" placeholder="Tên đăng nhập" autocomplete="username"
+            required />
+        </div>
+        <div class="field">
+          <label for="password">Mật khẩu</label>
+          <input id="password" name="password" type="password" placeholder="••••••••" autocomplete="current-password"
+            required />
+        </div>
+        <div class="field" id="confirmPasswordField" style="display: none;">
+          <label for="confirmPassword">Xác nhận mật khẩu</label>
+          <input id="confirmPassword" name="confirmPassword" type="password" placeholder="••••••••"
+            autocomplete="new-password" />
+        </div>
+        <div class="row-actions">
+          <button type="submit" class="btn primary" id="loginBtn">Đăng nhập</button>
+          <a class="btn ghost" href="/ui/">Về trang chủ</a>
+        </div>
+        <p id="loginStatus" class="pill-status"></p>
+      </form>
+    </section>
+  </main>
 
-    <script src="auth.js?v=warm1"></script>
-    <script>
-      const STORAGE_THEME = "datn_ui_theme";
+  <script src="auth.js?v=auth_v3"></script>
+  <script>
+    const STORAGE_THEME = "datn_ui_theme";
 
-      function applyTheme() {
-        const saved = localStorage.getItem(STORAGE_THEME);
-        let dark = false;
-        if (saved === "dark") dark = true;
-        else if (saved === "light") dark = false;
-        else dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        document.documentElement.classList.toggle("dark", dark);
-        const moon = document.querySelector(".icon-moon");
-        const sun = document.querySelector(".icon-sun");
-        if (moon && sun) {
-          moon.classList.toggle("hidden", dark);
-          sun.classList.toggle("hidden", !dark);
+    function applyTheme() {
+      const saved = localStorage.getItem(STORAGE_THEME);
+      let dark = false;
+      if (saved === "dark") dark = true;
+      else if (saved === "light") dark = false;
+      else dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", dark);
+      const moon = document.querySelector(".icon-moon");
+      const sun = document.querySelector(".icon-sun");
+      if (moon && sun) {
+        moon.classList.toggle("hidden", dark);
+        sun.classList.toggle("hidden", !dark);
+      }
+    }
+
+    function toggleTheme() {
+      const next = !document.documentElement.classList.contains("dark");
+      localStorage.setItem(STORAGE_THEME, next ? "dark" : "light");
+      applyTheme();
+    }
+
+    function showAuthPopup(title, message, isSuccess) {
+      const existing = document.getElementById("authCustomPopup");
+      if (existing) existing.remove();
+
+      const popup = document.createElement("div");
+      popup.id = "authCustomPopup";
+      popup.style.position = "fixed";
+      popup.style.inset = "0";
+      popup.style.zIndex = "10000";
+      popup.style.display = "flex";
+      popup.style.alignItems = "center";
+      popup.style.justifyContent = "center";
+      popup.style.background = "rgba(0, 0, 0, 0.6)";
+      popup.style.backdropFilter = "blur(8px)";
+      popup.style.animation = "fadeIn 0.25s ease-out";
+
+      const card = document.createElement("div");
+      card.style.background = "var(--bg-elevated, #fff)";
+      card.style.border = `1px solid ${isSuccess ? "var(--ok, #7a9e6d)" : "var(--danger, #c45c4a)"}`;
+      card.style.padding = "2rem";
+      card.style.borderRadius = "var(--radius, 18px)";
+      card.style.maxWidth = "26rem";
+      card.style.width = "90%";
+      card.style.boxShadow = "var(--shadow, 0 14px 40px rgba(0,0,0,0.2))";
+      card.style.textAlign = "center";
+      card.style.color = "var(--ink, #3d3229)";
+      card.style.animation = "scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)";
+
+      if (!document.getElementById("authPopupStyles")) {
+        const styleSheet = document.createElement("style");
+        styleSheet.id = "authPopupStyles";
+        styleSheet.innerText = `
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        `;
+        document.head.appendChild(styleSheet);
+      }
+
+      const icon = document.createElement("div");
+      icon.style.fontSize = "3.5rem";
+      icon.style.marginBottom = "1rem";
+      icon.innerHTML = isSuccess ? "✅" : "❌";
+
+      const h2 = document.createElement("h2");
+      h2.textContent = title;
+      h2.style.fontFamily = "var(--font-display)";
+      h2.style.margin = "0 0 0.5rem 0";
+      h2.style.fontSize = "1.5rem";
+      h2.style.fontWeight = "700";
+
+      const p = document.createElement("p");
+      p.textContent = message;
+      p.style.margin = "0 0 1.5rem 0";
+      p.style.color = "var(--muted, #7d6b5d)";
+      p.style.fontSize = "0.95rem";
+
+      const btn = document.createElement("button");
+      btn.textContent = "Đóng";
+      btn.className = "btn";
+      btn.style.background = isSuccess ? "linear-gradient(135deg, var(--ok, #7a9e6d), #6a8c5d)" : "linear-gradient(135deg, var(--danger, #c45c4a), #b24b3b)";
+      btn.style.color = "#fff";
+      btn.style.width = "100%";
+      btn.onclick = () => popup.remove();
+
+      card.appendChild(icon);
+      card.appendChild(h2);
+      card.appendChild(p);
+      card.appendChild(btn);
+      popup.appendChild(card);
+      document.body.appendChild(popup);
+
+      if (isSuccess) {
+        setTimeout(() => {
+          popup.remove();
+        }, 1800);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      applyTheme();
+      document.getElementById("themeToggle")?.addEventListener("click", toggleTheme);
+      const form = document.getElementById("loginForm");
+      const status = document.getElementById("loginStatus");
+      const btn = document.getElementById("loginBtn");
+
+      let mode = "login";
+      const tabLogin = document.getElementById("tabLogin");
+      const tabRegister = document.getElementById("tabRegister");
+      const confirmField = document.getElementById("confirmPasswordField");
+      const confirmInput = document.getElementById("confirmPassword");
+      const title = document.getElementById("authTitle");
+      const subtitle = document.querySelector(".auth-card .muted");
+
+      function setMode(newMode) {
+        mode = newMode;
+        if (mode === "login") {
+          tabLogin.style.color = "var(--color-text, #fff)";
+          tabLogin.style.borderBottom = "2px solid var(--color-primary, #d97736)";
+          tabRegister.style.color = "var(--color-text-muted, #888)";
+          tabRegister.style.borderBottom = "none";
+          confirmField.style.display = "none";
+          confirmInput.removeAttribute("required");
+          btn.textContent = "Đăng nhập";
+          title.textContent = "Đăng nhập tài khoản";
+          subtitle.textContent = "Đăng nhập tài khoản chính thức để lưu trữ thông tin sử dụng.";
+        } else {
+          tabRegister.style.color = "var(--color-text, #fff)";
+          tabRegister.style.borderBottom = "2px solid var(--color-primary, #d97736)";
+          tabLogin.style.color = "var(--color-text-muted, #888)";
+          tabLogin.style.borderBottom = "none";
+          confirmField.style.display = "block";
+          confirmInput.setAttribute("required", "required");
+          btn.textContent = "Đăng ký";
+          title.textContent = "Đăng ký tài khoản";
+          subtitle.textContent = "Tạo một tài khoản chính thức mới để bắt đầu lưu trữ.";
         }
       }
 
-      function toggleTheme() {
-        const next = !document.documentElement.classList.contains("dark");
-        localStorage.setItem(STORAGE_THEME, next ? "dark" : "light");
-        applyTheme();
-      }
+      tabLogin?.addEventListener("click", () => setMode("login"));
+      tabRegister?.addEventListener("click", () => setMode("register"));
 
-      document.addEventListener("DOMContentLoaded", async () => {
-        applyTheme();
-        document.getElementById("themeToggle")?.addEventListener("click", toggleTheme);
-        const form = document.getElementById("loginForm");
-        const status = document.getElementById("loginStatus");
-        const btn = document.getElementById("loginBtn");
+      // Detect tab mode from URL query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialTab = urlParams.get("tab") || "login";
+      setMode(initialTab === "register" ? "register" : "login");
 
-        if (await window.DATNAuth.verifySession()) {
-          window.location.href = "/ui/dashboard.html";
-          return;
-        }
+      // Bind submit event listener first so it is guaranteed to work!
+      form?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+        status.textContent = mode === "register" ? "Đang tạo tài khoản..." : "Đang đăng nhập...";
+        status.className = "pill-status";
+        btn.disabled = true;
 
-        form?.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          const username = document.getElementById("username").value.trim();
-          const password = document.getElementById("password").value;
-          status.textContent = "Đang đăng nhập...";
-          status.className = "pill-status";
-          btn.disabled = true;
-          try {
+        try {
+          if (mode === "register") {
+            const confirm = confirmInput.value;
+            if (password !== confirm) {
+              throw new Error("Mật khẩu xác nhận không khớp.");
+            }
+            if (password.length < 6) {
+              throw new Error("Mật khẩu đăng ký phải từ 6 ký tự trở lên.");
+            }
+            await window.DATNAuth.register(username, password);
+            status.textContent = "Đăng ký thành công! Đang chuyển trang...";
+            showAuthPopup("Đăng ký thành công", `Chào mừng ${username}! Bạn đã tạo tài khoản thành công.`, true);
+          } else {
             await window.DATNAuth.login(username, password);
-            status.textContent = "Đăng nhập thành công. Đang chuyển trang...";
-            status.className = "pill-status ok";
-            const next = new URLSearchParams(window.location.search).get("next") || "/ui/dashboard.html";
-            window.location.href = next.startsWith("/ui/") ? next : "/ui/dashboard.html";
-          } catch (error) {
-            status.textContent = `Lỗi: ${error.message || "Không thể đăng nhập."}`;
-            status.className = "pill-status err";
-          } finally {
-            btn.disabled = false;
+            status.textContent = "Đăng nhập thành công! Đang chuyển trang...";
+            showAuthPopup("Đăng nhập thành công", `Chào mừng trở lại, ${username}!`, true);
           }
-        });
+
+          status.className = "pill-status ok";
+          const next = new URLSearchParams(window.location.search).get("next") || "/ui/dashboard.html";
+          setTimeout(() => {
+            window.location.href = next.startsWith("/ui/") ? next : "/ui/dashboard.html";
+          }, 1500);
+
+        } catch (error) {
+          status.textContent = `Lỗi: ${error.message || "Thao tác thất bại."}`;
+          status.className = "pill-status err";
+          btn.disabled = false;
+          showAuthPopup(
+            mode === "register" ? "Đăng ký thất bại" : "Đăng nhập thất bại",
+            error.message || "Đã xảy ra lỗi, vui lòng thử lại.",
+            false
+          );
+        }
       });
-    </script>
-  </body>
+
+      // Auto verify session in background without blocking form binding!
+      (async () => {
+        try {
+          const currentUsername = window.DATNAuth?.getAuthUser();
+          const isGuest = !currentUsername;
+          if (!isGuest && window.DATNAuth?.verifySession) {
+            const ok = await window.DATNAuth.verifySession().catch(() => false);
+            if (ok) {
+              window.location.href = "/ui/dashboard.html";
+            }
+          }
+        } catch (err) {
+          console.error("Session verification failed:", err);
+        }
+      })();
+
+    });
+  </script>
+</body>
+
 </html>

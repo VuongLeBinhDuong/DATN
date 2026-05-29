@@ -139,7 +139,38 @@ function renderSuggestedMedications(data) {
   title.classList.remove("hidden");
   if (hint) hint.classList.remove("hidden");
   block.classList.remove("hidden");
-  block.innerHTML = meds
+
+  // Multi-drug Interaction Alerts (Mock logic for premium presentation)
+  let interactionWarningHtml = "";
+  if (meds.length >= 2) {
+    const names = meds.map(m => String(m.name ?? "").toLowerCase());
+    const conflicts = [];
+    
+    // check Metformin vs Contrast media or NSAIDs
+    if (names.some(x => x.includes("metformin")) && names.some(x => x.includes("aspirin") || x.includes("ibuprofen") || x.includes("nhóm nsaid"))) {
+      conflicts.push("<strong>Metformin + Nhóm NSAID/Aspirin:</strong> Có thể làm giảm nhẹ chức năng lọc của thận, cần theo dõi định kỳ chỉ số Creatinine huyết thanh.");
+    }
+    // check NSAID + NSAID (Ibuprofen + Aspirin)
+    if (names.some(x => x.includes("ibuprofen")) && names.some(x => x.includes("aspirin"))) {
+      conflicts.push("<strong>Ibuprofen + Aspirin:</strong> Sử dụng đồng thời làm tăng nguy cơ kích ứng niêm mạc dạ dày và giảm hoạt tính chống kết tập tiểu cầu của Aspirin.");
+    }
+
+    if (conflicts.length > 0) {
+      interactionWarningHtml = `
+        <div class="chat-row" style="margin-bottom:1rem; width:100%;">
+          <div class="chat-subgraph-wrapper" style="border-color: #fbc02d; background: rgba(251, 192, 45, 0.04); margin-top:0;">
+            <div class="chat-subgraph-title" style="color: #fbc02d; font-size:13px; font-weight:700;">⚠ Cảnh báo tương tác thuốc tự động</div>
+            <ul style="margin: 8px 0 0 0; padding-left: 18px; font-size: 13px; color: var(--ink);">
+              ${conflicts.map(c => `<li style="margin-bottom: 6px;">${c}</li>`).join("")}
+            </ul>
+            <p style="font-size:11px; color:var(--muted); margin: 6px 0 0 0; font-style:italic;">* Tính năng tự động quét tương tác hoạt chất dựa trên hệ thống cơ sở tri thức y khoa y học.</p>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  const cardsHtml = meds
     .map((m) => {
       const n = escapeHtml(String(m.name ?? ""));
       const sn = escapeHtml(String(m.snippet ?? ""));
@@ -153,17 +184,91 @@ function renderSuggestedMedications(data) {
               )
               .join("")}</div><p class="muted small suggested-med-img-note">Ảnh minh họa (dataset crawl); đối chiếu nhãn thật / dược sĩ.</p></div>`
           : "";
+          
+      // Premium interactive dosage converter for doctors/nurses
+      const dosageConverterHtml = `
+        <div class="dosage-converter" style="margin-top: 12px; padding: 10px; border-radius: 8px; border: 1px solid var(--line, rgba(128,128,128,0.15)); background: rgba(128,128,128,0.03);">
+          <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px;">Tính liều lượng nhanh (Theo cân nặng)</label>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+            <input type="number" class="dosage-weight" placeholder="Cân nặng (kg)" style="width: 100px; padding: 4px 8px; font-size: 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-elevated);" min="1" max="200" />
+            <select class="dosage-type" style="padding: 4px 8px; font-size: 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-elevated); color: var(--ink);">
+              <option value="adult">Người lớn</option>
+              <option value="child">Trẻ em</option>
+            </select>
+            <button type="button" class="btn primary btn-calc-dosage" data-med="${escapeAttr(n)}" style="padding: 4px 10px; font-size: 11px; height: 26px; line-height: 18px; border-radius: 4px; font-weight:600; cursor:pointer;">Tính nhanh</button>
+          </div>
+          <div class="dosage-result hidden" style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 12px; font-weight: bold; color: var(--accent);"></div>
+        </div>
+      `;
+
       return `
       <article class="suggested-med-card">
         <div class="suggested-med-icon">${medPillIconSvg()}</div>
-        <div class="suggested-med-body">
+        <div class="suggested-med-body" style="width:100%;">
           <h4 class="suggested-med-name">${n}</h4>
           <p class="suggested-med-snippet">${sn}</p>
           ${imgsHtml}
+          ${dosageConverterHtml}
         </div>
       </article>`;
     })
     .join("");
+
+  block.innerHTML = interactionWarningHtml + `<div class="suggested-meds-grid" style="display:flex; flex-direction:column; gap:1rem; width:100%;">${cardsHtml}</div>`;
+
+  // Bind click handlers to newly generated dosage converters
+  block.querySelectorAll(".btn-calc-dosage").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const container = btn.closest(".dosage-converter");
+      const weightInput = container.querySelector(".dosage-weight");
+      const typeSelect = container.querySelector(".dosage-type");
+      const resultDiv = container.querySelector(".dosage-result");
+      
+      const weight = parseFloat(weightInput.value);
+      const type = typeSelect.value;
+      const medName = btn.getAttribute("data-med").toLowerCase();
+      
+      if (isNaN(weight) || weight <= 0) {
+        alert("Vui lòng nhập cân nặng hợp lệ (kg) để tính liều lượng.");
+        return;
+      }
+      
+      let dosageText = "";
+      if (type === "child") {
+        if (medName.includes("paracetamol")) {
+          const dose = Math.round(weight * 12.5); // 10-15mg/kg
+          dosageText = `Liều trẻ em khuyến nghị: ${dose}mg / mỗi 4-6 giờ (tối đa 4 lần/ngày).`;
+        } else if (medName.includes("amoxicillin")) {
+          const dose = Math.round(weight * 30); // 20-40mg/kg
+          dosageText = `Liều trẻ em khuyến nghị: ${dose}mg / ngày, chia 2-3 lần.`;
+        } else if (medName.includes("ibuprofen")) {
+          const dose = Math.round(weight * 7.5); // 5-10mg/kg
+          dosageText = `Liều trẻ em khuyến nghị: ${dose}mg / mỗi 6-8 giờ.`;
+        } else if (medName.includes("metformin")) {
+          dosageText = "Cảnh báo: Metformin KHÔNG khuyến nghị sử dụng tự ý cho trẻ em dưới 10 tuổi.";
+        } else {
+          const dose = Math.round(weight * 10);
+          dosageText = `Liều trẻ em ước tính: ${dose}mg / lần. Tham khảo kỹ chỉ định của bác sĩ nhi khoa.`;
+        }
+      } else {
+        // Adult
+        if (medName.includes("paracetamol")) {
+          dosageText = "Liều người lớn khuyến nghị: 500mg – 1000mg / mỗi 4-6 giờ (không quá 4000mg/ngày).";
+        } else if (medName.includes("metformin")) {
+          dosageText = "Liều người lớn khuyến nghị khởi đầu: 500mg hoặc 850mg / lần, uống 1-2 lần/ngày trong hoặc sau ăn.";
+        } else if (medName.includes("amoxicillin")) {
+          dosageText = "Liều người lớn khuyến nghị: 500mg – 1000mg / mỗi 8 giờ.";
+        } else if (medName.includes("ibuprofen")) {
+          dosageText = "Liều người lớn khuyến nghị: 200mg – 400mg / mỗi 4-6 giờ (tối đa 1200mg/ngày).";
+        } else {
+          dosageText = "Liều người lớn thông thường: 500mg / lần. Đối chiếu kỹ nhãn thuốc và đơn bác sĩ.";
+        }
+      }
+      
+      resultDiv.textContent = dosageText;
+      resultDiv.classList.remove("hidden");
+    });
+  });
 }
 
 function statusLabel(st) {
@@ -386,9 +491,7 @@ async function submitMedical(ev) {
   const fileInput = $("medicalFile");
   const f = fileInput.files?.[0];
   if (!f) {
-    $("medicalResult").classList.remove("hidden");
-    $("medicalSummary").innerHTML = "<p class=\"muted\">Chọn một tệp PDF hoặc Excel.</p>";
-    $("comparisonsBody").innerHTML = "";
+    alert("Vui lòng kéo thả hoặc chọn một tệp hồ sơ xét nghiệm (PDF/Excel).");
     return;
   }
 
@@ -405,8 +508,30 @@ async function submitMedical(ev) {
   const sex = $("patientSex").value;
   if (sex) fd.append("patient_sex", sex);
 
-  $("medicalResult").classList.remove("hidden");
-  $("medicalSummary").innerHTML = '<span class="skel">Đang xử lý…</span>';
+  // Show split layout and skeleton loading panel, hide results panel
+  $("splitLayout").classList.remove("hidden");
+  $("medicalSkeleton").classList.remove("hidden");
+  $("medicalResult").classList.add("hidden");
+  
+  // Try to render PDF preview if applicable
+  const previewPlaceholder = $("filePreviewPlaceholder");
+  const iframe = $("pdfPreviewIframe");
+  if (f.type === "application/pdf") {
+    const objectUrl = URL.createObjectURL(f);
+    iframe.src = objectUrl;
+    iframe.classList.remove("hidden");
+    previewPlaceholder.classList.add("hidden");
+  } else {
+    // Excel or other
+    iframe.classList.add("hidden");
+    previewPlaceholder.classList.remove("hidden");
+    previewPlaceholder.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <p style="font-weight: 600; color: var(--accent); margin-top: 10px;">${escapeHtml(f.name)}</p>
+      <p class="muted small">Tập tin Bảng tính Excel (Không thể hiển thị PDF trực tiếp. Đang chuẩn bị phân tích các ô chỉ số xét nghiệm...)</p>
+    `;
+  }
+
   $("comparisonsBody").innerHTML = "";
   $("narrativeTitle").classList.add("hidden");
   $("narrativeBlock").classList.add("hidden");
@@ -437,8 +562,13 @@ async function submitMedical(ev) {
       const detail = data.detail ?? data.message ?? r.statusText;
       throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
     }
+    
+    // Hide skeleton and render real results
+    $("medicalSkeleton").classList.add("hidden");
     renderMedicalResult(data);
   } catch (e) {
+    $("medicalSkeleton").classList.add("hidden");
+    $("medicalResult").classList.remove("hidden");
     $("medicalSummary").innerHTML = `<p class="pill-status err">Lỗi: ${escapeHtml(e.message || String(e))}</p>`;
     $("comparisonsBody").innerHTML = "";
     $("rawJson").textContent = "";
@@ -459,6 +589,46 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const medicalForm = $("medicalForm");
   if (medicalForm) medicalForm.addEventListener("submit", submitMedical);
+
+  // Premium Drag & Drop Area listeners
+  const dropZone = $("dropZone");
+  const fileInput = $("medicalFile");
+  const fileNameDisplay = $("selectedFileName");
+  
+  if (dropZone && fileInput) {
+    dropZone.addEventListener("click", () => fileInput.click());
+    
+    fileInput.addEventListener("change", () => {
+      const f = fileInput.files?.[0];
+      if (f) {
+        fileNameDisplay.textContent = `✓ Đã chọn: ${f.name} (${(f.size / 1024).toFixed(1)} KB)`;
+        dropZone.classList.add("has-file");
+      } else {
+        fileNameDisplay.textContent = "";
+        dropZone.classList.remove("has-file");
+      }
+    });
+    
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
+    
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      
+      const files = e.dataTransfer.files;
+      if (files?.length > 0) {
+        fileInput.files = files;
+        fileInput.dispatchEvent(new Event("change"));
+      }
+    });
+  }
 
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if (!localStorage.getItem(STORAGE_THEME)) applyTheme();

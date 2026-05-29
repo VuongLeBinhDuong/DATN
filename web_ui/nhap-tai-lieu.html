@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=warm1" />
+    <link rel="stylesheet" href="styles.css?v=force_vertical_v10" />
   </head>
   <body data-protected="true">
     <div class="mesh" aria-hidden="true"></div>
@@ -55,9 +55,6 @@
     </header>
 
     <main class="main main--with-hero">
-      <figure class="page-hero-banner page-hero-banner--narrow" aria-hidden="true">
-        <img src="/ui/img/visual-lab.jpg" width="1100" height="320" alt="" loading="eager" decoding="async" />
-      </figure>
       <p class="lede">
         Tải PDF hoặc Excel để so khớp chỉ số và xem gợi ý phân tích tự động. Chỉ mang tính minh họa; <strong>không thay thế</strong> bác sĩ, dược sĩ hay chẩn đoán lâm sàng.
       </p>
@@ -68,8 +65,16 @@
           <p class="muted small">Định dạng: PDF, XLSX, XLSM · tối đa theo cấu hình server.</p>
           <form id="medicalForm" class="medical-form">
             <div class="field">
-              <label for="medicalFile">Tệp</label>
-              <input type="file" id="medicalFile" accept=".pdf,.xlsx,.xlsm,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+              <label>Tệp hồ sơ xét nghiệm</label>
+              <div id="dropZone" class="premium-dropzone">
+                <div class="premium-dropzone-glass"></div>
+                <div class="premium-dropzone-content">
+                  <svg class="premium-dropzone-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <p class="premium-dropzone-text">Kéo &amp; thả file vào đây hoặc <span class="premium-dropzone-browse">chọn từ thiết bị</span></p>
+                  <p class="premium-dropzone-filename" id="selectedFileName"></p>
+                </div>
+                <input type="file" id="medicalFile" class="hidden-file-input" accept=".pdf,.xlsx,.xlsm,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display: none;" />
+              </div>
             </div>
             <div class="field-grid narrow">
               <div class="field">
@@ -95,43 +100,82 @@
           </form>
         </div>
 
-        <div class="card card-output hidden" id="medicalResult" aria-live="polite">
-          <h2 class="card-title">Kết quả</h2>
-          <div id="medicalSummary" class="medical-summary"></div>
-          <h3 class="card-subtitle">So sánh chỉ số</h3>
-          <div class="table-wrap">
-            <table class="data-table" id="comparisonsTable">
-              <thead>
-                <tr>
-                  <th>Chỉ số</th>
-                  <th>Giá trị</th>
-                  <th>Tham chiếu</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody id="comparisonsBody"></tbody>
-            </table>
+        <div class="hidden" id="splitLayout" style="width: 100%;">
+          <!-- Right side: Results -->
+          <div class="medical-result-panel" style="display:flex; flex-direction:column; gap:1.25rem; width: 100%;">
+            <!-- Skeleton Loader -->
+            <div id="medicalSkeleton" class="card medical-skeleton hidden" style="margin: 0; padding: 1.5rem;">
+              <h3 class="card-title" style="margin: 0 0 0.5rem 0;">Đang phân tích y khoa...</h3>
+              <div class="skeleton-header">
+                <div class="skeleton-line skeleton-title"></div>
+                <div class="skeleton-line skeleton-subtitle"></div>
+              </div>
+              <div class="skeleton-table">
+                <div class="skeleton-row skeleton-table-header">
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                </div>
+                <div class="skeleton-row">
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                </div>
+                <div class="skeleton-row">
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                  <div class="skeleton-cell"></div>
+                </div>
+              </div>
+              <div class="skeleton-narrative" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line" style="width: 70%;"></div>
+              </div>
+            </div>
+
+            <div class="card card-output hidden" id="medicalResult" aria-live="polite" style="margin:0;">
+              <h2 class="card-title" style="margin-top:0;">Kết quả phân tích</h2>
+              <div id="medicalSummary" class="medical-summary"></div>
+              <h3 class="card-subtitle">So sánh chỉ số</h3>
+              <div class="table-wrap">
+                <table class="data-table" id="comparisonsTable">
+                  <thead>
+                    <tr>
+                      <th>Chỉ số</th>
+                      <th>Giá trị</th>
+                      <th>Tham chiếu</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody id="comparisonsBody"></tbody>
+                </table>
+              </div>
+              <h3 class="card-subtitle hidden" id="narrativeTitle">Tóm tắt tự động</h3>
+              <div class="narrative narrative-md hidden" id="narrativeBlock"></div>
+              <h3 class="card-subtitle hidden" id="reportCompareTitle">So sánh với tham chiếu trên phiếu</h3>
+              <div class="narrative narrative-md hidden" id="reportCompareBlock"></div>
+              <h3 class="card-subtitle hidden" id="analysisAdviceTitle">Gợi ý phân tích</h3>
+              <div class="narrative narrative-md hidden" id="analysisAdviceBlock"></div>
+              <h3 class="card-subtitle hidden" id="suggestedMedsTitle">Thuốc được gợi ý</h3>
+              <p id="suggestedMedsHint" class="muted small hidden">
+                Trích từ đoạn gợi ý phía trên (minh họa). Không thay cho kê đơn hay hướng dẫn điều trị.
+              </p>
+              <div class="suggested-meds hidden" id="suggestedMedsBlock" aria-live="polite"></div>
+              <details class="raw-json" style="margin-top: 1rem;">
+                <summary>Dữ liệu chi tiết</summary>
+                <pre id="rawJson"></pre>
+              </details>
+            </div>
           </div>
-          <h3 class="card-subtitle hidden" id="narrativeTitle">Tóm tắt tự động</h3>
-          <div class="narrative narrative-md hidden" id="narrativeBlock"></div>
-          <h3 class="card-subtitle hidden" id="reportCompareTitle">So sánh với tham chiếu trên phiếu</h3>
-          <div class="narrative narrative-md hidden" id="reportCompareBlock"></div>
-          <h3 class="card-subtitle hidden" id="analysisAdviceTitle">Gợi ý phân tích</h3>
-          <div class="narrative narrative-md hidden" id="analysisAdviceBlock"></div>
-          <h3 class="card-subtitle hidden" id="suggestedMedsTitle">Thuốc được gợi ý</h3>
-          <p id="suggestedMedsHint" class="muted small hidden">
-            Trích từ đoạn gợi ý phía trên (minh họa). Không thay cho kê đơn hay hướng dẫn điều trị.
-          </p>
-          <div class="suggested-meds hidden" id="suggestedMedsBlock" aria-live="polite"></div>
-          <details class="raw-json">
-            <summary>Dữ liệu chi tiết</summary>
-            <pre id="rawJson"></pre>
-          </details>
         </div>
       </section>
     </main>
 
-    <script src="auth.js?v=auth1"></script>
+    <script src="auth.js?v=auth_v3"></script>
     <script src="app.js?v=noconn9"></script>
   </body>
 </html>

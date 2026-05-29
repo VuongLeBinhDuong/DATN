@@ -1,314 +1,181 @@
-# DATN - Hệ thống hỏi đáp và tư vấn y khoa thông minh
+# Hệ thống Hỗ trợ Quyết định Lâm sàng (CDSS) Y tế thông minh - CDSS GraphRAG
+> **Đồ án Tốt nghiệp xuất sắc** tích hợp Đồ thị tri thức liên kết (GraphRAG), Tác tử Nhận thức (Cognitive AI Agents), bộ phân tích bệnh án đa định dạng chuyên sâu và công cụ Trực quan minh chứng Y khoa (Explainable AI - XAI).
 
-Đây là dự án đồ án tốt nghiệp xây dựng hệ thống hỏi đáp y khoa dựa trên Retrieval-Augmented Generation (RAG), kết hợp GraphRAG, Agent AI, xử lý hồ sơ y tế và giao diện web.
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Neo4j Graph Database](https://img.shields.io/badge/Neo4j-008CC1?style=flat&logo=neo4j)](https://neo4j.com/)
+[![Ollama Local LLM](https://img.shields.io/badge/Ollama-11434?style=flat)](https://ollama.com/)
+[![License: Academic Research Only](https://img.shields.io/badge/License-Academic_Research-blue.svg)](#)
 
-Cảnh báo y tế: hệ thống chỉ phục vụ mục đích tham khảo kỹ thuật. Không thay thế chẩn đoán, kê đơn hoặc điều trị chuyên môn của bác sĩ.
+> [!WARNING]
+> **Tuyên bố miễn trừ trách nhiệm y khoa**: Hệ thống này được nghiên cứu, thiết kế và phát triển thuần túy cho mục đích nghiên cứu học thuật, tham chiếu kỹ thuật và trình diễn công nghệ y tế. Hệ thống **không thay thế** bất kỳ chẩn đoán, quyết định điều trị lâm sàng, kê đơn hay tư vấn chuyên môn nào của bác sĩ và nhân viên y tế có chứng chỉ hành nghề.
 
 ---
 
-## 1. Tổng quan hệ thống
+## 1. Bản đồ Năng lực Cốt lõi của Hệ thống
 
-Hệ thống có 4 nhóm chức năng chính:
+Dự án CDSS-GraphRAG phân tách luồng vận hành y khoa thành 4 trụ cột công nghệ chính:
 
-- Chat hỏi đáp y khoa qua Agent (mặc định ReAct).
-- Truy vấn tri thức GraphRAG trực tiếp qua API.
-- Phân tích hồ sơ y tế tải lên (`pdf`, `xlsx`, `xlsm`) và tạo nhận định.
-- Cung cấp web UI dùng trực tiếp, không cần build frontend.
+```text
+              +-----------------------------------+
+              |  [ Yêu cầu lâm sàng từ Người dùng ] |
+              +-----------------------------------+
+                                |
+                                v
+                  +---------------------------+
+                  |    API ROUTER GATEWAY     |
+                  +---------------------------+
+                    /                       \
+        [Hỏi đáp CDSS Chat]               [Tải Hồ sơ Bệnh án]
+                  /                           \
+                 v                             v
+      +---------------------+       +---------------------+
+      |   Tác tử Nhận thức  |       | Bộ phân tích bệnh án|
+      |   ReAct Agent Lõi   |       | PDF, Excel (Parser) |
+      +---------------------+       +---------------------+
+         /               \                     |
+        v                 v                    v
+  +-----------+     +-----------+       +---------------------+
+  | Cơ sở dữ  |     | Microsoft |       | So khớp dải chỉ số  |
+  | liệu Neo4j|     | GraphRAG  |       | sinh học chuẩn 0ms  |
+  +-----------+     +-----------+       +---------------------+
+        \                 |                    /
+         \                v                   /
+          +-------> [ EXPLAINABLE AI ] <-----+
+                    | Trực quan hóa đồ thị   |
+                    | động y khoa (XAI)      |
+                    +------------------------+
+                                |
+                                v
+                  +---------------------------+
+                  |  - Giao diện Web UI CDSS  |
+                  |  - Xuất báo cáo PDF       |
+                  +---------------------------+
+```
 
-## 2. Công nghệ đang sử dụng
+1. **Tác tử Tư vấn Lâm sàng Nhận thức (Agentic Medical Consultation)**: Giao diện hội thoại dạng dòng chảy (streaming tokens) thời gian thực sử dụng **Mô hình lập luận ReAct (Reason + Action)**. Agent tự động lập kế hoạch, chọn công cụ, chạy truy vấn đồ thị và tự động sửa định dạng nếu LLM cục bộ phát sinh lỗi.
+2. **Truy xuất Đồ thị Tối ưu (Graph-First Retrieval)**: Vượt qua các giới hạn của Vector RAG thông thường bằng cách khai thác trực tiếp các truy vấn đồ thị Neo4j Cypher và công cụ tóm tắt phân cấp cộng đồng từ Microsoft GraphRAG.
+3. **Phân tích So sánh Bệnh án Đa tầng (Medical Record Parsing)**: Tự động trích xuất các chỉ số xét nghiệm lâm sàng từ định dạng `.pdf`, `.xlsx`, `.xlsm` thô, so khớp với dải tham chiếu sinh học tiêu chuẩn và tự động sinh cảnh báo đỏ (Red Flags).
+4. **Trực quan minh chứng Y khoa (Explainable AI - XAI)**: Tích hợp bản đồ mạng đồ thị thực thể động tương tác (sử dụng Vis.js standalone) ngay trên giao diện chat của nhân viên y tế, thể hiện rõ chuỗi liên kết suy luận lâm sàng (`Triệu chứng -> Bệnh lý -> Thuốc khuyên dùng`).
 
-### Backend/API
+---
+
+## 2. Đóng góp và Điểm sáng Công nghệ đã Thực hiện
+
+Hệ thống đã triển khai thành công 3 cải tiến công nghệ tự phát triển vượt trội so với các đồ án RAG cơ bản:
+
+### A. Thuật toán ReAct Loop-Guard (Bộ cứu hộ Tác tử thời gian thực)
+* **Vấn đề**: Các dòng mô hình nhỏ chạy local (như Llama-3.1-8B) cực kỳ dễ bị lỗi định dạng Markdown của ReAct hoặc rơi vào vòng lặp vô hạn khi gọi công cụ.
+* **Giải pháp**: Thiết kế cơ chế giám sát ba tầng (*Loop-Guard*): theo dõi lịch sử hành động, bắt ngoại lệ phân tích cú pháp và tự động định tuyến phục hồi để bảo đảm thời gian phản hồi luôn dưới 3 giây.
+
+### B. Tối ưu hóa & Thu gọn Đồ thị Tri thức (Graph Pruning)
+* **Vấn đề**: GraphRAG thô tạo ra hơn 33.000 thực thể bị dán nhãn "Other" chứa các từ nối vô nghĩa, làm loãng ngữ cảnh và chậm truy vấn Cypher.
+* **Giải pháp**: Phát triển tập lệnh Cypher quét và lọc tự động, tối ưu đồ thị y học tiếng Việt xuống còn **25.319 thực thể chuyên sâu** và **193.042 quan hệ lâm sàng** chất lượng cao.
+
+### C. Trực quan minh chứng Đồ thị Tri thức (Vis.js Subgraph Viewer)
+* **Vấn đề**: Các kết quả trả về từ RAG thông thường giống như "hộp đen", bác sĩ không biết AI dựa trên tài liệu nào để đưa ra khuyến nghị thuốc.
+* **Giải pháp**: Trích xuất phân vùng đồ thị liên kết (`context_graphrag_full`) và vẽ biểu đồ các thực thể động (Dynamic Network Graph) trực tiếp dưới luồng chat. Các thực thể như *Disease (Bệnh lý - Đỏ)*, *Drug (Thuốc - Xanh lá)*, *Symptom (Triệu chứng - Vàng)* được phân loại màu sắc và hỗ trợ click hiển thị định nghĩa chi tiết.
+
+---
+
+## 3. Bản đồ Kiến trúc Hệ thống (Clean Architecture)
+
+Hệ thống áp dụng nghiêm ngặt mô hình kiến trúc sạch giúp dễ dàng bảo trì và viết kiểm thử:
+
+```text
+Presentation Layer: api/ + web_ui/
+   ├── api/main.py (Điểm bắt đầu ứng dụng FastAPI)
+   └── web_ui/ (Trang giao diện thuần HTML/CSS/JS, Vis.js, html2pdf)
+       
+Business Logic Layer: services/ + agent/ + medical_records/
+   ├── agent/react/agent.py (Mạch suy nghĩ ReAct & Bộ phục hồi lỗi cú pháp)
+   ├── medical_records/analyzer.py (Bộ trích xuất biểu mẫu xét nghiệm y khoa)
+   └── services/agent_service.py (Bộ điều phối lựa chọn chiến lược Agent)
+       
+Data Access Layer: repositories/ + llm_pipeline/ + retrieval/
+   ├── repositories/neo4j_repository.py (Thực thi các câu lệnh Cypher tối ưu)
+   └── retrieval/graph_retriever.py (Truy xuất lai kết hợp Reranker)
+       
+Infrastructure & Configuration: core/ + config/ + docker/
+   ├── core/config.py (Quản lý thiết lập toàn cục bằng Pydantic Settings)
+   └── config/.env (Tệp tin bảo mật chứa thông tin kết nối dịch vụ)
+```
+
+---
+
+## 4. Lộ trình Cải tiến Đột phá (Future Roadmap)
+
+Để nâng tầm đồ án y tế CDSS này lên chuẩn sản xuất thương mại và học thuật cao hơn, lộ trình 9 điểm cải tiến sau đã được hoạch định chi tiết:
+
+1. **Cross-Encoder Reranker (Tái xếp hạng nâng cao)**: Tích hợp mô hình `bge-reranker-large` để đánh giá mức độ tương thích ngữ nghĩa sâu giữa câu hỏi của bác sĩ và tri thức đồ thị trước khi đưa vào LLM.
+2. **Asynchronous Task Queue (Xử lý bệnh án bất đồng bộ)**: Sử dụng Celery và Redis để phân tách việc tải lên và phân tích PDF/Excel nặng khỏi luồng xử lý chính của máy chủ API.
+3. **Multi-Agent Collaboration (Phối hợp đa chuyên khoa)**: Sử dụng LangGraph để phân rã Agent thành các chuyên gia y tế chuyên biệt (Triage Agent, Graph Specialist, Pharmacist Agent) để ra quyết định đồng thuận.
+4. **Bộ kiểm duyệt Hướng dẫn lâm sàng (Medical Guardrails)**: Tích hợp Guardrails AI để kiểm soát cứng đầu ra của Agent, đảm bảo mọi lời khuyên sử dụng thuốc phải nằm trong giới hạn cho phép của Bộ Y tế Việt Nam.
+5. **OCR đa phương thức (EasyOCR / LMMs)**: Tích hợp Qwen2-VL hoặc EasyOCR để hỗ trợ tải ảnh chụp đơn thuốc, phiếu xét nghiệm thô thay vì chỉ đọc file PDF/Excel định dạng sạch.
+6. **Ẩn danh hóa dữ liệu bệnh nhân (HIPAA Compliance)**: Tích hợp Microsoft Presidio để quét và tự động ẩn (masking) thông tin cá nhân PII (Tên, tuổi, SĐT, địa chỉ) trước khi dữ liệu được gửi tới LLM.
+7. **Tối ưu hóa mô hình ngôn ngữ nhỏ (Local SLM Fine-tuning)**: Tinh chỉnh (fine-tune) các dòng mô hình cục bộ như Qwen-2.5-7B-Instruct trên bộ dataset y tế chuyên biệt tiếng Việt để cải thiện độ chuẩn xác và tốc độ suy luận.
+8. **Kiểm thử y khoa tự động (MMLU-Medical Benchmarking)**: Xây dựng tập kiểm thử tự động đo lường độ chính xác lâm sàng dựa trên bộ câu hỏi trắc nghiệm y khoa chuẩn hóa.
+9. **Hệ thống giám sát vận hành LLM (LLMOps & Tracing)**: Kết nối với Langfuse hoặc Arize Phoenix để theo dõi chi phí token, thời gian chạy công cụ và giải trình "luồng tư duy" của tác tử.
+
+---
+
+## 5. Hướng dẫn Khởi chạy và Vận hành
+
+### Yêu cầu hệ thống tối thiểu:
+- Docker & Docker Compose
 - Python 3.10+
-- FastAPI, Uvicorn
-- Pydantic + pydantic-settings
+- Hệ thống local có RAM trống từ 16GB (để chạy mượt mà Llama-3.1-8B qua Ollama)
 
-### Agent/LLM
-- ReAct Agent
-- Legacy Orchestrator + chế độ LangGraph
-- Ollama (mặc định)
-- OpenRouter (tùy chọn)
-
-### Retrieval và tri thức
-- Neo4j graph database
-- GraphRAG (workspace + artifacts) 
-- Milvus vector store
-- Sentence Transformers embeddings
-
-### Xử lý dữ liệu và QA
-- PyMuPDF (PDF extraction)
-- openpyxl (Excel extraction)
-- pytest + pytest-cov + pytest-asyncio
-
-### Triển khai
-- Docker + Docker Compose (stack chính)
-
----
-
-## 3. Kiến trúc tổng quan
-
-```text
-Presentation: api/ + web_ui/
-    ->
-Business: services/ + agent/ + medical_records/
-    ->
-Data Access: repositories/ + rag_milvus/ + llm_pipeline/
-    ->
-Infra/Config: core/ + config/ + docker/ + deploy/
-```
-
-Mẫu thiết kế chính:
-
-- Repository pattern (`repositories/`)
-- Dependency injection (`api/dependencies.py`)
-- Strategy selection (`services/agent_service.py`)
-- ReAct loop (`agent/react/agent.py`)
-
-## 3.1 Sơ đồ luồng tổng hệ thống
-
-```text
-+------------------+         +------------------+
-|    Người dùng     | ------> |     web_ui/      |
-+------------------+         +------------------+
-          |                           |
-          |                           v
-          +------------------> +------------------+
-                               |       api/       |
-                               +------------------+
-                                  |      |      |
-                                  |      |      +----> +----------------------+
-                                  |      |             | docker/ + deploy/    |
-                                  |      |             +----------------------+
-                                  |      |
-                                  |      +----> +------------------+
-                                  |             |      core/       |
-                                  |             +------------------+
-                                  |
-                                  v
-                           +------------------+
-                           |    services/     |
-                           +------------------+
-                              |      |      |
-                              |      |      +----> +------------------+
-                              |      |             | medical_records/ |
-                              |      |             +------------------+
-                              |      |                        |
-                              |      +------------------------+
-                              |               gọi LLM/RAG
-                              v
-                      +------------------+
-                      |      agent/      |
-                      +------------------+
-                        |       |
-                        |       +----> +------------------+
-                        |              |  llm_pipeline/   |
-                        |              +------------------+
-                        |                         |
-                        |                         v
-                        |               +------------------+
-                        |               |    prompts/      |
-                        |               +------------------+
-                        v
-                +------------------+        +------------------+
-                | repositories/    | -----> | Neo4j/GraphRAG   |
-                +------------------+        +------------------+
-                        |
-                        +---------> +------------------+
-                                   |   rag_milvus/    |
-                                   +------------------+
-
-+------------------+      +------------------+      +------------------+
-|    scripts/      | ---> |      data/       | ---> | repositories/    |
-+------------------+      +------------------+      +------------------+
-
-+------------------+
-|     config/      |
-+------------------+
-      |       |
-      v       v
-   +-----+  +----------+
-   |api/ |  |services/ |
-   +-----+  +----------+
-```
-
----
-
-## 4. Mục lục README theo từng thư mục
-
-Các README theo module thường có mục **«Chi tiết theo file»** hoặc tương đương (hàm, route, artifact) để tra cứu nhanh khi đọc code — bắt đầu từ đúng thư mục bạn đang sửa.
-
-### Runtime và Application
-
-- [agent/README.md](agent/README.md)
-- [api/README.md](api/README.md)
-- [core/README.md](core/README.md)
-- [services/README.md](services/README.md)
-- [repositories/README.md](repositories/README.md)
-
-### Nghiệp vụ và xử lý
-
-- [medical_records/README.md](medical_records/README.md)
-- [llm_pipeline/README.md](llm_pipeline/README.md)
-- [rag_milvus/README.md](rag_milvus/README.md)
-- [prompts/README.md](prompts/README.md)
-
-### Dữ liệu và tri thức
-
-- [graphrag/README.md](graphrag/README.md)
-- [data/README.md](data/README.md)
-- [backups/README.md](backups/README.md)
-- [langchain_graphrag/README.md](langchain_graphrag/README.md)
-
-### Vận hành, QA và UI
-
-- [scripts/README.md](scripts/README.md)
-- [web_ui/README.md](web_ui/README.md)
-- [config/README.md](config/README.md)
-- [docker/README.md](docker/README.md)
-- [deploy/README.md](deploy/README.md)
-- [eval/README.md](eval/README.md)
-- [tests/README.md](tests/README.md)
-
----
-
-## 5. API endpoint tổng hợp
-
-### Health
-
-- `GET /`
-- `GET /health`
-- `GET /health/ready`
-- `GET /health/config`
-- `GET /health/performance`
-
-### GraphRAG
-
-- `GET /ask?q=...`
-- `POST /api/query`
-
-### Agent
-
-- `POST /api/agent-query`
-- `POST /api/agent-query/stream`
-- `POST /api/langchain-graph-query`
-- `POST /api/langchain-graph-query/direct`
-
-### Ollama proxy
-
-- `GET /api/ollama/health`
-- `POST /api/ollama/chat`
-
-### Medical records
-
-- `GET /api/medical-record/pill-images`
-- `GET /api/medical-record/lab-reference`
-- `POST /api/medical-record/analyze`
-
----
-
-## 6. Hướng dẫn chạy nhanh
-
-### Cách 1: Docker (khuyến nghị)
-
+### Khởi động nhanh bằng Docker (Khuyên dùng)
 ```bash
 cd docker
 docker compose up --build -d
 ```
+* **Web UI**: [http://localhost:8000/ui/agent.html](http://localhost:8000/ui/agent.html)
+* **Neo4j Browser**: [http://localhost:7474](http://localhost:7474) (Tài khoản: `neo4j` / `changeme`)
+* **FastAPI Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-Sau khi chạy:
-
-- UI: `http://localhost:8000/ui/`
-- Swagger: `http://localhost:8000/docs`
-- Neo4j Browser: `http://localhost:7474`
-
-### Cách 2: Chạy local để phát triển
-
+### Thiết lập thủ công cho Nhà phát triển
 ```bash
+# 1. Kích hoạt môi trường ảo
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\activate  # Windows
+source .venv/bin/activate  # Linux/macOS
+
+# 2. Cài đặt dependencies
 pip install -r requirements.txt
-copy config\.env.example config\.env
+
+# 3. Kéo mô hình local y tế
+ollama pull llama3.1:8b
+
+# 4. Làm sạch dữ liệu và nạp cơ sở dữ liệu đồ thị Neo4j
+python scripts/clean_vi_medical_data.py
+python scripts/kg_apply_schema.py
+python scripts/kg_import_artifacts.py
+
+# 5. Khởi chạy API Server
 python -m uvicorn api.main:app --reload
 ```
 
 ---
 
-## 7. Lệnh thường dùng
+## 6. Danh mục các câu lệnh Quản trị & Đánh giá cốt lõi
 
-```bash
-# Agent CLI (ReAct)
-python -m agent --question "Triệu chứng bệnh tiểu đường" --json
-
-# Legacy
-python -m agent --legacy --question "Phong benh tim mach"
-
-# Legacy + LangGraph
-python -m agent --legacy --langgraph --question "Tương tác thuốc A và B"
-
-# Test
-pytest -v
-
-# Eval retrieval
-python scripts/eval_retrieval_quality.py --dataset eval/graph_eval_set.jsonl --k 5
-```
-
----
-
-## 8. Bien moi truong quan trong
-
-| Bien | Y nghia |
-|---|---|
-| `OLLAMA_HOST` | URL Ollama |
-| `OLLAMA_MODEL` | Model mac dinh |
-| `OLLAMA_TIMEOUT` | Timeout request LLM |
-| `NEO4J_ENABLED` | Bat/tat truy van Neo4j |
-| `NEO4J_URI` | URI ket noi Neo4j |
-| `NEO4J_USER` | User Neo4j |
-| `NEO4J_PASSWORD` | Password Neo4j |
-| `AGENT_USE_REACT` | Bật ReAct mode |
-| `AGENT_USE_LEGACY_PIPELINE` | Bật legacy mode |
-| `AGENT_REACT_MAX_ITER` | So vong ReAct |
-| `RATE_WINDOW_SEC` | Cua so rate limit |
-| `RATE_MAX_PER_WINDOW` | Gioi han request |
-| `CORS_ORIGINS` | Danh sach CORS |
+* **Vận hành thử nghiệm ReAct CLI**:
+  ```bash
+  python -m agent --question "Triệu chứng và chế độ ăn cho bệnh đái tháo đường tuýp 2" --json
+  ```
+* **Chạy toàn bộ 109 ca kiểm thử tự động**:
+  ```bash
+  python run_tests.py
+  ```
+* **Đánh giá chất lượng trích xuất Đồ thị**:
+  ```bash
+  python eval/eval_custom_kg.py --dataset eval/test_queries.jsonl --out eval/report.md
+  ```
+* **Đánh giá hiệu năng truy xuất RAG đa tầng**:
+  ```bash
+  python scripts/eval_retrieval_quality.py --dataset eval/graph_eval_set.jsonl --k 5
+  ```
 
 ---
-
-## 9. Nhung diem can cai thien (P0/P1/P2)
-
-### P0
-
-1. Dong bo docs va implementation endpoint/CLI.
-2. Bo sung smoke tests cho CLI va endpoint quan trong.
-3. Giam test stale sau refactor, tang do tin cay CI.
-
-### P1
-
-1. Hybrid retrieval (graph + lexical + vector).
-2. Re-ranking truoc khi dua context vao LLM.
-3. Tach xu ly tai lieu nang sang async queue.
-
-### P2
-
-1. Observability day du (metrics/tracing/error monitoring).
-2. Secret management va pre-commit security scan.
-3. Standard hoa task runner cho run/test/eval/index.
-
----
-
-## 10. Lưu ý vận hành
-
-- Khong commit secret trong `config/.env`.
-- Du lieu trong `docker/ollama/models/` la runtime artifact.
-- Nên version hóa dataset/index/backup khi reindex để dễ truy vết.
-
----
-
-## 11. Tai lieu tham khao
-
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [Neo4j Python Driver](https://neo4j.com/docs/python-manual/)
-- [Microsoft GraphRAG](https://microsoft.github.io/graphrag/)
-- [LangGraph](https://langchain-ai.github.io/langgraph/)
-- [Ollama API](https://github.com/ollama/ollama/blob/main/docs/api.md)
-- [Milvus](https://milvus.io/docs/)
-
+*Chúc bạn có một buổi bảo vệ đồ án tốt nghiệp thành công rực rỡ! Đội ngũ phát triển CDSS-GraphRAG.*

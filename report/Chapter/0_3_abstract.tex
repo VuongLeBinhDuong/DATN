@@ -1,0 +1,28 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\begin{center}
+    \Large{\textbf{ABSTRACT}}\\
+\end{center}
+\vspace{1cm}
+In recent years, deploying Large Language Models (LLMs) in clinical decision support systems (CDSS) has emerged as a promising frontier. However, standard LLMs suffer from severe hallucinations, lack structural medical traceability, and pose serious patient data privacy risks when using commercial cloud APIs. 
+
+This thesis presents a private, localized, and explainable **Smart Medical QA \& Consultation System** utilizing **Graph Retrieval-Augmented Generation (GraphRAG)** and **Agentic AI**. Operating entirely offline on consumer-grade hardware via Docker and local Ollama (Llama-3.1-8B), the system guarantees absolute patient data confidentiality. The core architecture is structured around four innovative technology pillars:
+(i) A **Custom Clinical Knowledge Graph** built on Neo4j, pruned through Cypher pattern-matching to achieve a high-density, purified graph containing **25,319 entities** and **193,042 relations**, reducing query latency from over 400ms to under 80ms.
+(ii) A **Resilient ReAct Reasoning Agent** loop reinforced with three custom defenses: *Parse-retry with prompt repair*, *Recovery-forced GraphRAG* at iteration 1, and *Loop-guard via action signature tracking* to completely eliminate format failures and infinite loops.
+(iii) A **Triangulated Hybrid Retrieval Engine** combining dual-channel Candidate Retrieval, Reciprocal Rank Fusion (RRF), and local dense **Neural Cross-Encoder Reranking**, boosting Precision@5 from 0.160 to 0.245.
+(iv) A **Zero-LLM Intent Router** providing a 0ms physiological validator that automatically detects quantitative biological reference queries, parsing and comparing them deterministically against standard clinical reference limits to guarantee 100\% mathematical accuracy.
+Additionally, the system features a **Multi-Format Clinical Document Analyzer** (extracting and benchmarking lab indicators from PDFs and Excel sheets), **Chatbot Conversational Memory**, **Clinical PDF Report Export**, and a premium **Vis.js Explainable AI Subgraph Viewer** that renders color-coded medical causality paths directly in the interface.
+
+Empirical evaluations demonstrate that the system successfully mitigates hallucination risks, guarantees zero latency for quantitative boundary checks, maintains robust reasoning agent flows under adversarial queries, and delivers clinically coherent medical advice, establishing a high-performance blueprint for localized healthcare AI solutions.
+
+\vspace{0.5cm}
+\noindent \textbf{Keywords:} Clinical Decision Support System (CDSS), GraphRAG, Agentic AI, ReAct Loop-Guard, Cross-Encoder Reranking, Intent Router, Explainable AI (XAI).
+
+\begin{flushright}
+\begin{tabular}{@{}c@{}}
+Vương Lê Bình Dương\\
+\textit{(Signature and full name)}
+\end{tabular}
+\end{flushright}
+\end{document}

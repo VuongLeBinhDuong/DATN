@@ -150,12 +150,25 @@ class ReActAgent:
         self.parser = ReActParser()
         self.system_prompt = get_react_system_prompt()
 
-    def _create_initial_messages(self, question: str) -> list[dict[str, str]]:
+    def _create_initial_messages(self, question: str, history: list[dict[str, str]] | None = None) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         """Create initial message history with system prompt."""
-        return [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": f"Question: {question}"},
-        ]
+        import re
+        clean_history = []
+        if history:
+            for turn in history[-6:]:
+                role = turn.get("role")
+                content = turn.get("content")
+                if role in ("user", "assistant") and content:
+                    # Strip any HTML tags from web UI
+                    clean_content = re.sub(r"<[^>]*>", "", content).strip()
+                    if clean_content:
+                        clean_history.append({"role": role, "content": clean_content})
+
+        initial_msgs = [{"role": "system", "content": self.system_prompt}]
+        for turn in clean_history:
+            initial_msgs.append(turn)
+        initial_msgs.append({"role": "user", "content": f"Question: {question}"})
+        return initial_msgs, clean_history
 
     def _execute_tool(
         self,
@@ -184,17 +197,19 @@ class ReActAgent:
 
         return merged_obs, updated_urls, hits
 
-    def run_sync(self, question: str) -> dict[str, Any]:
+    def run_sync(self, question: str, history: list[dict[str, str]] | None = None) -> dict[str, Any]:
         """Execute ReAct agent synchronously.
         
         Args:
             question: User question to answer
+            history: Previous conversation turns
             
         Returns:
             Result bundle with answer and metadata
         """
         q = (question or "").strip()
-        messages = self._create_initial_messages(q)
+        messages, clean_history = self._create_initial_messages(q, history)
+        history_len = len(clean_history)
 
         errors: list[str] = []
         steps: list[dict[str, Any]] = []
@@ -213,8 +228,9 @@ class ReActAgent:
                     assistant_text = "".join(self.llm.chat_stream(
                         messages=[
                             {"role": "system", "content": self.system_prompt},
+                            *clean_history,
                             {"role": "user", "content": f"Question: {q}"},
-                            *messages[2:],  # Skip system, include history
+                            *messages[2 + history_len:],  # ReAct iterations
                         ],
                         temperature=0.15,
                         stop=["Observation:"],
@@ -389,7 +405,7 @@ class ReActAgent:
             retrieval_hits,
         )
 
-    def run_stream(self, question: str) -> Iterator[dict[str, Any]]:
+    def run_stream(self, question: str, history: list[dict[str, str]] | None = None) -> Iterator[dict[str, Any]]:
         """Execute ReAct agent with streaming events.
         
         Yields events for real-time UI updates:
@@ -405,12 +421,14 @@ class ReActAgent:
         
         Args:
             question: User question to answer
+            history: Previous conversation turns
             
         Yields:
             Event dictionaries with type and data
         """
         q = (question or "").strip()
-        messages = self._create_initial_messages(q)
+        messages, clean_history = self._create_initial_messages(q, history)
+        history_len = len(clean_history)
 
         errors: list[str] = []
         steps: list[dict[str, Any]] = []
@@ -433,8 +451,9 @@ class ReActAgent:
                     for chunk in self.llm.chat_stream(
                         messages=[
                             {"role": "system", "content": self.system_prompt},
+                            *clean_history,
                             {"role": "user", "content": f"Question: {q}"},
-                            *messages[2:],
+                            *messages[2 + history_len:],
                         ],
                         temperature=0.15,
                         stop=["Observation:"],

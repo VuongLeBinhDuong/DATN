@@ -191,7 +191,8 @@ class Neo4jRepository(KnowledgeRepository):
             import time
             t0 = time.time()
 
-        context, hits = retrieve_graph_context_with_sources(rq_text, self.config)
+        from llm_pipeline.graphrag_query import run_graphrag_query_with_sources
+        context, hits = run_graphrag_query_with_sources(rq_text, retrieval_query=rq_text)
 
         if start_time:
             elapsed = time.time() - t0

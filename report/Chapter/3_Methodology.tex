@@ -1,0 +1,65 @@
+\documentclass[../Main.tex]{subfiles}
+\begin{document}
+
+This chapter details the theoretical background and technological foundations utilized to construct the smart medical QA and consultation system. It discusses property graph databases, analyzes the cognitive limitations of standard Vector RAG, outlines the paradigm shift to GraphRAG, details the ReAct agentic loop, and justifies the development stack.
+
+\section{Knowledge Graphs and Neo4j}
+\label{section:3.1}
+A **Knowledge Graph (KG)** is a highly structured representation of real-world facts consisting of entities (nodes) and relations (edges) \cite{robinson2015graph}. Formally, a knowledge graph $G$ can be defined as a set of RDF-style triples:
+\begin{equation}
+G = \{ (s, p, o) \mid s, o \in E, p \in R \}
+\end{equation}
+where $E$ represents the set of entities (e.g., specific diseases, symptoms, or medications) and $R$ represents the set of directed, semantic relation predicates (e.g., TREATS, CAUSES, CONTRAINDICATED\_FOR).
+
+Knowledge graphs are uniquely suited for the clinical domain. Unlike flat databases or unstructured text chunks, KGs represent explicit, verified, and normalized medical facts. For example, a relation such as `(:Drug {name: "Metformin"})-[:TREATS]->(:Disease {name: "Diabetes"})` is absolute and unambiguous, preventing semantic confusion.
+
+**Neo4j** is deployed as the core graph database engine. It utilizes the **Labeled Property Graph (LPG)** model, where:
+* **Nodes** represent medical entities, containing specific labels (e.g., `Entity`, `Chunk`, `Document`) and key-value properties (e.g., `canonical_name`, `type`, `aliases`).
+* **Relationships** represent directed connections between nodes, containing specific types (e.g., `REL`, `MENTIONS`, `HAS_CHUNK`) and properties (e.g., `predicate`, `confidence`).
+* **Cypher** is the declarative graph query language used to execute high-performance pattern matching. For instance, finding all symptoms caused by a specific disease is executed via a pattern-matching traversal:
+\begin{verbatim}
+MATCH (d:Entity {canonical_name: "Gout"})-[:REL {predicate: "HAS_SYMPTOM"}]->(s:Entity)
+RETURN s.canonical_name;
+\end{verbatim}
+This direct structural matching guarantees factual retrieval, serving as the system's primary diagnostic evidence layer.
+
+\section{Retrieval-Augmented Generation (RAG) and GraphRAG}
+\label{section:3.2}
+Classic **Retrieval-Augmented Generation (RAG)** indexes flat text documents into high-dimensional vector spaces using embedding models and retrieves semantically similar chunks based on cosine similarity calculations of user query embeddings \cite{lewis2020retrieval}. Formally, the similarity between query vector $\vec{q}$ and document chunk vector $\vec{d}$ is computed as:
+\begin{equation}
+\text{Similarity}(\vec{q}, \vec{d}) = \frac{\vec{q} \cdot \vec{d}}{\|\vec{q}\| \|\vec{d}\|}
+\end{equation}
+
+#### The Cognitive Limitation of Vector RAG:
+While Vector RAG is effective for localized, single-document lookups, it fails in **multi-hop clinical reasoning**. If a patient asks: *"I have hypertension and take Metformin; is there any interaction with a new drug for my kidney disease?"*, a standard vector search will match separate chunks detailing Metformin, kidney disease, or hypertension, but cannot traverse the logical chain of dependencies. It lacks the relational capability to connect these concepts.
+
+#### The Paradigm Shift to GraphRAG:
+**GraphRAG** bridges this gap by merging text chunks with structured knowledge graphs \cite{edge2024from}. In our architecture, the GraphRAG framework operates on two distinct layers:
+1. **Direct Custom KG Retrieval (Local)**: The user's query is analyzed to extract entities. Neo4j is queried directly first (Graph-First). Using direct Cypher traversals, the system fetches immediate neighbors and evidence text chunks linked via `[:MENTIONS]` relations, bypassing expensive LLM synthesis steps for speed.
+2. **Microsoft GraphRAG (Global)**: Leverages hierarchical community clustering algorithms (e.g., Leiden algorithm) to group related clinical entities, pre-generating community-level narrative summaries. This enables high-level, global synthesis when the query requires an overview across the entire medical literature base.
+
+\section{Agentic AI and Reasoning Paradigms}
+\label{section:3.3}
+Medical consultations are dynamic. Patients present ambiguous symptom histories that cannot be resolved in a single retrieval step. The system utilizes **Agentic AI** to simulate dynamic clinical thinking.
+
+#### The ReAct (Reason + Action) Framework:
+Yao et al. proposed the **ReAct** paradigm, which enables an LLM to generate alternating reasoning traces ("Thoughts") and execute diagnostic "Actions" \cite{yao2022react}. The execution loop follows:
+\begin{equation}
+\text{Thought}_i \rightarrow \text{Action}_i (\text{Action Input}_i) \rightarrow \text{Observation}_i \rightarrow \text{Thought}_{i+1} \rightarrow \dots \rightarrow \text{Final Answer}
+\end{equation}
+During the action step, the LLM calls external tools:
+* `graphrag_query`: Executes direct Neo4j Cypher lookups on our 25k clinical entities database to retrieve grounded evidence.
+* `pill_image_lookup`: Queries local visual folders to render drug appearance cards.
+This iterative loop ensures that before the model outputs a final recommendation, it must search the verified database, cross-reference symptoms, and build an explainable chain of thought.
+
+#### Dialog State Machines via LangGraph:
+For complex, multi-turn conversations, the system integrates a fallback **LangGraph** engine. LangGraph models the conversation as a stateful graph where each node is a specialized agent step (e.g., query parser, retrieval coordinator, answer generator, safety filter) and edges represent state transitions. This state machine structure enforces deterministic boundaries around the open-ended LLM, ensuring the system remains on-topic and compliant with clinical safety rules.
+
+\section{Development Stack Justification}
+\label{section:3.4}
+The backing technologies are selected to guarantee high-performance, security, and offline execution on consumer hardware:
+* **FastAPI (Python 3.10+)**: Chosen as the backend framework due to its asynchronous runtime (ASGI). It handles high-concurrency streamed NDJSON connections seamlessly, allowing reasoning tokens to stream in real-time.
+* **Ollama (Local LLM hosting)**: Hosts the 8-billion parameter models (Llama-3.1-8B) locally. Running Ollama offline ensures absolute patient data confidentiality, complying with healthcare security regulations, and eliminates API call latency or pricing dependencies.
+* **PyMuPDF \& openpyxl**: PyMuPDF provides high-speed, lightweight PDF text extraction, while openpyxl enables complex cell and grid parsing from Excel spreadsheets (`.xlsx`, `.xlsm`). Both operate fully locally without external network requests.
+
+\end{document}

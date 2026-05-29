@@ -1,0 +1,69 @@
+\documentclass[../Main.tex]{subfiles}
+\begin{document}
+This appendix provides detailed use case specifications for the core functions of the Smart Medical QA \& Consultation System.
+
+\section{Use Case UC-01: Consult Medical Agent}
+\label{section:uc-01}
+\begin{itemize}
+    \item **Actor**: Clinician, Patient, or Administrative Staff.
+    \item **Description**: The user queries the intelligent agent in natural language. The agent executes a localized ReAct loop to search the custom Neo4j Knowledge Graph, retrieve clinical evidence chunks, inspect pill details, and construct a structured Vietnamese response with Vis.js network citations.
+    \item **Preconditions**:
+        \begin{enumerate}
+            \item The Docker Compose stack is running, and Neo4j is loaded with the pruned 25k medical nodes database.
+            \item The local Ollama backend is running and hosting the Llama-3.1-8B model.
+        \end{enumerate}
+    \item **Normal Flow**:
+        \begin{enumerate}
+            \item The user enters a clinical question (e.g., *"Diabetes diet suggestions"*) in the chat interface.
+            \item The system detects the query intent. If it is a generic query, it invokes the ReAct agent pipeline.
+            \item The ReAct agent starts iteration 1: generates a thought and executes the `graphrag_query` tool with appropriate inputs.
+            \item The system runs Cypher queries against Neo4j, retrieves matching entities and context paragraphs, and returns them as observations.
+            \item The agent starts iteration 2: synthesizes the retrieved evidence, determines that it has enough information, and outputs the `Final Answer`.
+            \item The Web UI streams the generated markdown tokens, renders the Vis.js subgraph map showing connected nodes, and provides an option to export the output as a PDF report.
+        \end{enumerate}
+    \item **Alternative Flows**:
+        * **Format Recovery**: If the LLM generates a response missing mandatory ReAct tags, the parser triggers up to 3 repair cycles by appending prompt fixes.
+        * **Loop Guard Trigger**: If the agent submits duplicate tool calls, the loop-guard terminates execution immediately, synthesizes the final answer using existing context, and prevents infinite tokens consumption.
+        * **Intent Routing Fallback**: If the query asks for a quantitative lab indicator check, the router intercepts it in 0ms, matches bounds, and displays a deterministic report.
+\end{itemize}
+
+\section{Use Case UC-02: Import and Analyze Multi-format Lab Report}
+\label{section:uc-02}
+\begin{itemize}
+    \item **Actor**: Clinician or Patient.
+    \item **Description**: The user uploads a digital lab report in PDF or Excel (`.xlsx`, `.xlsm`) format. The system extracts the textual metrics, automatically compares them against on-form printed reference ranges, highlights abnormal parameters, and generates a personalized clinical consultation based on graph-derived recommendations.
+    \item **Preconditions**:
+        \begin{enumerate}
+            \item The user has a valid local file containing standard laboratory testing grids.
+        \end{enumerate}
+    \item **Normal Flow**:
+        \begin{enumerate}
+            \item The user drops a PDF or Excel report file onto the Web UI upload zone.
+            \item The FastAPI server delegates the file stream to the PyMuPDF or openpyxl extractor.
+            \item The extracted cell grids are sent to the `lab_compare_on_form` module.
+            \item The system isolates boundary bounds, compares patient numbers, and flags indicators as *Bình thường* (Within), *Tăng cao* (Above), or *Giảm thấp* (Below).
+            \item The system automatically extracts abnormal entities, queries Neo4j for clinical recommendations, and prompts the LLM to write a comprehensive advice plan.
+            \item The UI displays the side-by-side view with color-coded alerts and the generated advisory text.
+        \end{enumerate}
+\end{itemize}
+
+\section{Use Case UC-03: Manage Medication Schedule and Reminder}
+\label{section:uc-03}
+\begin{itemize}
+    \item **Actor**: Patient or Caregiver.
+    \item **Description**: The user sets up daily intake schedules for suggested medications, visualizes the schedule blocks on a weekly calendar, and receives automated audio-visual reminders.
+    \item **Preconditions**:
+        \begin{enumerate}
+            \item The agent has generated a prescription plan or the user manually inputs drug names.
+        \end{enumerate}
+    \item **Normal Flow**:
+        \begin{enumerate}
+            \item The user opens the Reminder Calendar screen.
+            \item The user selects a medication card, defines the daily frequency (e.g., *2 times/day*), specifies target times, and sets intake markers (e.g., *after meals*).
+            \item The system stores the calendar block configuration in the local SQLite database.
+            \item The Web UI updates the weekly schedule grid, displaying colored blocks for each time slot.
+            \item When a time slot is reached, the browser triggers an alert notification badge and a audio tone.
+        \end{enumerate}
+\end{itemize}
+
+\end{document}

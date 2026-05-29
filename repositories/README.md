@@ -1,97 +1,82 @@
-# Module Repositories
+# 📁 Phân hệ Repositories — Kiến trúc Kết nối Cơ sở Tri thức CDSS
 
-## Mục đích
+Phân hệ `repositories/` chịu trách nhiệm đóng gói toàn bộ logic truy vấn dữ liệu từ các nguồn tri thức khác nhau (Đồ thị Neo4j, Microsoft GraphRAG, v.v.) theo thiết kế mẫu **Repository Pattern**. Điều này giúp tách biệt hoàn toàn tầng logic nghiệp vụ của tác nhân (Agent) và các API dịch vụ khỏi hạ tầng dữ liệu cụ thể phía dưới.
 
-`repositories/` cung cấp tầng truy cập tri thức theo Repository Pattern, giúp tách logic nghiệp vụ khỏi backend cụ thể.
+---
 
-## Thành phần
+## 🏗️ Tổng quan Kiến trúc & Sơ đồ Luồng
 
-| File | Vai trò |
-|---|---|
-| `base.py` | Định nghĩa `KnowledgeRepository` và model kết quả query |
-| `factory.py` | Chọn backend `auto`, `neo4j`, `cli` |
-| `neo4j_repo.py` | Query graph trực tiếp bằng Neo4j/Cypher |
-| `graphrag_cli_repo.py` | Fallback qua CLI khi Neo4j không dùng được |
+Hệ thống hỗ trợ cơ chế truy vấn lai động (Dynamic Hybrid Retrieval), cho phép tự động phát hiện trạng thái hoạt động của cơ sở dữ liệu đồ thị Neo4j để đưa ra quyết định chuyển hướng (Fallback) thông minh:
 
-## Cách chọn backend
+```mermaid
+graph TD
+    A[Tầng Services / Agents] -->|Query Hỏi đáp Y tế| B(repositories/factory.py)
+    B -->|get_default_repository| C{Hàm Factory Chọn?}
+    C -->|auto| D[Kiểm tra Kết nối Neo4j]
+    C -->|neo4j| E[Neo4jRepository]
+    C -->|cli| F[GraphRAGCLIRepository]
+    
+    D -->|Thành công| E
+    D -->|Thất bại| F
+    
+    E -->|Cypher Fulltext & Graph Search| G[Kết quả: QueryResult]
+    F -->|Microsoft GraphRAG CLI query| G
+    
+    G -->|Trả về Text + Trích dẫn nguồn| A
+```
+
+---
+
+## 🗂️ Danh sách các Thành phần
+
+| Tệp tin | Vai trò & Trách nhiệm | Chi tiết kỹ thuật |
+| :--- | :--- | :--- |
+| **[base.py](file:///d:/DATN/repositories/base.py)** | Định nghĩa lớp cơ sở trừu tượng (Abstract Base Class) | Khai báo cấu trúc dữ liệu trả về `QueryResult` (gồm văn bản `text` và danh sách nguồn trích dẫn `sources`) và interface `KnowledgeRepository`. |
+| **[factory.py](file:///d:/DATN/repositories/factory.py)** | Quản lý vòng đời và cấp phát thực thể (Factory Class) | Cung cấp hàm `get_default_repository()` để tự động nhận dạng môi trường, ưu tiên Neo4j và tự động chuyển sang CLI làm phương án dự phòng. |
+| **[neo4j_repo.py](file:///d:/DATN/repositories/neo4j_repo.py)** | Tương tác trực tiếp với Cơ sở dữ liệu đồ thị Neo4j | Thực thi các truy vấn Cypher tối ưu hóa (kết hợp Fulltext Index và đồ thị láng giềng) trên tập dữ liệu đồ thị thực thể y khoa khổng lồ. |
+| **[graphrag_cli_repo.py](file:///d:/DATN/repositories/graphrag_cli_repo.py)** | Dự phòng truy xuất qua Microsoft GraphRAG CLI | Khởi chạy tiến trình con GraphRAG để tìm kiếm ngữ cảnh cục bộ hoặc toàn cục khi database đồ thị gặp sự cố hoặc ngoại tuyến. |
+
+---
+
+## 🚀 Hướng dẫn Sử dụng trong Code
+
+Để tích hợp cơ sở tri thức vào bất kỳ module dịch vụ nào, bạn chỉ cần sử dụng hàm Factory được cung cấp sẵn với cơ chế Dependency Injection của FastAPI:
 
 ```python
-from repositories import get_knowledge_repository
+from fastapi import Depends
+from repositories.base import KnowledgeRepository
+from repositories.factory import get_default_repository
 
-repo = get_knowledge_repository("auto")  # ưu tiên neo4j, fallback cli
-result = repo.query("Triệu chứng thiếu máu")
+# Sử dụng Dependency Injection trong router FastAPI
+@router.get("/api/query")
+async def query_knowledge(
+    question: str,
+    repo: KnowledgeRepository = Depends(get_default_repository)
+):
+    # Hệ thống sẽ tự động chọn Neo4j (nếu online) hoặc GraphRAG CLI (nếu offline)
+    result = await repo.query(question)
+    return {
+        "answer": result.text,
+        "citations": result.sources
+    }
 ```
 
-## Lưu ý
+---
 
-- Chất lượng Agent phụ thuộc mạnh vào kết quả từ repository.
-- `neo4j_repo` thường cho nguồn trích dẫn rõ hơn và latency ổn định hơn khi index tốt.
+## 💡 Các Điểm Lưu ý & Best Practices
 
-## Chi tiết theo file
+> [!TIP]
+> **Hiệu năng và Nguồn dẫn**: 
+> Sử dụng `Neo4jRepository` luôn mang lại tốc độ truy vấn vượt trội (độ trễ milisecond) và trích dẫn thực thể đồ thị cực kỳ chính xác nhờ việc lập chỉ mục (Fulltext Indexes) trên Neo4j.
 
-### `base.py`
+> [!WARNING]
+> **Dự phòng GraphRAG CLI**:
+> `GraphRAGCLIRepository` sử dụng cơ chế gọi câu lệnh CLI qua tiến trình con (Subprocess), do đó có thể gây tăng thời gian phản hồi (Latency) khi chạy luồng phân tích sâu. Khuyến nghị chỉ sử dụng làm phương án fallback.
 
-| Thành phần | Mô tả |
-|---|---|
-| `QueryResult` | Dataclass/container kết quả: văn bản trả về + danh sách `sources` (dict). |
-| `KnowledgeRepository` (ABC) | Interface: phương thức `query` đồng bộ (và tuỳ backend, tham số bổ sung). |
+---
 
-### `factory.py`
+## 📈 Định hướng Nâng cấp Tiếp theo
 
-| Hàm | Mô tả |
-|---|---|
-| `get_knowledge_repository(kind)` | `neo4j` \| `cli` \| `auto` — auto: ưu tiên Neo4j nếu config bật và kết nối được, ngược lại CLI GraphRAG. |
-| `get_default_repository()` | Wrapper gọi `get_knowledge_repository("auto")` (dùng trong API `Depends`). |
-
-### `neo4j_repo.py`
-
-| Thành phần | Mô tả |
-|---|---|
-| `_normalize_bolt_uri`, `_fulltext_safe_query`, `_query_to_string` | Tiện ích chuẩn hoá URI / query fulltext / stringify kết quả Cypher. |
-| `Neo4jRepository` | Cài đặt `KnowledgeRepository`: truy vấn fulltext + láng giềng, trả text + sources có score. |
-
-### `graphrag_cli_repo.py`
-
-| Thành phần | Mô tả |
-|---|---|
-| `_resolve_graphrag_data_dir` | Tìm thư mục dữ liệu artifact GraphRAG. |
-| `GraphRAGCLIRepository` | Gọi pipeline GraphRAG qua subprocess/CLI khi không dùng Neo4j driver. |
-
-## Cần cải thiện
-
-1. Thêm backend hybrid retrieval (graph + lexical + vector) dưới cùng interface.
-2. Bổ sung cache theo query normalized.
-3. Chuẩn hóa confidence score giữa các backend.
-
-## Sơ đồ chọn backend retrieval
-
-```text
-+--------------------------+
-| Query từ service / agent |
-+--------------------------+
-             |
-             v
- +------------------------------+
- | get_knowledge_repository()   |
- +------------------------------+
-      |        |         |
-      v        v         v
-    neo4j     cli       auto
-      |        |         |
-      |        |    kiểm tra Neo4j
-      |        |      |      |
-      |        |      v      v
-      |        |   dùng neo4j / dùng cli
-      v        v
- Neo4jRepo   GraphRAGCLIRepo
-      \        /
-       \      /
-        +------------------------------+
-        | QueryResult: text + sources  |
-        +------------------------------+
-```
-
-## Liên kết
-
-- README tổng: [`../README.md`](../README.md)
-- Service layer: [`../services/README.md`](../services/README.md)
+1. **Hybrid Retrieval (Truy xuất lai đa tầng)**: Kết hợp tìm kiếm đồ thị (Graph Search), tìm kiếm từ khóa truyền thống (BM25) và tìm kiếm Vector (Dense Embeddings) dưới cùng một giao diện Repository duy nhất.
+2. **Normalized Scoring**: Chuẩn hóa thuật toán tính điểm tin cậy (Confidence score) giữa Neo4j Cypher và GraphRAG CLI để việc xếp hạng nguồn trích dẫn y khoa được chuẩn xác nhất.
+3. **Caching Layer**: Bổ sung phân lớp Cache lưu trữ cặp `(query, QueryResult)` sử dụng Redis/In-memory để tăng tốc độ phản hồi đối với các câu hỏi trùng lặp thường gặp.

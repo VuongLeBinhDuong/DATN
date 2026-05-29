@@ -84,12 +84,39 @@ async function logout() {
   }
 }
 
-async function ensureProtectedPage() {
-  const ok = await verifySession();
-  if (!ok) {
-    const next = encodeURIComponent(window.location.pathname);
-    window.location.href = `/ui/login.html?next=${next}`;
+async function registerGuest(username = "") {
+  const base = authDefaultApiBase().replace(/\/$/, "");
+  const response = await fetch(`${base}/api/auth/register-guest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.detail || "Đăng ký phiên khách thất bại.");
   }
+  setAuthSession(data.access_token, data.username);
+  return data;
+}
+
+async function register(username, password) {
+  const base = authDefaultApiBase().replace(/\/$/, "");
+  const response = await fetch(`${base}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.detail || "Đăng ký tài khoản thất bại.");
+  }
+  setAuthSession(data.access_token, data.username || username);
+  return data;
+}
+
+async function ensureProtectedPage() {
+  // Bỏ chuyển hướng cưỡng bức, cho phép Khách sử dụng mọi trang
+  return true;
 }
 
 function bindAuthUi() {
@@ -98,16 +125,59 @@ function bindAuthUi() {
   const authLabel = document.getElementById("authUserLabel");
   const token = getAuthToken();
   const username = getAuthUser();
+
+  const isGuest = !token || !username || (typeof username === "string" && username.startsWith("Khách_"));
+
+
+
   if (authLabel) {
-    authLabel.textContent = token ? `Xin chào, ${username || "user"}` : "";
+    authLabel.textContent = isGuest ? "Xin chào, Khách" : `Xin chào, ${username}`;
+    authLabel.style.marginRight = "10px";
   }
-  if (loginLink) loginLink.classList.toggle("hidden", Boolean(token));
-  if (logoutBtn) logoutBtn.classList.toggle("hidden", !token);
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      await logout();
-      window.location.href = "/ui/login.html";
-    });
+
+  // Handle registerLink dynamically
+  let registerLink = document.getElementById("registerLink");
+
+  if (isGuest) {
+    // Show Sign In button
+    if (loginLink) {
+      loginLink.textContent = "Đăng nhập";
+      loginLink.setAttribute("href", "/ui/login.html?tab=login");
+      loginLink.classList.remove("hidden");
+      loginLink.onclick = null;
+    }
+    // Show Sign Up button next to it
+    if (loginLink && !registerLink) {
+      registerLink = document.createElement("a");
+      registerLink.id = "registerLink";
+      registerLink.className = "btn primary btn-auth";
+      registerLink.textContent = "Đăng ký";
+      registerLink.setAttribute("href", "/ui/login.html?tab=register");
+      registerLink.style.marginLeft = "8px";
+      loginLink.parentNode.insertBefore(registerLink, loginLink.nextSibling);
+    }
+    if (registerLink) {
+      registerLink.classList.remove("hidden");
+    }
+    // Hide Logout button
+    if (logoutBtn) {
+      logoutBtn.classList.add("hidden");
+    }
+  } else {
+    // Registered user
+    if (loginLink) {
+      loginLink.classList.add("hidden");
+    }
+    if (registerLink) {
+      registerLink.classList.add("hidden");
+    }
+    if (logoutBtn) {
+      logoutBtn.classList.remove("hidden");
+      logoutBtn.onclick = async () => {
+        await logout();
+        window.location.href = "/ui/";
+      };
+    }
   }
 }
 
@@ -120,4 +190,24 @@ window.DATNAuth = {
   login,
   logout,
   verifySession,
+  registerGuest,
+  register,
 };
+
+// Check and verify session on load
+(async () => {
+  const token = getAuthToken();
+  const username = getAuthUser();
+
+  // Tự động dọn dẹp các phiên khách ngẫu nhiên cũ để đồng bộ trạng thái mới
+  if (username && username.startsWith("Khách_")) {
+    clearAuthSession();
+  } else if (token) {
+    await verifySession().catch(() => {});
+  }
+  bindAuthUi();
+})();
+
+
+
+

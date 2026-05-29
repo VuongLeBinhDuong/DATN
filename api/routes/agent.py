@@ -26,6 +26,7 @@ class AgentQueryIn(BaseModel):
     use_react: bool = Field(default=True, description="Use ReAct pattern (default)")
     use_legacy_pipeline: bool = Field(default=False)
     backend: str = Field(default="auto", pattern="^(auto|ollama|openrouter)$", description="LLM backend to use")
+    history: list[dict[str, str]] = Field(default=[], description="Previous conversation turns")
 
 
 class SourceOut(BaseModel):
@@ -88,6 +89,7 @@ async def api_agent_query(
         strategy=body.strategy,
         use_legacy=body.use_legacy_pipeline,
         use_langgraph=body.use_langgraph,
+        history=body.history,
     )
     
     return AgentQueryOut(**result)
@@ -132,7 +134,7 @@ async def api_agent_query_stream(
     
     def ndjson_stream():
         """Generate NDJSON stream of events."""
-        for event in service.execute_stream(body.message, body.strategy):
+        for event in service.execute_stream(body.message, body.strategy, history=body.history):
             yield json.dumps(event, ensure_ascii=False) + "\n"
     
     return StreamingResponse(

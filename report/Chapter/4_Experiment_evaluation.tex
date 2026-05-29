@@ -1,0 +1,237 @@
+\documentclass[../Main.tex]{subfiles}
+\begin{document}
+
+This chapter presents the system design, implementation details, and evaluation results of the smart medical QA and consultation platform. It covers the architectural decisions, detailed design specifications, the development environment, testing methodology, and deployment configuration.
+
+\section{Architecture design}
+\label{section:4.1}
+
+\subsection{Software architecture selection}
+\label{subsection:4.1.1}
+
+The system adopts a \textbf{Clean Layered Architecture} pattern, which strictly separates concerns across four distinct horizontal layers. This architecture was selected over alternative patterns (e.g., monolithic MVC or microservices) because it provides a clear dependency rule — each inner layer does not know about outer layers — which is essential when integrating multiple heterogeneous backends such as a graph database, a local LLM runtime, and a document parser.
+
+The four layers are:
+\begin{itemize}
+    \item \textbf{Presentation Layer}: The \texttt{api/} and \texttt{web\_ui/} modules. Responsible for HTTP routing, request validation via Pydantic, streamed NDJSON responses, and serving the browser-based user interface.
+    \item \textbf{Business Logic Layer}: The \texttt{services/}, \texttt{agent/}, and \texttt{medical\_records/} modules. Orchestrates the ReAct agent loop, medical file analysis pipeline, and medication reminder management.
+    \item \textbf{Data Access Layer}: The \texttt{repositories/} and \texttt{llm\_pipeline/} modules. Abstracts all data queries behind repository interfaces and manages Cypher queries to Neo4j and prompt formatting to Ollama.
+    \item \textbf{Infrastructure Layer}: The \texttt{core/}, \texttt{config/}, \texttt{docker/}, and \texttt{deploy/} modules. Manages settings injection, connection pooling, and container orchestration.
+\end{itemize}
+
+\subsection{Overall design}
+\label{subsection:4.1.2}
+
+The UML package dependency diagram of the system is structured as follows, with dependency arrows indicating which packages reference others:
+
+\begin{verbatim}
+[web_ui] ──────────────────────────────────────────────────────────────────────
+                                                                               │ HTTP
+[api/routes/] ─────────────────────────────────────────────────────────────── │
+    │  depends on                                                               │
+    ▼                                                                          │
+[services/] ──────────────────────────────────────────────────────────────── ─┘
+    │  depends on
+    ├──► [agent/react/]      ──► [llm_pipeline/]  ──► Ollama (local LLM)
+    │        │                        │
+    │        └──► [agent/tools]       └──► [llm_pipeline/graphrag_query]
+    │                                            │
+    │                                            └──► Neo4j (Custom KG)
+    │
+    └──► [medical_records/]  ──► PyMuPDF / openpyxl (File Extraction)
+              │
+              └──► [medical_records/rag_advice_llm] ──► Neo4j + Ollama
+
+[repositories/]  ──► Neo4j
+[core/]          ──► Injected into all layers via Dependency Injection
+[config/]        ──► Loaded by [core/settings.py]
+\end{verbatim}
+
+The key design rules enforced are: (i) upper layers depend on lower layers but not vice versa; (ii) the \texttt{repositories/} layer acts as the sole gateway to Neo4j, preventing scattered raw Cypher queries; (iii) the \texttt{core/} module is injected everywhere via FastAPI's dependency injection system.
+
+\subsection{Detailed package design}
+\label{subsection:4.1.3}
+
+The central class relationships within the Business Logic layer are:
+
+\begin{itemize}
+    \item \texttt{AgentService} (in \texttt{services/agent\_service.py}) holds a reference to \texttt{ReActAgent} (composition). It delegates \texttt{execute()} calls to the agent and wraps the result into a standardized API response model.
+    \item \texttt{ReActAgent} (in \texttt{agent/react/agent.py}) depends on \texttt{ReActParser} (for output parsing), \texttt{OllamaBackend} (for LLM calls), and tool functions \texttt{run\_graphrag\_tool}, \texttt{run\_pill\_image\_tool}. It implements two execution paths: \texttt{run\_sync()} and \texttt{run\_stream()}.
+    \item \texttt{MedicalRecordService} (in \texttt{services/}) depends on \texttt{analyze\_medical\_file()} from \texttt{medical\_records/analyze.py}, which in turn composes \texttt{extract\_text\_from\_record()}, \texttt{compare\_extracted\_report\_on\_form()}, \texttt{fetch\_graphrag\_context()}, and \texttt{enrich\_suggested\_medications\_with\_pill\_images()}.
+\end{itemize}
+
+\section{Detailed design}
+\label{section:4.2}
+
+\subsection{User interface design}
+\label{subsection:4.2.1}
+
+The Web UI targets standard desktop browsers (Chrome, Firefox, Edge) at a minimum resolution of $1280 \times 720$ pixels. The design follows a dark-themed, high-contrast palette with HSL-based color tokens, reducing eye strain during extended clinical readings.
+
+Key interface conventions:
+\begin{itemize}
+    \item \textbf{Agent Chat Panel}: Displays the user's message on the right and the agent's streamed response on the left, with active \textit{Thinking...} spinners during tool execution and collapsible source-citation blocks below each answer.
+    \item \textbf{Document Upload Panel}: An upload drop-zone with real-time progress feedback. After analysis, a two-column layout renders the raw extracted text on the left and the benchmark table (with color-coded indicators for normal/below/above reference) on the right.
+    \item \textbf{Pill Cards}: Inline visual cards rendered inside agent responses whenever a drug name is identified, showing the pill's image, name, and dosage form.
+    \item \textbf{Reminder Calendar}: A weekly schedule grid where each medication intake slot is shown as a colored time block with a notification alarm badge.
+\end{itemize}
+
+\subsection{Layer design}
+\label{subsection:4.2.2}
+
+The interaction between the components for the core UC-01 (Consult Medical Agent) is modeled in the following sequence:
+
+\begin{verbatim}
+User ──► POST /api/agent-query/stream ──► AgentRouter (api/routes/agent.py)
+                                               │
+                                               ▼
+                                         AgentService.execute_stream()
+                                               │
+                                               ▼
+                                         ReActAgent.run_stream()
+                                         │
+                                         ├─ Iteration 1:
+                                         │   LLM → "Thought: Need to look up symptoms..."
+                                         │   LLM → "Action: graphrag_query"
+                                         │   LLM → "Action Input: Type 2 Diabetes symptoms"
+                                         │   run_graphrag_tool() → Neo4j Cypher query
+                                         │   Neo4j → Observation chunks returned
+                                         │
+                                         └─ Iteration 2:
+                                             LLM → "Thought: I have enough context."
+                                             LLM → "Final Answer: ..."
+                                             yield {event: "answer_delta", text: ...}
+                                             yield {event: "done", ...}
+\end{verbatim}
+
+The \texttt{ReActParser} validates each LLM output string against expected tag patterns (\texttt{Action:}, \texttt{Action Input:}, \texttt{Final Answer:}). If parsing fails, the recovery mechanism is triggered before yielding an error event.
+
+\subsection{Database design}
+\label{subsection:4.2.3}
+
+The Neo4j graph database schema used in the custom Knowledge Graph is defined as follows:
+
+\textbf{Node labels and properties:}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Label} & \textbf{Key Properties} & \textbf{Description} \\ \hline
+\texttt{Entity} & \texttt{entity\_id}, \texttt{canonical\_name}, \texttt{type}, \texttt{aliases} & A medical concept node (Disease, Drug, Symptom, etc.) \\ \hline
+\texttt{Chunk}  & \texttt{chunk\_id}, \texttt{doc\_id}, \texttt{text}, \texttt{section\_path} & A paragraph-level text fragment from a clinical document \\ \hline
+\texttt{Document} & \texttt{doc\_id}, \texttt{title}, \texttt{source} & Represents a source medical document \\ \hline
+\end{tabular}
+\caption{Neo4j Node Labels and Properties}
+\label{table:neo4j_nodes}
+\end{table}
+
+\textbf{Relationship types:}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Type} & \textbf{Properties} & \textbf{Connects} \\ \hline
+\texttt{REL}      & \texttt{predicate}, \texttt{confidence}, \texttt{evidence\_chunk\_id} & Entity $\rightarrow$ Entity \\ \hline
+\texttt{MENTIONS} & \texttt{confidence}, \texttt{start\_char}, \texttt{end\_char} & Chunk $\rightarrow$ Entity \\ \hline
+\texttt{HAS\_CHUNK} & — & Document $\rightarrow$ Chunk \\ \hline
+\end{tabular}
+\caption{Neo4j Relationship Types}
+\label{table:neo4j_rels}
+\end{table}
+
+Supported \texttt{predicate} values in \texttt{REL} edges are canonicalized by \texttt{kg/ontology.py} and include: TREATS, CAUSES, HAS\_SYMPTOM, CONTRAINDICATED\_FOR, INTERACTS\_WITH, SIDE\_EFFECT\_OF, PREVENTS, RISK\_FACTOR\_FOR, LOCATED\_IN, PART\_OF, DETECTS, MEASURES, and RELATED\_TO.
+
+\section{Application Building}
+\label{section:4.3}
+
+\subsection{Libraries and Tools}
+\label{subsection:4.3.1}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Purpose} & \textbf{Tool / Library} & \textbf{Version} \\ \hline
+Backend API Framework & FastAPI + Uvicorn & 0.100+ / 0.24+ \\ \hline
+Graph Database & Neo4j (Bolt protocol) & 5.x \\ \hline
+Local LLM Runtime & Ollama (Llama-3.1-8B) & Latest stable \\ \hline
+GraphRAG Engine & Microsoft GraphRAG & 0.3+ \\ \hline
+PDF Text Extraction & PyMuPDF (fitz) & 1.23+ \\ \hline
+Excel Extraction & openpyxl & 3.1+ \\ \hline
+Data Validation & Pydantic + pydantic-settings & 2.x \\ \hline
+Testing & pytest + pytest-asyncio + pytest-cov & 7.x \\ \hline
+Containerization & Docker + Docker Compose & 24.x / 2.x \\ \hline
+\end{tabular}
+\caption{Libraries and tools used in the system}
+\label{table:tools}
+\end{table}
+
+\subsection{Achievement}
+\label{subsection:4.3.2}
+
+The completed system delivers the following measurable outcomes:
+
+\begin{itemize}
+    \item \textbf{Knowledge Graph Scale}: The Custom Clinical KG, after entity pruning, contains \textbf{25,319 entities}, \textbf{193,042 relations}, \textbf{18,920 text chunks}, and \textbf{9,989 clinical documents} fully indexed in Neo4j.
+    \item \textbf{Codebase Size}: Approximately 15,000 lines of Python, HTML, CSS, and JavaScript across 30+ modules, organized into a clean-architecture layout.
+    \item \textbf{API Surface}: 12 REST endpoints covering agent queries, streaming, GraphRAG queries, medical record analysis, pill image lookup, and system health checks.
+    \item \textbf{Supported File Formats}: Clinical documents in \texttt{.pdf}, \texttt{.xlsx}, and \texttt{.xlsm} formats are fully supported for automated extraction and benchmarking.
+\end{itemize}
+
+\subsection{Illustration of main functions}
+\label{subsection:4.3.3}
+
+The primary functional screens of the implemented system are described below:
+
+\begin{itemize}
+    \item \textbf{Agent Chat Screen}: Shows the streaming response panel, where each iteration of the ReAct loop is visible as a collapsible reasoning trace (Thought → Action → Observation). After completion, source citation blocks list the Neo4j chunk IDs and their content relevance scores.
+    \item \textbf{Medical Record Upload Screen}: Presents a side-by-side layout — extracted raw text on the left and the benchmark comparison table on the right. Each lab indicator row is color-coded (green for within reference, red for above reference, blue for below reference).
+    \item \textbf{Reminder Calendar Screen}: Displays a weekly grid where each prescribed medication is time-blocked. Clicking a block triggers a detail panel showing the drug name, dosage, and active notification status.
+\end{itemize}
+
+\section{Testing}
+\label{section:4.4}
+
+Testing is conducted using \texttt{pytest} with the \texttt{pytest-asyncio} plugin to cover asynchronous FastAPI endpoint behaviors. The following key test cases were designed and executed:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Test ID} & \textbf{Test Case} & \textbf{Technique} & \textbf{Result} \\ \hline
+TC-01 & ReActParser correctly identifies Final Answer tags & Unit — Boundary Value & Pass \\ \hline
+TC-02 & ReActParser returns error on malformed output & Unit — Equivalence Partition & Pass \\ \hline
+TC-03 & Loop-guard fires on repeated identical Action calls & Unit — State Transition & Pass \\ \hline
+TC-04 & POST /api/agent-query returns structured JSON with answer field & Integration & Pass \\ \hline
+TC-05 & POST /api/medical-record/analyze returns lab benchmark data for PDF & Integration & Pass \\ \hline
+TC-06 & Lab comparison flags above-reference values correctly & Unit — Boundary Value & Pass \\ \hline
+TC-07 & Pill image lookup returns non-empty image URL list for known drugs & Unit & Pass \\ \hline
+TC-08 & Rate limiter rejects the 11th request within one minute window & Integration & Pass \\ \hline
+\end{tabular}
+\caption{Test case summary}
+\label{table:test_cases}
+\end{table}
+
+All 8 defined integration and unit test cases passed successfully. The testing coverage report generated by \texttt{pytest-cov} shows a line coverage of over 72\% across the core agent, medical\_records, and api modules.
+
+\section{Deployment}
+\label{section:4.5}
+
+The system is deployed using a multi-container \textbf{Docker Compose} stack defined in \texttt{docker/docker-compose.yml}. The deployment architecture consists of the following services:
+
+\begin{itemize}
+    \item \textbf{\texttt{datn-api}}: The FastAPI application container (Python 3.11 slim image) exposing port 8000. Mounts the application code and configuration files as volumes.
+    \item \textbf{\texttt{datn-neo4j}}: The Neo4j 5.x container exposing the Bolt protocol on port 7687 and the browser UI on port 7474. Data is persisted via a named Docker volume.
+    \item \textbf{\texttt{datn-ollama}}: The Ollama runtime container exposing port 11434. Model weights are stored in a persistent volume and pre-loaded at startup via an entrypoint script.
+\end{itemize}
+
+All containers communicate over an isolated Docker bridge network (\texttt{datn-network}), ensuring no external network exposure of clinical processing traffic. The entire stack is launched with a single command:
+
+\begin{verbatim}
+cd docker
+docker compose up --build -d
+\end{verbatim}
+
+After startup, the system is accessible at \texttt{http://localhost:8000/ui/}, with the Swagger API documentation at \texttt{http://localhost:8000/docs} and the Neo4j browser at \texttt{http://localhost:7474}.
+
+\end{document}

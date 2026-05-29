@@ -48,7 +48,19 @@ class TestAgentService:
         with patch("agent.react.ReActAgent.run_sync", return_value=mock_react_result) as mock_run:
             res = service.execute("Flu symptoms")
             assert res == mock_react_result
-            mock_run.assert_called_once_with("Flu symptoms")
+            mock_run.assert_called_once_with("Flu symptoms", history=None)
+
+    def test_execute_intent_router_direct_db(self, clean_settings_cache):
+        """Test execute routes to direct_db for physiological lookup."""
+        mock_llm = MagicMock()
+        service = AgentService(llm_backend=mock_llm)
+        
+        # Test direct_db matching query
+        query = "glucose của tôi là 7.5 mmol/L"
+        res = service.execute(query)
+        
+        assert "KẾT QUẢ ĐỐI CHIẾU CHỈ SỐ LÂM SÀNG TỰ ĐỘNG" in res["answer"]
+        assert res["sources"][0]["source"] == "Bộ Y tế Việt Nam / WHO Guidelines"
 
     def test_execute_legacy_strategy(self, clean_settings_cache):
         """Test execute runs legacy orchestrator when settings specify it or force flag passed."""
@@ -71,11 +83,11 @@ class TestAgentService:
         mock_lg_result = {"answer": "LangGraph answer"}
         
         # Force langgraph
-        with patch("services.agent_service.AgentService._should_use_langgraph", return_value=True):
-            with patch("agent.langgraph_app.run_agent_demo_langgraph", return_value=mock_lg_result) as mock_lg:
+        with patch.object(service, "_should_use_langgraph", return_value=True):
+            with patch.object(service, "_run_langgraph", return_value=mock_lg_result) as mock_lg:
                 res = service.execute("Flu query", use_langgraph=True)
                 assert res == mock_lg_result
-                mock_lg.assert_called_once()
+                mock_lg.assert_called_once_with("Flu query", "auto")
 
     def test_execute_stream_react(self, clean_settings_cache):
         """Test streaming execution yields events via ReAct agent."""
@@ -171,3 +183,41 @@ class TestRetrievalService:
             assert ans == "Answer with sources"
             assert src == mock_sources
             mock_query.assert_called_once_with("Flu")
+
+
+def test_prune_subgraph_clinical_noise_reduction():
+    """Test prune_subgraph correctly removes isolated, generic, and noisy nodes."""
+    from retrieval.graph_first import prune_subgraph
+    
+    # Mock subgraph with valid nodes, a generic node, a noisy punctuation node, and an isolated node
+    mock_subgraph = {
+        "entities": [
+            {"entity_id": "ent_diabetes", "name": "Tiểu đường", "type": "Disease"},
+            {"entity_id": "ent_metformin", "name": "Metformin", "type": "Drug"},
+            {"entity_id": "ent_isolated", "name": "Isolated Node", "type": "Disease"},
+            {"entity_id": "ent_noisy_punc", "name": "!!!", "type": "Disease"},
+            {"entity_id": "ent_generic", "name": "Some Generic", "type": "Generic"},
+        ],
+        "edges": [
+            {"source": "ent_diabetes", "target": "ent_metformin", "relation": "TREATS"}
+        ]
+    }
+    
+    # Run the soft pruning
+    pruned = prune_subgraph(mock_subgraph, seed_ids=["ent_diabetes"])
+    
+    # Assertions
+    entity_ids = {e["entity_id"] for e in pruned["entities"]}
+    
+    # Active/connected components should be kept
+    assert "ent_diabetes" in entity_ids
+    assert "ent_metformin" in entity_ids
+    
+    # Noisy, isolated, and generic components should be pruned
+    assert "ent_isolated" not in entity_ids
+    assert "ent_noisy_punc" not in entity_ids
+    assert "ent_generic" not in entity_ids
+    
+    # Edges should remain intact
+    assert len(pruned["edges"]) == 1
+    assert pruned["edges"][0]["relation"] == "TREATS"

@@ -1,0 +1,154 @@
+\documentclass[../Main.tex]{subfiles}
+\begin{document}
+
+This chapter conducts a detailed requirement survey and system analysis for the proposed smart medical QA and consultation platform. It establishes the current state of retrieval technologies in the medical field, maps out the general and detailed use cases, details core use case specifications, and outlines the functional and non-functional requirements governing the system's runtime environment.
+
+\section{Status survey}
+\label{section:2.1}
+Providing reliable medical information requires a highly specialized approach to information retrieval. Traditional and contemporary systems in the medical QA domain fall into three major paradigms, each having distinct strengths and critical limitations:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{6cm}|p{6cm}|}
+\hline
+\textbf{Paradigm} & \textbf{Strengths} & \textbf{Weaknesses} \\ \hline
+\textbf{Traditional Search (e.g., Google Search)} & - Extremely fast access to massive indexed web resources. \newline- High availability. & - High information noise and commercial bias.\newline- Generic results lacking personalized clinical context.\newline- Risk of misinterpretation by laypersons. \\ \hline
+\textbf{Standard Vector RAG} & - Semantic matching of patient queries to textbook chunks. \newline- Minimizes basic textual hallucinations. & - Lacks structured clinical connections.\newline- Fails to cross-reference multi-hop dependencies (e.g., drug interactions, symptom chains).\newline- High risk of retrieving irrelevant context due to semantic overlaps. \\ \hline
+\textbf{GraphRAG (Neo4j + Custom KG)} & - Preserves precise clinical relationships.\newline- Maps multi-hop pathways (Disease $\rightarrow$ Symptom $\rightarrow$ Drug).\newline- Pure offline, private processing capability. & - Higher upfront complexity in constructing and indexing the knowledge graph.\newline- Requires active pruning to prevent generic entity clutter (e.g., "Other" type nodes). \\ \hline
+\end{tabular}
+\caption{Comparative analysis of medical retrieval paradigms}
+\label{table:retrieval_paradigms}
+\end{table}
+
+Based on this comparative status survey, the proposed system addresses these gaps by combining a **purified Custom Knowledge Graph (Neo4j)** for direct factual queries and **Microsoft GraphRAG** for global summary retrieval, orchestrated by a local **ReAct Agent** to ensure privacy, reasoning transparency, and clinical explainability.
+
+\section{Functional Overview}
+\label{section:2.2}
+The system's functional architecture is designed to accommodate two primary actors: the **User/Patient** seeking clinical consultation and the **Medical Admin/Expert** managing system resources.
+
+\subsection{General use case diagram}
+\label{subsection:2.2.1}
+The general use case diagram structures the core capabilities of the system. The actors and their respective use cases are defined as follows:
+\begin{itemize}
+    \item **User/Patient (Actor)**: Interacts with the platform to consult the agent, upload and analyze personal health files, view drug imagery, and manage prescription calendars.
+    \item **Medical Admin/Expert (Actor)**: Oversees system operations, reviews parsed medical record histories, and manages backing database configurations.
+\end{itemize}
+
+The main use cases include:
+1. **UC-01: Consult Medical Agent**: The primary interactive channel where the user sends prompts, and the ReAct Agent streams real-time reasoning thoughts, triggers GraphRAG tools, and provides final clinical citations.
+2. **UC-02: Upload \& Analyze Medical Record**: Allows users to upload clinical PDFs or Excel sheets. The system extracts raw text, executes local indicator benchmarking, and builds customized advice.
+3. **UC-03: Manage Medication Reminders**: Translates clinical suggestions into actionable intake schedules with automated browser alarms.
+4. **UC-04: Inspect Pill Imagery**: Enables users to search for specific drug terms and visualize pill physical appearances to prevent medication ingestion errors.
+5. **UC-05: Authenticate User**: Secures access through JWT token-based registration and login flows.
+
+\subsection{Detailed use case diagram}
+\label{subsection:2.2.2}
+To represent detailed relationships, the primary use cases are decomposed into specific sub-use cases:
+\begin{itemize}
+    \item **UC-01: Consult Medical Agent** is decomposed into:
+        - *Retrieve Context via Cypher* (using Direct Neo4j KG matching).
+        - *Retrieve Microsoft GraphRAG Community Summaries* (for global overview fallbacks).
+        - *Execute Tool Calling* (interactively querying pill databases or clinical records).
+        - *Stream NDJSON reasoning logs* (providing transparent chain-of-thought outputs on the UI).
+    \item **UC-02: Upload \& Analyze Medical Record** is decomposed into:
+        - *Extract Text via PyMuPDF/openpyxl* (parsing tabular formats).
+        - *Execute Lab Indicator Benchmarking* (comparing numeric values to reference boundaries).
+        - *Synthesize Clinical Advice via GraphRAG* (grounding narrative analysis).
+        - *Enrich Drug Images* (automatically looking up pill images).
+\end{itemize}
+
+\subsection{Business process}
+\label{subsection:2.2.3}
+A primary contribution of the system is the unified business workflow of processing an uploaded medical file. This sequence combines multiple modules to execute a complete diagnostic consultation:
+
+```text
++-------------+      +--------------+      +------------------+      +--------------------+
+| User Upload | ---> | Text Extract | ---> | Extract Numeric  | ---> | Benchmark Match vs |
+| PDF / Excel |      | (PyMuPDF /   |      | Lab Indicators   |      | Form Reference     |
+|             |      |  openpyxl)   |      | (lab_parse.py)   |      | (lab_compare.py)   |
++-------------+      +--------------+      +------------------+      +--------------------+
+                                                                                |
+                                                                                v
++-------------+      +--------------+      +------------------+      +--------------------+
+| Generate    | <--- | Fetch Pill   | <--- | Extract Suggested| <--- | Query Custom KG    |
+| Interactive |      | Images from  |      | Meds & Dosing    |      | for Abnormal Lab   |
+| Reminder    |      | Local DB     |      | (LLM synthesis)  |      | Anomalies Context  |
++-------------+      +--------------+      +------------------+      +--------------------+
+```
+
+This business process operates fully offline, preventing sensitive medical logs from leaking to external cloud networks.
+
+\section{Functional description}
+\label{section:2.3}
+The following four core use cases represent the critical operational paths of the system and are detailed using standard software engineering specifications.
+
+\subsection{Description of UC-01: Consult Medical Agent}
+\begin{itemize}
+    \item **Actor**: User / Patient.
+    \item **Description**: The user inputs a clinical question, and the system executes a ReAct reasoning loop to search the knowledge graph and stream verified clinical answers with source citations.
+    \item **Pre-conditions**: The user has successfully logged in and the local Neo4j database is active.
+    \item **Post-conditions**: A streamed, grounded answer is rendered with proper citations, active tool indicators, and visual pill cards (if drugs are mentioned).
+    \item **Basic Flow**:
+        1. User enters a query (e.g., "Symptoms of Type 2 Diabetes").
+        2. FastAPI backend receives the request and triggers `AgentService`.
+        3. The `ReActAgent` parses the query, initiates reasoning, and outputs a `Thought`.
+        4. The agent decides to call the `graphrag_query` tool with the entity "Type 2 Diabetes".
+        5. The tool queries Neo4j directly, finds matches, and returns text chunks as `Observation`.
+        6. The agent integrates the observation, formulates a final answer, appends source citations, and sends it to the UI.
+    \item **Alternate Flow (Format Recovery)**:
+        - If the LLM generates a malformed tool call pattern in iteration 1, `AgentService` intercepts the error, runs a fallback query matching the original question, synthesizes the results, and returns a verified fallback answer to prevent application crashes.
+\end{itemize}
+
+\subsection{Description of UC-02: Upload \& Analyze Medical Record}
+\begin{itemize}
+    \item **Actor**: User / Patient.
+    \item **Description**: The user uploads a clinical report (PDF/XLSX), and the system automatically parses it, benchmarks lab indicators against reference bounds, and provides graph-supported advice.
+    \item **Pre-conditions**: The uploaded file format is supported (`.pdf`, `.xlsx`, `.xlsm`).
+    \item **Post-conditions**: The user receives a comprehensive benchmark table of lab anomalies (labeled as normal, below, or above reference) and a GraphRAG-supported consultation text.
+    \item **Basic Flow**:
+        1. User selects and uploads an Excel sheet containing blood test indicators.
+        2. The backend extracts cells using `openpyxl`.
+        3. The system parses numeric readings and printed reference ranges using `compare_extracted_report_on_form`.
+        4. An automated matching engine compares the patient's value to the reference bounds.
+        5. The backend triggers `rag_advice_llm` to fetch Neo4j context relating to any detected abnormal indicators.
+        6. The LLM synthesizes a grounded medical explanation in Vietnamese (or English) and displays it alongside the benchmark table on the dashboard.
+\end{itemize}
+
+\subsection{Description of UC-03: Manage Medication Reminders}
+\begin{itemize}
+    \item **Actor**: User / Patient.
+    \item **Description**: Users customize medication reminder schedules extracted from their clinical recommendations to trigger automatic local notification alerts.
+    \item **Pre-conditions**: The medical analysis narrative contains suggested drugs and dosing parameters.
+    \item **Post-conditions**: Reminder schedules are written to the SQLite database and automated browser alerts are active.
+    \item **Basic Flow**:
+        1. The user views the consultation results showing suggested medications (e.g., "Metformin 500mg, twice a day").
+        2. User clicks "Add to Reminders".
+        3. The system parses the drug name, dosage, and frequency, transforming them into specific calendar timestamps.
+        4. The intake calendar is saved in the local SQLite database.
+        5. The browser's active background worker schedules local visual alarms.
+\end{itemize}
+
+\subsection{Description of UC-04: Verify Pill Imagery}
+\begin{itemize}
+    \item **Actor**: User / Patient.
+    \item **Description**: Search for medical pill names in the database to inspect their physical characteristics (color, shape, packaging) to prevent pill ingestion errors.
+    \item **Pre-conditions**: The database contains pill images and identifiers.
+    \item **Post-conditions**: Visual pill cards with exact descriptions are rendered on the chat or dashboard screen.
+    \item **Basic Flow**:
+        1. User asks the agent about a drug or manually types the drug name in the lookup bar.
+        2. The system calls the `pill_image_lookup` tool.
+        3. The backend searches the local directory `web_ui/img/` matching the canonicalized drug name.
+        4. The matching image path is returned, and a card showing the physical card (e.g., shape, color, dosage form) is rendered on the UI.
+\end{itemize}
+
+\section{Non-functional requirement}
+\label{section:2.4}
+To guarantee system stability, local execution feasibility, and absolute privacy, the following non-functional requirements are enforced:
+\begin{itemize}
+    \item **Private, Offline Execution**: The system must run entirely on the user's local machine without sending clinical prompts to external cloud APIs, ensuring compliance with data privacy regulations.
+    \item **Response Streaming Speed**: Chat API `/api/agent-query/stream` must yield the first reasoning token within **1.5 seconds** of receiving the user query, and stream chunks continuously to avoid high perceived latency on local hardware.
+    \item **Security and Rate Limiting**: The system implements FastAPI dependency injection rate limiters (`check_rate_limit`) to restrict queries to **10 requests per minute** per IP, preventing denial-of-service loops on local LLM runtimes.
+    \item **Hardware Feasibility**: The local LLM engine (Ollama Llama-3.1-8B) must execute within standard consumer hardware constraints (requiring a minimum of 8GB VRAM or 16GB system RAM) with an active request timeout limit of **120 seconds**.
+\end{itemize}
+
+\end{document}

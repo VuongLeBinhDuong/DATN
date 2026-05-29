@@ -1,0 +1,49 @@
+\documentclass[../Main.tex]{subfiles}
+\begin{document}
+
+\section{Conclusion}
+\label{section:6.1}
+
+This graduation thesis has designed, implemented, and evaluated a \textbf{Smart Medical QA and Consultation System} combining Graph Retrieval-Augmented Generation (GraphRAG) and Agentic AI. The system operates entirely offline on consumer hardware, ensuring full patient data confidentiality.
+
+The key achievements of this thesis are summarized as follows:
+
+\begin{itemize}
+    \item \textbf{Purified Clinical Knowledge Graph}: A custom medical KG was constructed from 9,989 clinical documents. After systematic entity pruning to remove conversational noise, the graph retains 25,319 high-quality clinical entities and 193,042 semantic relations, indexed in Neo4j for direct Cypher-based retrieval.
+    \item \textbf{Graph-First Hybrid Retrieval}: A dual-layer retrieval engine was implemented, routing queries first to the Custom KG for precise local entity matching, and falling back to Microsoft GraphRAG community summaries for global synthesis when needed.
+    \item \textbf{Resilient ReAct Agent}: A robust agentic reasoning loop was built on top of a local Ollama LLM, reinforced with three defensive mechanisms — parse-retry prompting, iteration-1 recovery-forced GraphRAG, and loop-guard signature tracking — achieving a 100\% meaningful-response rate on adversarial test queries.
+    \item \textbf{Multi-Format Clinical Analyzer}: An automatic document processing pipeline supports PDF and Excel medical records, performs on-form reference range benchmarking without hardcoded tables, and generates graph-grounded clinical consultations enriched with pill imagery.
+    \item \textbf{Triangulated Reranking and Semantic Graph Pruning}: Fused dual-channel retrieval results via Reciprocal Rank Fusion (RRF) and integrated a neural Cross-Encoder model locally to boost Precision@5 to 0.245, combined with a graph soft-pruning algorithm to systematically sweep out isolated/noisy Neo4j nodes.
+    \item \textbf{CDSS Workflows and Conversational Memory}: Closed the E2E clinical workflow by implementing a local conversational chat memory with regex-based HTML sanitization and a high-fidelity vector clinical PDF report exporter, transforming a standard chat application into a fully-featured Clinical Decision Support System (CDSS).
+    \item \textbf{Production-Ready Deployment}: The entire system is containerized using Docker Compose, covering the API server, Neo4j graph database, and Ollama LLM runner, fully reproducible from a single command.
+\end{itemize}
+
+Compared to baseline approaches, the proposed system demonstrates clear advantages over standard Vector RAG (no structural cross-referencing) and commercial cloud-based LLMs (privacy violation, API cost). Its Graph-First architecture provides explicit, traceable evidence citations for every answer, a property absent from dense retrieval systems.
+
+During the development process, several important engineering lessons were learned: the importance of aggressive entity pruning in clinical KG construction; the necessity of defensive parsing in small LLM deployments; the value of separating pure-Python extraction logic from LLM synthesis to maximize reliability; and the importance of offline-first design when handling sensitive health data.
+
+\section{Future Work}
+\label{section:6.2}
+
+While the current system achieves its primary objectives, several directions exist for further improvement:
+
+\textbf{Short-term improvements:}
+\begin{itemize}
+    \item \textbf{Semantic Caching}: Implement a local vector-similarity cache layer (e.g., lightweight local cosine embeddings) before the ReAct loop to detect semantically identical medical queries (similarity > 0.95), serving historical consultations instantly (under 5ms) and further decreasing token overhead.
+    \item \textbf{Expanded evaluation dataset}: The current evaluation uses only 10 clinical queries. Expanding the dataset to 100+ queries covering a broader range of disease categories, drug interactions, and lab indicators would provide statistically significant benchmark results.
+\end{itemize}
+
+\textbf{Medium-term improvements:}
+\begin{itemize}
+    \item \textbf{Asynchronous document processing queue}: The medical record analysis pipeline currently runs synchronously in the FastAPI request thread. For large Excel files or multi-page PDFs, this can cause request timeouts. Migrating to an asynchronous task queue (e.g., Celery with Redis) would allow background processing with webhook callbacks or WebSocket progress updates.
+    \item \textbf{LLM model upgrade}: As larger, more instruction-following models (e.g., Llama-3.3-70B via quantization, or Qwen2.5-14B) become feasible on consumer hardware, upgrading the local LLM backend is expected to substantially reduce ReAct format errors and improve answer quality.
+\end{itemize}
+
+\textbf{Long-term improvements:}
+\begin{itemize}
+    \item \textbf{Full observability stack}: Integrating distributed tracing (OpenTelemetry), Prometheus metrics for per-endpoint latency monitoring, and structured logging for agent reasoning traces would enable production-grade monitoring and anomaly detection.
+    \item \textbf{Federated KG with hospital systems}: The current KG is built from a single public conversational medical dataset. Federated integration with hospital FHIR APIs or clinical trial databases would expand knowledge coverage without centralizing sensitive patient data.
+    \item \textbf{Multimodal clinical inputs}: Extending the document analyzer to support radiology imaging reports (DICOM), ECG trace analysis, and handwritten prescription OCR would broaden the system's applicability across clinical specialties.
+\end{itemize}
+
+\end{document}

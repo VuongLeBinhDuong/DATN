@@ -340,6 +340,7 @@ function renderChatFromStorage() {
     appendChatBubble(item.role, item.html, { persist: false, skipScroll: true });
   }
   scrollChatToBottom();
+  renderAllGraphs();
 }
 
 function escapeHtml(s) {
@@ -416,6 +417,281 @@ function buildSourcesFooter(data) {
   return "";
 }
 
+function buildPdfExportButtonHtml() {
+  return "";
+}
+
+function exportClinicalPdf(btn) {
+  const bubble = btn.closest(".chat-bubble-inner");
+  if (!bubble) return;
+  
+  // Clone the node to avoid altering live UI elements
+  const printClone = bubble.cloneNode(true);
+  
+  // Remove print-unfriendly features
+  const actions = printClone.querySelector(".chat-actions");
+  if (actions) actions.remove();
+  
+  const thinkingDetails = printClone.querySelector(".chat-thinking-details");
+  if (thinkingDetails) thinkingDetails.remove();
+  
+  // Package into report layout
+  const reportContainer = document.createElement("div");
+  reportContainer.style.padding = "30px";
+  reportContainer.style.fontFamily = "'Source Sans 3', sans-serif";
+  reportContainer.style.color = "#1e293b";
+  reportContainer.style.background = "#ffffff";
+  
+  const headerHtml = `
+    <div style="border-bottom: 2px solid #d97706; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1 style="margin: 0; font-size: 20px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.5px;">Hệ Thống Hỗ Trợ Quyết Định Lâm Sàng CDSS</h1>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">BÁO CÁO KHUYẾN NGHỊ Y KHOA TỰ ĐỘNG (CDSS-REPORT)</p>
+      </div>
+      <div style="text-align: right; font-size: 11px; color: #64748b;">
+        <p style="margin: 0;">Mã số báo cáo: CDSS_${Date.now().toString().slice(-6)}</p>
+        <p style="margin: 2px 0 0 0;">Ngày tạo: ${new Date().toLocaleString("vi-VN")}</p>
+      </div>
+    </div>
+    
+    <div style="margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <div><strong>Đối tượng áp dụng:</strong> Nhân viên y tế & Bệnh nhân tham khảo</div>
+      <div><strong>Nguồn dữ liệu:</strong> Đồ thị Tri thức Y học Neo4j & Reranker lai đa tầng</div>
+      <div><strong>Mức độ tin cậy:</strong> Chuẩn y khoa định mức (0ms / ReAct Agent)</div>
+      <div><strong>Trạng thái xác thực:</strong> Tự động đối chiếu WHO / Bộ Y tế</div>
+    </div>
+  `;
+  
+  const footerHtml = `
+    <div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 10px; color: #64748b; text-align: center; line-height: 1.4;">
+      <p style="margin: 0;">Báo cáo này được tạo tự động bởi Hệ Thống Hỗ Trợ Quyết Định Lâm Sàng CDSS.</p>
+      <p style="margin: 2px 0 0 0; font-weight: bold; color: #b45309;">LƯU Ý: Kết quả chỉ mang tính chất tham khảo chuyên môn kỹ thuật, không thay thế cho quyết định chẩn đoán lâm sàng cuối cùng của bác sĩ điều trị.</p>
+    </div>
+  `;
+  
+  reportContainer.innerHTML = headerHtml + printClone.innerHTML + footerHtml;
+  
+  const opt = {
+    margin:       10,
+    filename:     `CDSS_Report_${Date.now().toString().slice(-6)}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  
+  document.body.appendChild(reportContainer);
+  
+  html2pdf().from(reportContainer).set(opt).save().then(() => {
+    document.body.removeChild(reportContainer);
+  });
+}
+
+/* --- Premium Interactive Entity Node Graph (Vis-Network) --- */
+
+function parseSubgraphFromContext(text) {
+  if (!text) return null;
+  const nodes = [];
+  const edges = [];
+  const lines = text.split("\n");
+  
+  let currentEntity = null;
+  let inRelations = false;
+  
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) continue;
+    
+    if (line.includes("Quan hệ (trong tập trên)") || line.includes("RELATED") || line.includes("Quan hệ")) {
+      inRelations = true;
+      continue;
+    }
+    
+    if (!inRelations) {
+      const entityMatch = line.match(/^---\s*Entity\s*\[\d+\]\s*\(score≈([\d.]+)\)\s*id=(.+?)\s*---$/i);
+      if (entityMatch) {
+        if (currentEntity) {
+          nodes.push(currentEntity);
+        }
+        currentEntity = {
+          id: entityMatch[2].trim(),
+          label: entityMatch[2].trim(),
+          type: "Entity",
+          score: parseFloat(entityMatch[1])
+        };
+        continue;
+      }
+      
+      if (currentEntity) {
+        if (line.startsWith("title:")) {
+          currentEntity.label = line.replace("title:", "").trim();
+        } else if (line.startsWith("type:")) {
+          currentEntity.type = line.replace("type:", "").trim();
+        } else if (line.startsWith("description:")) {
+          currentEntity.description = line.replace("description:", "").trim();
+        }
+      }
+    } else {
+      const relMatch = line.match(/^[•*+-]\s*(.+?)\s*—\[([\d.\w_-]+)\]→\s*(.+)$/);
+      if (relMatch) {
+        edges.push({
+          from: relMatch[1].trim(),
+          to: relMatch[3].trim(),
+          label: relMatch[2].trim()
+        });
+      }
+    }
+  }
+  
+  if (currentEntity) {
+    nodes.push(currentEntity);
+  }
+  
+  const uniqueNodes = [];
+  const seenNodes = new Set();
+  for (const n of nodes) {
+    const key = n.label.toLowerCase();
+    if (!seenNodes.has(key)) {
+      seenNodes.add(key);
+      uniqueNodes.push(n);
+    }
+  }
+  
+  for (const e of edges) {
+    const fromLower = e.from.toLowerCase();
+    const toLower = e.to.toLowerCase();
+    
+    if (!uniqueNodes.some(n => n.label.toLowerCase() === fromLower)) {
+      uniqueNodes.push({ id: e.from, label: e.from, type: "Unknown" });
+    }
+    if (!uniqueNodes.some(n => n.label.toLowerCase() === toLower)) {
+      uniqueNodes.push({ id: e.to, label: e.to, type: "Unknown" });
+    }
+  }
+  
+  return uniqueNodes.length > 0 ? { nodes: uniqueNodes, edges } : null;
+}
+
+function buildSubgraphHtml(contextText) {
+  if (!contextText || !contextText.trim()) return "";
+  const subgraph = parseSubgraphFromContext(contextText);
+  if (!subgraph) return "";
+  
+  const containerId = `subgraph_${newId("g")}`;
+  return `<div class="chat-subgraph-wrapper" data-context="${escapeAttr(contextText)}">
+    <div class="chat-subgraph-title">Sơ đồ mạng lưới thực thể y khoa</div>
+    <div id="${containerId}" class="chat-subgraph-canvas" style="height: 320px; width: 100%; border-radius: 8px; background: var(--bg-elevated, #fff); margin-top: 10px; border: 1px solid var(--line, rgba(128,128,128,0.15));"></div>
+    <div class="chat-subgraph-hint">* Kéo các thực thể để sắp xếp, click để xem mô tả chi tiết</div>
+  </div>`;
+}
+
+function renderGraphInContainer(containerId, subgraph) {
+  const container = document.getElementById(containerId);
+  if (!container || !subgraph || !window.vis) return;
+  
+  const nodes = subgraph.nodes.map(n => {
+    let color = {
+      background: "rgba(217, 119, 54, 0.08)",
+      border: "#d97736",
+      highlight: { background: "rgba(217, 119, 54, 0.16)", border: "#c25e1a" }
+    };
+    
+    const type = String(n.type || "").toLowerCase();
+    if (type.includes("disease") || type.includes("bệnh")) {
+      color = {
+        background: "rgba(229, 57, 53, 0.08)",
+        border: "#e53935",
+        highlight: { background: "rgba(229, 57, 53, 0.16)", border: "#b71c1c" }
+      };
+    } else if (type.includes("drug") || type.includes("thuốc") || type.includes("treatment")) {
+      color = {
+        background: "rgba(67, 160, 71, 0.08)",
+        border: "#43a047",
+        highlight: { background: "rgba(67, 160, 71, 0.16)", border: "#1b5e20" }
+      };
+    } else if (type.includes("symptom") || type.includes("triệu chứng")) {
+      color = {
+        background: "rgba(251, 192, 45, 0.08)",
+        border: "#fbc02d",
+        highlight: { background: "rgba(251, 192, 45, 0.16)", border: "#f57f17" }
+      };
+    }
+    
+    return {
+      id: n.id,
+      label: n.label,
+      title: n.description || n.label,
+      shape: "box",
+      margin: 8,
+      font: { face: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif", size: 12, bold: true },
+      color: color,
+      borderWidth: 1.5,
+      shapeProperties: { borderRadius: 6 }
+    };
+  });
+  
+  const edges = subgraph.edges.map(e => {
+    return {
+      from: e.from,
+      to: e.to,
+      label: e.label,
+      arrows: "to",
+      font: { size: 9, align: "horizontal", color: "#888" },
+      color: { color: "rgba(128,128,128,0.25)", highlight: "#d97736" }
+    };
+  });
+  
+  const data = {
+    nodes: new vis.DataSet(nodes),
+    edges: new vis.DataSet(edges)
+  };
+  
+  const options = {
+    physics: {
+      solver: "forceAtlas2Based",
+      forceAtlas2Based: {
+        gravitationalConstant: -35,
+        centralGravity: 0.015,
+        springLength: 100,
+        springConstant: 0.08
+      }
+    },
+    interaction: {
+      hover: true,
+      tooltipDelay: 200,
+      zoomView: true,
+      dragView: true
+    }
+  };
+  
+  const network = new vis.Network(container, data, options);
+  
+  network.on("click", function(params) {
+    if (params.nodes.length > 0) {
+      const nodeId = params.nodes[0];
+      const node = subgraph.nodes.find(n => n.id === nodeId);
+      if (node && node.description) {
+        showToast(`${node.label}: ${node.description}`);
+      }
+    }
+  });
+}
+
+function renderAllGraphs() {
+  if (!window.vis) return;
+  document.querySelectorAll(".chat-subgraph-wrapper").forEach(wrapper => {
+    const canvas = wrapper.querySelector(".chat-subgraph-canvas");
+    if (!canvas || canvas.children.length > 0) return;
+    
+    const contextText = wrapper.getAttribute("data-context");
+    if (!contextText) return;
+    
+    const subgraph = parseSubgraphFromContext(contextText);
+    if (subgraph) {
+      renderGraphInContainer(canvas.id, subgraph);
+    }
+  });
+}
+
 function persistAssistantBubbleHtml(innerHtml) {
   const t = getActiveThread();
   if (!t) return;
@@ -458,26 +734,13 @@ async function sendAgentQuery() {
   ta.style.height = "auto";
   btn.disabled = true;
 
-  const workRow = document.createElement("div");
-  workRow.className = "chat-row chat-row--stream-work";
-  workRow.innerHTML = `<div class="chat-stream-work"><span class="chat-stream-work-label">Suy luận &amp; công cụ</span><pre class="chat-stream-reasoning" aria-live="polite"></pre><div class="chat-stream-tools"></div></div>`;
-  $("chatMessages").appendChild(workRow);
-  const workShell = workRow.querySelector(".chat-stream-work");
-  const pre = workRow.querySelector(".chat-stream-reasoning");
-  const toolsEl = workRow.querySelector(".chat-stream-tools");
-
   let answerRow = null;
   let plainAnswer = "";
-  let workRemoved = false;
-
-  function removeWorkSoon() {
-    if (workRemoved || !workShell) return;
-    workRemoved = true;
-    workShell.classList.add("is-leaving");
-    setTimeout(() => {
-      workRow.remove();
-    }, 230);
-  }
+  let pre = null;
+  let toolsEl = null;
+  let thinkingTitle = null;
+  let thinkingDetails = null;
+  let thinkingIndicator = null;
 
   try {
     // Get selected backend and query mode from UI
@@ -489,6 +752,12 @@ async function sendAgentQuery() {
     
     // Handle Neo4j Direct mode (non-streaming, no LLM)
     if (queryMode === "neo4j-direct") {
+      const directWorkRow = document.createElement("div");
+      directWorkRow.className = "chat-row chat-row--stream-work";
+      directWorkRow.innerHTML = `<div class="chat-stream-work" style="padding: 10px 14px; border-radius: 8px; border: 1px dashed var(--line); font-size: 13px; color: var(--muted);"><span class="chat-thinking-indicator" style="margin-right: 8px; vertical-align: middle;"></span> Đang truy vấn Neo4j trực tiếp...</div>`;
+      $("chatMessages").appendChild(directWorkRow);
+      scrollChatToBottom();
+
       const directPath = "/api/langchain-graph-query/direct";
       const r = window.DATNAuth?.authApiFetch
         ? await window.DATNAuth.authApiFetch(directPath, {
@@ -504,21 +773,25 @@ async function sendAgentQuery() {
       
       if (!r.ok) {
         const errText = await r.text();
-        workRow.remove();
+        directWorkRow.remove();
         appendChatBubble("assistant", `<div class="chat-bubble-inner chat-error"><p>Lỗi: ${escapeHtml(errText)}</p></div>`, {
           persist: true,
         });
+        btn.disabled = false;
         return;
       }
       
       const data = await r.json();
-      workRow.remove();
+      directWorkRow.remove();
       
       // Format the raw context with sources
       let html = `<div class="chat-bubble-inner">`;
       html += `<div class="chat-answer">`;
       html += `<pre class="chat-raw-context" style="white-space: pre-wrap; font-family: inherit; background: rgba(128,128,128,0.08); padding: 12px; border-radius: 8px; font-size: 14px; line-height: 1.6;">${escapeHtml(data.answer)}</pre>`;
       html += `</div>`;
+      
+      // Add dynamic subgraph canvas
+      html += buildSubgraphHtml(data.answer);
       
       // Add sources if available
       if (data.sources && data.sources.length > 0) {
@@ -531,19 +804,32 @@ async function sendAgentQuery() {
         html += `</ul></div>`;
       }
       
+      // Add PDF export button
+      html += buildPdfExportButtonHtml();
       html += `</div>`;
       
       appendChatBubble("assistant", html, { persist: true });
       renderThreadList();
+      renderAllGraphs();
+      btn.disabled = false;
       return;
     }
     
+    // Fetch and map previous chat turns (excluding the latest user message)
+    const history = currentMessages()
+      .slice(0, -1)
+      .map(msg => ({
+        role: msg.role === "assistant" ? "assistant" : "user",
+        content: msg.html || ""
+      }));
+
     // Default: Agent mode with streaming
     const payload = {
       message,
       strategy: "auto",
       use_react: true,
       backend: selectedBackend,  // 'auto', 'ollama', 'openrouter'
+      history,
     };
     const streamPath = "/api/agent-query/stream";
     const r = window.DATNAuth?.authApiFetch
@@ -567,13 +853,36 @@ async function sendAgentQuery() {
       } catch {
         /* ignore */
       }
-      workRow.remove();
       const msg = typeof detail === "string" ? detail : JSON.stringify(detail);
       appendChatBubble("assistant", `<div class="chat-bubble-inner chat-error"><p>${escapeHtml(msg)}</p></div>`, {
         persist: true,
       });
+      btn.disabled = false;
       return;
     }
+
+    // Initialize answer row containing Deep Thinking Accordion
+    answerRow = ensureAnswerRow();
+    const bubbleInner = answerRow.querySelector(".chat-bubble-inner");
+    bubbleInner.innerHTML = `
+      <details class="chat-details chat-thinking-details" open>
+        <summary class="chat-thinking-summary">
+          <span class="chat-thinking-indicator"></span>
+          <span class="chat-thinking-title">Đang kết nối hệ sinh thái tri thức y khoa...</span>
+        </summary>
+        <div class="chat-details-body chat-thinking-body">
+          <pre class="chat-stream-reasoning" style="white-space: pre-wrap; font-family: monospace; font-size: 11px; max-height: 180px; overflow-y: auto; margin: 0; padding: 0; background: transparent; border: none;"></pre>
+          <div class="chat-stream-tools" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px;"></div>
+        </div>
+      </details>
+      <div class="chat-answer chat-answer--streaming"></div>
+    `;
+    
+    pre = bubbleInner.querySelector(".chat-stream-reasoning");
+    toolsEl = bubbleInner.querySelector(".chat-stream-tools");
+    thinkingTitle = bubbleInner.querySelector(".chat-thinking-title");
+    thinkingDetails = bubbleInner.querySelector(".chat-thinking-details");
+    thinkingIndicator = bubbleInner.querySelector(".chat-thinking-indicator");
 
     const reader = r.body.getReader();
     const dec = new TextDecoder();
@@ -595,62 +904,98 @@ async function sendAgentQuery() {
         }
         const ev = evt.event;
         if (ev === "step") {
-          pre.textContent = "";
+          if (pre) pre.textContent = "";
+          if (thinkingTitle) {
+            thinkingTitle.textContent = `Đang lập luận và suy luận lâm sàng (bước ${evt.iteration})...`;
+          }
         } else if (ev === "reasoning_delta") {
-          pre.textContent += evt.text ?? "";
+          if (pre) pre.textContent += evt.text ?? "";
           scrollChatToBottom();
         } else if (ev === "parse_retry") {
-          toolsEl.insertAdjacentHTML(
-            "beforeend",
-            `<div class="chat-stream-tool chat-stream-tool--muted">Sửa định dạng (lần ${escapeHtml(String(evt.attempt ?? ""))})…</div>`
-          );
-          pre.textContent = "";
+          if (toolsEl) {
+            toolsEl.insertAdjacentHTML(
+              "beforeend",
+              `<div class="chat-stream-tool chat-stream-tool--muted">Sửa định dạng ReAct (lần ${escapeHtml(String(evt.attempt ?? ""))})…</div>`
+            );
+          }
+          if (pre) pre.textContent = "";
+          if (thinkingTitle) {
+            thinkingTitle.textContent = `Đang điều chỉnh định dạng ReAct...`;
+          }
         } else if (ev === "tool") {
           const inp = escapeHtml((evt.input || "").slice(0, CONFIG.MAX_PREVIEW_CHARS));
-          toolsEl.insertAdjacentHTML(
-            "beforeend",
-            `<div class="chat-stream-tool"><strong>Tool</strong> ${escapeHtml(evt.name || "")} · <code>${inp}</code></div>`
-          );
+          const toolName = evt.name === "graphrag_query" ? "Truy vấn Đồ thị tri thức (GraphRAG)" : evt.name === "pill_image_lookup" ? "Tìm kiếm ảnh thuốc" : evt.name;
+          if (toolsEl) {
+            toolsEl.insertAdjacentHTML(
+              "beforeend",
+              `<div class="chat-stream-tool"><strong>Gọi công cụ:</strong> ${escapeHtml(toolName)} · <code>${inp}</code></div>`
+            );
+          }
+          if (thinkingTitle) {
+            thinkingTitle.textContent = `Đang chạy công cụ: ${toolName}...`;
+          }
           scrollChatToBottom();
         } else if (ev === "tool_done") {
-          toolsEl.insertAdjacentHTML(
-            "beforeend",
-            `<div class="chat-stream-tool chat-stream-tool--ok">Đã nhận kết quả (${evt.observation_chars ?? 0} ký tự)</div>`
-          );
+          if (toolsEl) {
+            toolsEl.insertAdjacentHTML(
+              "beforeend",
+              `<div class="chat-stream-tool chat-stream-tool--ok">Đã nhận kết quả (${evt.observation_chars ?? 0} ký tự)</div>`
+            );
+          }
+          if (thinkingTitle) {
+            thinkingTitle.textContent = `Đang tiếp tục suy luận y khoa...`;
+          }
           scrollChatToBottom();
         } else if (ev === "answer_start") {
-          removeWorkSoon();
-          answerRow = ensureAnswerRow();
+          if (thinkingDetails) {
+            thinkingDetails.removeAttribute("open");
+          }
+          if (thinkingTitle) {
+            thinkingTitle.textContent = `Đã hoàn thành suy luận và truy vấn tri thức y khoa`;
+          }
+          if (thinkingIndicator) {
+            thinkingIndicator.className = "chat-thinking-indicator chat-thinking-indicator--done";
+          }
           plainAnswer = "";
         } else if (ev === "answer_delta") {
-          if (!answerRow) answerRow = ensureAnswerRow();
           plainAnswer += evt.text ?? "";
           const el = answerRow.querySelector(".chat-answer--streaming");
           if (el) el.textContent = plainAnswer;
           scrollChatToBottom();
         } else if (ev === "error") {
-          toolsEl.insertAdjacentHTML(
-            "beforeend",
-            `<div class="chat-stream-tool chat-stream-tool--err">${escapeHtml(evt.message || "Lỗi")}</div>`
-          );
+          if (toolsEl) {
+            toolsEl.insertAdjacentHTML(
+              "beforeend",
+              `<div class="chat-stream-tool chat-stream-tool--err">${escapeHtml(evt.message || "Lỗi")}</div>`
+            );
+          }
         } else if (ev === "done") {
-          if (!workRemoved && workRow.parentNode) removeWorkSoon();
           const ans = evt.answer ?? "";
-          const innerHtml = `<div class="chat-bubble-inner"><div class="chat-answer">${formatAnswerBody(ans)}</div>${buildDrugImagesHtml(evt.drug_images)}${buildRetrievalConfidenceHtml(evt.retrieval_confidence)}${buildSourcesFooter(evt)}</div>`;
+          const graphHtml = buildSubgraphHtml(evt.context_graphrag_full);
+          const thinkingHtml = `
+            <details class="chat-details chat-thinking-details">
+              <summary class="chat-thinking-summary">
+                <span class="chat-thinking-indicator chat-thinking-indicator--done"></span>
+                <span class="chat-thinking-title">Đã hoàn thành suy luận và truy vấn tri thức y khoa</span>
+              </summary>
+              <div class="chat-details-body chat-thinking-body">
+                <pre class="chat-stream-reasoning" style="white-space: pre-wrap; font-family: monospace; font-size: 11px; max-height: 180px; overflow-y: auto; margin: 0; padding: 0; background: transparent; border: none;">${escapeHtml(pre ? pre.textContent : "")}</pre>
+                <div class="chat-stream-tools" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px;">${toolsEl ? toolsEl.innerHTML : ""}</div>
+              </div>
+            </details>
+          `;
+          const innerHtml = `<div class="chat-bubble-inner">${thinkingHtml}<div class="chat-answer">${formatAnswerBody(ans)}</div>${graphHtml}${buildDrugImagesHtml(evt.drug_images)}${buildRetrievalConfidenceHtml(evt.retrieval_confidence)}${buildSourcesFooter(evt)}${buildPdfExportButtonHtml()}</div>`;
           if (answerRow) {
             const bubble = answerRow.querySelector(".chat-bubble--assistant");
             if (bubble) bubble.innerHTML = innerHtml;
             persistAssistantBubbleHtml(innerHtml);
-          } else {
-            if (workRow.parentNode) workRow.remove();
-            appendChatBubble("assistant", innerHtml, { persist: true });
           }
           renderThreadList();
+          renderAllGraphs();
         }
       }
     }
   } catch (e) {
-    if (workRow.parentNode) workRow.remove();
     appendChatBubble("assistant", `<div class="chat-bubble-inner chat-error"><p>${escapeHtml(e.message || String(e))}</p></div>`, {
       persist: true,
     });

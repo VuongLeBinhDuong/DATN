@@ -59,22 +59,60 @@ class AgentService:
         strategy: str = "auto",
         use_legacy: bool = False,
         use_langgraph: bool = False,
+        history: list[dict[str, str]] | None = None,
     ) -> dict[str, Any]:
         """Execute agent query with appropriate strategy."""
+        # 1. 0ms Intent Router Check
+        from core.intent_router import detect_intent, execute_direct_db_query
+        intent = detect_intent(message)
+        if intent == "direct_db":
+            return execute_direct_db_query(message)
+
         if self._should_use_langgraph(use_langgraph):
             return self._run_langgraph(message, strategy)
 
         if self._should_use_legacy(use_legacy):
             return self._run_legacy(message, strategy)
 
-        return self._run_react(message)
+        return self._run_react(message, history=history)
 
     def execute_stream(
         self,
         message: str,
         strategy: str = "auto",
+        history: list[dict[str, str]] | None = None,
     ) -> Iterator[dict[str, Any]]:
         """Execute agent query with streaming events."""
+        # 1. 0ms Intent Router Check
+        from core.intent_router import detect_intent, execute_direct_db_query
+        intent = detect_intent(message)
+        if intent == "direct_db":
+            res = execute_direct_db_query(message)
+            yield {
+                "event": "step",
+                "iteration": 1,
+                "thought": "Quyết định từ Intent Router: Chuyển hướng xử lý 0ms..."
+            }
+            yield {
+                "event": "reasoning_delta",
+                "text": "Phát hiện câu hỏi tra cứu chỉ số sinh học lâm sàng chuẩn. Đang đối chiếu khoảng tham chiếu Việt Nam/WHO (0ms)...\n"
+            }
+            yield {
+                "event": "answer_start"
+            }
+            yield {
+                "event": "answer_delta",
+                "text": res["answer"]
+            }
+            yield {
+                "event": "done",
+                "answer": res["answer"],
+                "sources": res.get("sources", []),
+                "context_graphrag_full": "",
+                "drug_images": []
+            }
+            return
+
         if self._should_use_legacy():
             raise ValueError("Streaming not supported for legacy pipeline")
 
@@ -86,16 +124,16 @@ class AgentService:
             max_iterations=self.settings.agent.react_max_iter,
             parse_retries=self.settings.agent.react_parse_retries,
         )
-        yield from agent.run_stream(message)
+        yield from agent.run_stream(message, history=history)
 
-    def _run_react(self, message: str) -> dict[str, Any]:
+    def _run_react(self, message: str, history: list[dict[str, str]] | None = None) -> dict[str, Any]:
         """Run ReAct agent."""
         agent = ReActAgent(
             llm_backend=self.llm,
             max_iterations=self.settings.agent.react_max_iter,
             parse_retries=self.settings.agent.react_parse_retries,
         )
-        return agent.run_sync(message)
+        return agent.run_sync(message, history=history)
 
     def _run_legacy(self, message: str, strategy: str) -> dict[str, Any]:
         """Run legacy orchestrator."""

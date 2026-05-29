@@ -90,11 +90,115 @@ def _llm_rerank(question: str, chunks: list[dict[str, Any]], top_k: int) -> list
     return sorted([c for c in chunks if c["chunk_id"] in picked_ids], key=lambda c: order.get(c["chunk_id"], 10**9))[:top_k]
 
 
+def reciprocal_rank_fusion(
+    graph_ranked: list[dict[str, Any]],
+    lexical_ranked: list[dict[str, Any]],
+    k: int = 60,
+) -> list[dict[str, Any]]:
+    """Fuse multiple query rank paths using Reciprocal Rank Fusion (RRF)."""
+    scores: dict[str, float] = {}
+    chunk_map: dict[str, dict[str, Any]] = {}
+    
+    for idx, ch in enumerate(graph_ranked):
+        cid = ch.get("chunk_id")
+        if cid:
+            chunk_map[cid] = ch
+            scores[cid] = scores.get(cid, 0.0) + 1.0 / (k + idx + 1)
+            
+    for idx, ch in enumerate(lexical_ranked):
+        cid = ch.get("chunk_id")
+        if cid:
+            chunk_map[cid] = ch
+            scores[cid] = scores.get(cid, 0.0) + 1.0 / (k + idx + 1)
+            
+    sorted_cids = sorted(scores.keys(), key=lambda cid: scores[cid], reverse=True)
+    return [chunk_map[cid] for cid in sorted_cids]
+
+
+def _cross_encoder_rerank(question: str, chunks: list[dict[str, Any]], top_k: int) -> list[dict[str, Any]]:
+    """Local neural cross-encoder reranker with graceful fallback to LLM/lexical ranking."""
+    try:
+        from sentence_transformers import CrossEncoder
+        # Vietnamese document reranker or default lightweight cross-encoder
+        model_name = os.getenv("KG_RERANKER_MODEL", "dangvantuan/vietnamese-document-reranker")
+        model = CrossEncoder(model_name, max_length=512)
+        
+        pairs = [[question, (ch.get("text") or "")[:800]] for ch in chunks]
+        scores = model.predict(pairs)
+        
+        for ch, score in zip(chunks, scores):
+            ch["rerank_score"] = float(score)
+            
+        return sorted(chunks, key=lambda x: x.get("rerank_score", -9999.0), reverse=True)[:top_k]
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("CrossEncoder rerank failed, falling back to LLM rerank: %s", e)
+        return _llm_rerank(question, chunks, top_k)
+
+
 @dataclass(frozen=True)
 class GraphFirstResult:
     evidence_chunks: list[dict[str, Any]]
     subgraph: dict[str, Any]
     debug: dict[str, Any]
+
+
+def prune_subgraph(subgraph: dict[str, Any], seed_ids: list[str]) -> dict[str, Any]:
+    """Clean and prune the retrieved subgraph to reduce noise and isolate connected clinical components.
+    
+    Filters out non-clinical terms, generic type labels, and isolated entity nodes (degree = 0).
+    """
+    entities = subgraph.get("entities") or []
+    edges = subgraph.get("edges") or []
+    
+    # 1. Clean and filter entities
+    clean_entities = []
+    valid_entity_ids = set()
+    seed_set = set(seed_ids)
+    
+    # Check for noisy/generic terms or isolated characters
+    noise_pattern = re.compile(r"^[0-9\W_]+$")
+    generic_types = {"other", "generic", "noise", "document", "chunk"}
+    
+    for ent in entities:
+        ent_id = ent.get("entity_id")
+        name = (ent.get("name") or "").strip()
+        ent_type = (ent.get("type") or "").strip().lower()
+        
+        if not ent_id or not name:
+            continue
+        if len(name) < 2 or noise_pattern.match(name):
+            continue
+        if ent_type in generic_types:
+            continue
+            
+        clean_entities.append(ent)
+        valid_entity_ids.add(ent_id)
+        
+    # 2. Filter edges to only those connecting valid entities
+    clean_edges = []
+    connected_entity_ids = set()
+    
+    for edge in edges:
+        source = edge.get("source")
+        target = edge.get("target")
+        
+        if source in valid_entity_ids and target in valid_entity_ids:
+            clean_edges.append(edge)
+            connected_entity_ids.add(source)
+            connected_entity_ids.add(target)
+            
+    # 3. Soft Pruning of Isolated Nodes (degree = 0)
+    # Keep an entity only if it is connected OR is a primary search seed
+    pruned_entities = [
+        ent for ent in clean_entities 
+        if ent.get("entity_id") in connected_entity_ids or ent.get("entity_id") in seed_set
+    ]
+    
+    return {
+        "entities": pruned_entities,
+        "edges": clean_edges
+    }
 
 
 def graph_first_retrieve(
@@ -112,6 +216,17 @@ def graph_first_retrieve(
     seed_ids = [s["entity_id"] for s in seeds if s.get("entity_id")]
 
     subgraph = c.expand_subgraph(seed_ids, hops=hops)
+    
+    # Apply Clinical Graph Validation & Soft Pruning
+    subgraph = prune_subgraph(subgraph, seed_ids)
+    
+    entities = subgraph.get("entities") or []
+    if seed_ids and entities:
+        seed_set = set(seed_ids)
+        subgraph["entities"] = sorted(
+            entities,
+            key=lambda e: (e.get("entity_id") not in seed_set)
+        )
     edges = subgraph.get("edges") or []
 
     evidence_ids: list[str] = []
@@ -132,18 +247,37 @@ def graph_first_retrieve(
         if cid:
             merged[cid] = ch
 
-    # Simple overlap ranking
-    ranked = sorted(
+    # 1. Graph-based candidate ranking (based on mention confidence)
+    graph_ranked = sorted(
         merged.values(),
-        key=lambda x: (_score_overlap(question, x.get("text") or ""), float(x.get("mention_confidence") or 0.0)),
+        key=lambda x: (float(x.get("mention_confidence") or 0.0)),
         reverse=True,
     )
 
+    # 2. Lexical-based candidate ranking (based on term overlap)
+    lexical_ranked = sorted(
+        merged.values(),
+        key=lambda x: (_score_overlap(question, x.get("text") or "")),
+        reverse=True,
+    )
+
+    # 3. Reciprocal Rank Fusion (RRF)
+    fused_ranked = reciprocal_rank_fusion(graph_ranked, lexical_ranked)
+
+    # 4. Reranking Layer (Neural Cross-Encoder or LLM agent choice)
+    use_reranker = (os.getenv("KG_USE_RERANKER") or "").strip().lower() in ("1", "true", "yes", "on", "active")
     use_llm_rerank = (os.getenv("KG_USE_LLM_RERANK") or "").strip().lower() in ("1", "true", "yes", "on")
-    if use_llm_rerank and ranked:
-        top = _llm_rerank(question, ranked, top_k=evidence_k)
+
+    if fused_ranked:
+        if use_reranker:
+            candidates = fused_ranked[:20]
+            top = _cross_encoder_rerank(question, candidates, top_k=evidence_k)
+        elif use_llm_rerank:
+            top = _llm_rerank(question, fused_ranked, top_k=evidence_k)
+        else:
+            top = fused_ranked[:evidence_k]
     else:
-        top = ranked[:evidence_k]
+        top = []
 
     debug = {
         "fulltext_query": ft_q,
@@ -152,6 +286,8 @@ def graph_first_retrieve(
         "hops": hops,
         "evidence_from_edges": len(chunks_from_edges),
         "evidence_from_mentions": len(mention_chunks),
+        "use_rrf_fusion": True,
+        "use_reranker": use_reranker,
         "use_llm_rerank": use_llm_rerank,
     }
     return GraphFirstResult(evidence_chunks=top, subgraph=subgraph, debug=debug)
