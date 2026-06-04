@@ -36,7 +36,7 @@ To fulfill the objectives and scope, this thesis proposes an offline-first, high
     \item **Presentation Layer**: Built using lightweight, high-performance Vanilla Web technologies (HTML5, responsive CSS3, and modern asynchronous Javascript). This layer provides live streamed chat responses, interactive document upload logs, and pill identification cards.
     \item **Business Logic Layer**: Developed in Python using the **FastAPI** framework to handle high-concurrency asynchronous endpoints. The core orchestration consists of the `AgentService` executing the custom `ReActAgent` loop, and the `MedicalRecordService` managing document extraction and automatic lab indicator benchmarking.
     \item **Data Access Layer**: Managing the retrieval pipelines. Structured clinical queries are resolved by querying the **Neo4j** graph database using specialized Cypher templates, while conversational configurations are fetched from SQLite repositories.
-    \item **Infrastructure & LLM Engine Layer**: Running entirely offline via **Docker Compose**. A local **Ollama** runner hosts open-source models (such as Llama-3.1-8B) to execute reasoning steps and synthesize final clinical answers.
+    \item **Infrastructure \& LLM Engine Layer**: Running entirely offline via **Docker Compose**. A local **Ollama** runner hosts open-source models (such as Llama-3.1-8B) to execute reasoning steps and synthesize final clinical answers.
 \end{enumerate}
 This tentative architecture guarantees data confidentiality, enforces structural factual grounding via Neo4j KG matching, and optimizes runtime speed by purging generic nodes from the retrieval loop.
 

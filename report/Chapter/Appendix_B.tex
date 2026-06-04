@@ -16,7 +16,7 @@ This appendix provides detailed use case specifications for the core functions o
         \begin{enumerate}
             \item The user enters a clinical question (e.g., *"Diabetes diet suggestions"*) in the chat interface.
             \item The system detects the query intent. If it is a generic query, it invokes the ReAct agent pipeline.
-            \item The ReAct agent starts iteration 1: generates a thought and executes the `graphrag_query` tool with appropriate inputs.
+            \item The ReAct agent starts iteration 1: generates a thought and executes the \texttt{graphrag\_query} tool with appropriate inputs.
             \item The system runs Cypher queries against Neo4j, retrieves matching entities and context paragraphs, and returns them as observations.
             \item The agent starts iteration 2: synthesizes the retrieved evidence, determines that it has enough information, and outputs the `Final Answer`.
             \item The Web UI streams the generated markdown tokens, renders the Vis.js subgraph map showing connected nodes, and provides an option to export the output as a PDF report.
@@ -40,7 +40,7 @@ This appendix provides detailed use case specifications for the core functions o
         \begin{enumerate}
             \item The user drops a PDF or Excel report file onto the Web UI upload zone.
             \item The FastAPI server delegates the file stream to the PyMuPDF or openpyxl extractor.
-            \item The extracted cell grids are sent to the `lab_compare_on_form` module.
+            \item The extracted cell grids are sent to the \texttt{lab\_compare\_on\_form} module.
             \item The system isolates boundary bounds, compares patient numbers, and flags indicators as *Bình thường* (Within), *Tăng cao* (Above), or *Giảm thấp* (Below).
             \item The system automatically extracts abnormal entities, queries Neo4j for clinical recommendations, and prompts the LLM to write a comprehensive advice plan.
             \item The UI displays the side-by-side view with color-coded alerts and the generated advisory text.

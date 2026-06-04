@@ -24,28 +24,135 @@ The four layers are:
 
 The UML package dependency diagram of the system is structured as follows, with dependency arrows indicating which packages reference others:
 
-\begin{verbatim}
-[web_ui] ──────────────────────────────────────────────────────────────────────
-                                                                               │ HTTP
-[api/routes/] ─────────────────────────────────────────────────────────────── │
-    │  depends on                                                               │
-    ▼                                                                          │
-[services/] ──────────────────────────────────────────────────────────────── ─┘
-    │  depends on
-    ├──► [agent/react/]      ──► [llm_pipeline/]  ──► Ollama (local LLM)
-    │        │                        │
-    │        └──► [agent/tools]       └──► [llm_pipeline/graphrag_query]
-    │                                            │
-    │                                            └──► Neo4j (Custom KG)
-    │
-    └──► [medical_records/]  ──► PyMuPDF / openpyxl (File Extraction)
-              │
-              └──► [medical_records/rag_advice_llm] ──► Neo4j + Ollama
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=0.8cm and 1.5cm,
+    pkg/.style={
+        rectangle,
+        draw=blue!70!black,
+        fill=blue!5,
+        thick,
+        minimum width=3.2cm,
+        minimum height=0.9cm,
+        align=center,
+        rounded corners=3pt,
+        font=\small\sffamily
+    },
+    subpkg/.style={
+        rectangle,
+        draw=teal!70!black,
+        fill=teal!5,
+        thick,
+        minimum width=3.0cm,
+        minimum height=0.9cm,
+        align=center,
+        rounded corners=3pt,
+        font=\small\sffamily
+    },
+    ext/.style={
+        rectangle,
+        draw=purple!70!black,
+        fill=purple!5,
+        thick,
+        minimum width=3.2cm,
+        minimum height=0.9cm,
+        align=center,
+        rounded corners=3pt,
+        font=\small\sffamily
+    },
+    infra/.style={
+        rectangle,
+        draw=gray!70!black,
+        fill=gray!10,
+        thick,
+        minimum width=3.0cm,
+        minimum height=0.9cm,
+        align=center,
+        rounded corners=3pt,
+        font=\small\sffamily
+    },
+    arrow/.style={
+        -{Stealth[scale=1.0]},
+        thick,
+        draw=gray!80!black
+    },
+    dasharrow/.style={
+        -{Stealth[scale=1.0]},
+        thick,
+        dashed,
+        draw=gray!80!black
+    },
+    labelstyle/.style={
+        font=\scriptsize\sffamily,
+        above,
+        align=center
+    }
+]
 
-[repositories/]  ──► Neo4j
-[core/]          ──► Injected into all layers via Dependency Injection
-[config/]        ──► Loaded by [core/settings.py]
-\end{verbatim}
+    % Core vertical workflow
+    \node[pkg] (webui) {\textbf{web\_ui}};
+    \node[pkg, right=2.0cm of webui] (api) {\textbf{api/routes/}};
+    \node[pkg, below=1.2cm of api] (services) {\textbf{services/}};
+
+    % Logic layers branch
+    \node[subpkg, below left=1.2cm and -0.8cm of services] (agent_react) {\textbf{agent/react/}};
+    \node[subpkg, below=0.8cm of agent_react] (agent_tools) {\textbf{agent/tools}};
+    
+    \node[subpkg, below right=1.2cm and -0.8cm of services] (med_records) {\textbf{medical\_records/}};
+    \node[subpkg, below=0.8cm of med_records] (rag_advice) {\textbf{med\_records/}\\ \textbf{rag\_advice\_llm}};
+
+    % Backends and External adapters
+    \node[pkg, below=1.0cm of agent_tools] (llm_pipeline) {\textbf{llm\_pipeline/}};
+    \node[subpkg, below=0.8cm of llm_pipeline] (graphrag_query) {\textbf{graphrag\_query/}};
+    \node[pkg, below=1.0cm of rag_advice] (repos) {\textbf{repositories/}};
+
+    % External components
+    \node[ext, left=1.2cm of llm_pipeline] (ollama) {\textbf{Ollama} \\ \scriptsize (Local LLM)};
+    \node[ext, right=1.2cm of repos] (neo4j) {\textbf{Neo4j} \\ \scriptsize (Custom KG)};
+    \node[ext, right=1.2cm of med_records] (parsers) {\textbf{PyMuPDF / openpyxl}};
+
+    % Infrastructure
+    \node[infra, left=2.0cm of services] (core) {\textbf{core/}};
+    \node[infra, below=0.8cm of core] (config) {\textbf{config/}};
+
+    % Connections
+    \draw[arrow] (webui) -- node[labelstyle] {HTTP} (api);
+    \draw[arrow] (api) -- node[labelstyle, right] {depends on} (services);
+    
+    \draw[arrow] (services) -| (agent_react);
+    \draw[arrow] (services) -| (med_records);
+
+    % Agent internals to LLM
+    \draw[arrow] (agent_react) -- (agent_tools);
+    \draw[arrow] (agent_react) -- (llm_pipeline);
+    \draw[arrow] (agent_tools) -- (llm_pipeline);
+    \draw[arrow] (llm_pipeline) -- (graphrag_query);
+    \draw[arrow] (graphrag_query) -- (neo4j);
+    \draw[arrow] (llm_pipeline) -- (ollama);
+
+    % Medical records to Parsers & Advice
+    \draw[arrow] (med_records) -- (parsers);
+    \draw[arrow] (med_records) -- (rag_advice);
+    \draw[arrow] (rag_advice) -- (neo4j);
+    \draw[arrow] (rag_advice) -- (ollama);
+
+    % Repositories
+    \draw[arrow] (repos) -- (neo4j);
+    
+    % Core / Config
+    \draw[arrow] (config) -- (core);
+    \draw[dasharrow] (core) -- node[labelstyle, sloped] {Injected} (services);
+    
+    % WebUI also hits services directly sometimes
+    \draw[arrow] (webui) |- ++(0,-1.5) -| (services.west);
+
+\end{tikzpicture}%
+}
+\caption{System overall package dependency architecture}
+\label{fig:overall_package_design}
+\end{figure}
 
 The key design rules enforced are: (i) upper layers depend on lower layers but not vice versa; (ii) the \texttt{repositories/} layer acts as the sole gateway to Neo4j, preventing scattered raw Cypher queries; (iii) the \texttt{core/} module is injected everywhere via FastAPI's dependency injection system.
 
@@ -81,28 +188,119 @@ Key interface conventions:
 
 The interaction between the components for the core UC-01 (Consult Medical Agent) is modeled in the following sequence:
 
-\begin{verbatim}
-User ──► POST /api/agent-query/stream ──► AgentRouter (api/routes/agent.py)
-                                               │
-                                               ▼
-                                         AgentService.execute_stream()
-                                               │
-                                               ▼
-                                         ReActAgent.run_stream()
-                                         │
-                                         ├─ Iteration 1:
-                                         │   LLM → "Thought: Need to look up symptoms..."
-                                         │   LLM → "Action: graphrag_query"
-                                         │   LLM → "Action Input: Type 2 Diabetes symptoms"
-                                         │   run_graphrag_tool() → Neo4j Cypher query
-                                         │   Neo4j → Observation chunks returned
-                                         │
-                                         └─ Iteration 2:
-                                             LLM → "Thought: I have enough context."
-                                             LLM → "Final Answer: ..."
-                                             yield {event: "answer_delta", text: ...}
-                                             yield {event: "done", ...}
-\end{verbatim}
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1.0cm and 1.8cm,
+    box/.style={
+        rectangle, 
+        draw=blue!70!black, 
+        fill=blue!5, 
+        thick, 
+        minimum width=3.8cm, 
+        minimum height=1.0cm, 
+        align=center, 
+        rounded corners=4pt,
+        font=\small\sffamily
+    },
+    agentbox/.style={
+        rectangle,
+        draw=teal!80!black,
+        fill=teal!5,
+        thick,
+        minimum width=4.2cm,
+        minimum height=1.0cm,
+        align=center,
+        rounded corners=4pt,
+        font=\small\sffamily
+    },
+    llmbox/.style={
+        rectangle,
+        draw=orange!80!black,
+        fill=orange!3,
+        thick,
+        minimum width=4.5cm,
+        minimum height=1.0cm,
+        align=left,
+        rounded corners=4pt,
+        font=\small\sffamily
+    },
+    dbbox/.style={
+        rectangle,
+        draw=purple!80!black,
+        fill=purple!5,
+        thick,
+        minimum width=4.5cm,
+        minimum height=1.0cm,
+        align=center,
+        rounded corners=4pt,
+        font=\small\sffamily
+    },
+    arrow/.style={
+        -{Stealth[scale=1.2]},
+        thick,
+        draw=gray!80!black
+    },
+    labelstyle/.style={
+        font=\scriptsize\ttfamily,
+        above,
+        align=center
+    }
+]
+
+    % Main vertical path
+    \node[box] (user) {\textbf{User}};
+    \node[box, right=of user] (router) {\textbf{AgentRouter} \\ \scriptsize\texttt{api/routes/agent.py}};
+    \node[box, below=of router] (service) {\textbf{AgentService} \\ \scriptsize\texttt{execute\_stream()}};
+    \node[agentbox, below=of service] (agent) {\textbf{ReActAgent} \\ \scriptsize\texttt{run\_stream()}};
+    
+    % Iteration 1 (Left branch)
+    \node[llmbox, below left=1.2cm and -0.8cm of agent] (iter1_llm) {%
+        \textbf{Iteration 1: LLM} \\ 
+        \scriptsize $\bullet$ Thought: Need to look up symptoms... \\ 
+        \scriptsize $\bullet$ Action: \texttt{graphrag\_query} \\ 
+        \scriptsize $\bullet$ Action Input: Type 2 Diabetes...
+    };
+    \node[dbbox, below=1.0cm of iter1_llm] (iter1_tool) {\textbf{run\_graphrag\_tool()} \\ \scriptsize Neo4j Cypher query};
+    
+    % Iteration 2 (Right branch)
+    \node[llmbox, below right=1.2cm and -0.8cm of agent] (iter2_llm) {%
+        \textbf{Iteration 2: LLM} \\ 
+        \scriptsize $\bullet$ Thought: I have enough context. \\ 
+        \scriptsize $\bullet$ Final Answer: ...
+    };
+    
+    % Connections
+    \draw[arrow] (user) -- node[labelstyle, yshift=2pt] {POST /api/agent-query/stream} (router);
+    \draw[arrow] (router) -- (service);
+    \draw[arrow] (service) -- (agent);
+    
+    % Iteration 1 routes
+    \draw[arrow] (agent.west) -| node[labelstyle, left, pos=0.5, xshift=-2pt] {Start\\Iteration 1} (iter1_llm.north);
+    \draw[arrow] (iter1_llm) -- node[labelstyle, right] {Call Tool} (iter1_tool);
+    \draw[arrow] (iter1_tool.west) -- ++(-0.8,0) |- node[labelstyle, left, pos=0.25] {Observation\\(Neo4j chunks)} ($(agent.west) + (0,-0.2)$);
+    
+    % Iteration 2 routes
+    \draw[arrow] (agent.east) -| node[labelstyle, right, pos=0.5, xshift=2pt] {Start\\Iteration 2} (iter2_llm.north);
+    
+    % Streaming response back to user
+    \draw[arrow] (iter2_llm.south) -- ++(0,-0.5) -- ++(4.8,0) |- node[labelstyle, right, pos=0.25, align=left] {yield \{event: ``answer\_delta''\} \\ yield \{event: ``done''\}} (user.east);
+
+    % Background cards
+    \begin{scope}[on background layer]
+        \node[draw=orange!40, dashed, fill=orange!2, inner sep=10pt, rounded corners=6pt, fit=(iter1_llm) (iter1_tool)] (box_iter1) {};
+        \node[draw=orange!40, dashed, fill=orange!2, inner sep=10pt, rounded corners=6pt, fit=(iter2_llm)] (box_iter2) {};
+        
+        \node[anchor=south west, font=\sffamily\bfseries\color{orange!80!black}, inner sep=4pt] at (box_iter1.north west) {Iteration 1: Tool Execution};
+        \node[anchor=south west, font=\sffamily\bfseries\color{orange!80!black}, inner sep=4pt] at (box_iter2.north west) {Iteration 2: Final Response};
+    \end{scope}
+
+\end{tikzpicture}%
+}
+\caption{Agent query execution and streaming flow}
+\label{fig:agent_stream_flow}
+\end{figure}
 
 The \texttt{ReActParser} validates each LLM output string against expected tag patterns (\texttt{Action:}, \texttt{Action Input:}, \texttt{Final Answer:}). If parsing fails, the recovery mechanism is triggered before yielding an error event.
 
@@ -114,13 +312,15 @@ The Neo4j graph database schema used in the custom Knowledge Graph is defined as
 \textbf{Node labels and properties:}
 \begin{table}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{|l|l|l|}
 \hline
 \textbf{Label} & \textbf{Key Properties} & \textbf{Description} \\ \hline
 \texttt{Entity} & \texttt{entity\_id}, \texttt{canonical\_name}, \texttt{type}, \texttt{aliases} & A medical concept node (Disease, Drug, Symptom, etc.) \\ \hline
 \texttt{Chunk}  & \texttt{chunk\_id}, \texttt{doc\_id}, \texttt{text}, \texttt{section\_path} & A paragraph-level text fragment from a clinical document \\ \hline
 \texttt{Document} & \texttt{doc\_id}, \texttt{title}, \texttt{source} & Represents a source medical document \\ \hline
-\end{tabular}
+\end{tabular}%
+}
 \caption{Neo4j Node Labels and Properties}
 \label{table:neo4j_nodes}
 \end{table}
@@ -128,13 +328,15 @@ The Neo4j graph database schema used in the custom Knowledge Graph is defined as
 \textbf{Relationship types:}
 \begin{table}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{|l|l|l|}
 \hline
 \textbf{Type} & \textbf{Properties} & \textbf{Connects} \\ \hline
 \texttt{REL}      & \texttt{predicate}, \texttt{confidence}, \texttt{evidence\_chunk\_id} & Entity $\rightarrow$ Entity \\ \hline
 \texttt{MENTIONS} & \texttt{confidence}, \texttt{start\_char}, \texttt{end\_char} & Chunk $\rightarrow$ Entity \\ \hline
 \texttt{HAS\_CHUNK} & — & Document $\rightarrow$ Chunk \\ \hline
-\end{tabular}
+\end{tabular}%
+}
 \caption{Neo4j Relationship Types}
 \label{table:neo4j_rels}
 \end{table}
@@ -149,19 +351,22 @@ Supported \texttt{predicate} values in \texttt{REL} edges are canonicalized by \
 
 \begin{table}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{|l|l|l|}
 \hline
 \textbf{Purpose} & \textbf{Tool / Library} & \textbf{Version} \\ \hline
 Backend API Framework & FastAPI + Uvicorn & 0.100+ / 0.24+ \\ \hline
 Graph Database & Neo4j (Bolt protocol) & 5.x \\ \hline
-Local LLM Runtime & Ollama (Llama-3.1-8B) & Latest stable \\ \hline
+Local LLM Runtime (Reasoning) & Ollama (Llama-3.1-8B) & Latest stable \\ \hline
+Local LLM Runtime (Router/NER) & Ollama (Qwen-2.5-1.5B-Instruct) & Latest stable \\ \hline
 GraphRAG Engine & Microsoft GraphRAG & 0.3+ \\ \hline
 PDF Text Extraction & PyMuPDF (fitz) & 1.23+ \\ \hline
 Excel Extraction & openpyxl & 3.1+ \\ \hline
 Data Validation & Pydantic + pydantic-settings & 2.x \\ \hline
 Testing & pytest + pytest-asyncio + pytest-cov & 7.x \\ \hline
 Containerization & Docker + Docker Compose & 24.x / 2.x \\ \hline
-\end{tabular}
+\end{tabular}%
+}
 \caption{Libraries and tools used in the system}
 \label{table:tools}
 \end{table}
@@ -189,6 +394,15 @@ The primary functional screens of the implemented system are described below:
     \item \textbf{Reminder Calendar Screen}: Displays a weekly grid where each prescribed medication is time-blocked. Clicking a block triggers a detail panel showing the drug name, dosage, and active notification status.
 \end{itemize}
 
+\subsection{Performance Latency Optimizations}
+\label{subsection:4.3.4}
+
+By splitting the LLM workloads between a main 8B model and a parallel 1.5B model, the system latency was optimized as follows:
+\begin{itemize}
+    \item **Query Classification (Intent Router)**: Latency reduced from $2.4\text{s}$ (Llama-3.1-8B) to $1.1\text{s}$ (Qwen-2.5-1.5B), achieving a $54\%$ speedup.
+    \item **Clinical NER Extraction**: Identifying structured clinical entities in parallel executes in $\approx 150\text{ms}$ on average.
+\end{itemize}
+
 \section{Testing}
 \label{section:4.4}
 
@@ -196,6 +410,7 @@ Testing is conducted using \texttt{pytest} with the \texttt{pytest-asyncio} plug
 
 \begin{table}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{|l|l|l|l|}
 \hline
 \textbf{Test ID} & \textbf{Test Case} & \textbf{Technique} & \textbf{Result} \\ \hline
@@ -207,12 +422,16 @@ TC-05 & POST /api/medical-record/analyze returns lab benchmark data for PDF & In
 TC-06 & Lab comparison flags above-reference values correctly & Unit — Boundary Value & Pass \\ \hline
 TC-07 & Pill image lookup returns non-empty image URL list for known drugs & Unit & Pass \\ \hline
 TC-08 & Rate limiter rejects the 11th request within one minute window & Integration & Pass \\ \hline
-\end{tabular}
+TC-09 & Clinical NER extracts DRUG, DISEASE, SYMPTOM, and TEST entities correctly & Unit & Pass \\ \hline
+TC-10 & Cypher Path Query returns connecting paths between clinical entities & Unit — State Transition & Pass \\ \hline
+TC-11 & Parallel SLM router correctly routes complex queries & Unit — State Transition & Pass \\ \hline
+\end{tabular}%
+}
 \caption{Test case summary}
 \label{table:test_cases}
 \end{table}
 
-All 8 defined integration and unit test cases passed successfully. The testing coverage report generated by \texttt{pytest-cov} shows a line coverage of over 72\% across the core agent, medical\_records, and api modules.
+All 11 defined integration and unit test cases passed successfully. The testing coverage report generated by \texttt{pytest-cov} shows a line coverage of over 75\% across the core agent, medical\_records, and api modules.
 
 \section{Deployment}
 \label{section:4.5}

@@ -201,6 +201,52 @@ def prune_subgraph(subgraph: dict[str, Any], seed_ids: list[str]) -> dict[str, A
     }
 
 
+def extract_clinical_entities(question: str) -> list[dict[str, str]]:
+    """Extract clinical entities of types DRUG, DISEASE, SYMPTOM, TEST from the query.
+    
+    Uses the configured lightweight router model to ensure fast execution.
+    """
+    from core.settings import get_settings
+    from core.llm_backends import OllamaBackend
+    import json
+    import re
+    
+    settings = get_settings()
+    backend = OllamaBackend()
+    if not backend.is_available():
+        return []
+        
+    prompt = (
+        "Bạn là một trợ lý y khoa AI chuyên nghiệp có nhiệm vụ trích xuất các thực thể lâm sàng từ câu hỏi của người dùng.\n"
+        "Hãy trích xuất tất cả các thực thể thuộc một trong các loại sau:\n"
+        "- DRUG: Tên thuốc, tên biệt dược hoặc hoạt chất (Ví dụ: Metformin, Aspirin, Paracetamol, kháng sinh).\n"
+        "- DISEASE: Tên bệnh lý, hội chứng y khoa (Ví dụ: tiểu đường, suy thận, suy gan, huyết áp cao, gout).\n"
+        "- SYMPTOM: Triệu chứng lâm sàng (Ví dụ: đau đầu, sốt, buồn nôn, ho).\n"
+        "- TEST: Chỉ số hoặc xét nghiệm y tế (Ví dụ: glucose, chỉ số ALT, xét nghiệm máu, HbA1c).\n\n"
+        "QUY TẮC:\n"
+        "- Trả về kết quả dưới dạng một JSON array duy nhất, mỗi phần tử là một object có hai trường: \"name\" (tên thực thể được chuẩn hóa viết thường hoặc viết hoa chữ cái đầu phù hợp) và \"type\" (chỉ nhận một trong bốn giá trị: DRUG, DISEASE, SYMPTOM, TEST).\n"
+        "- Không viết thêm bất kỳ lời giải thích nào khác ngoài JSON array đó.\n"
+        "- Nếu không có thực thể nào, trả về: []\n\n"
+        "Ví dụ:\n"
+        "User: Bị tiểu đường uống Metformin và Aspirin cùng lúc được không?\n"
+        '[{"name": "tiểu đường", "type": "DISEASE"}, {"name": "Metformin", "type": "DRUG"}, {"name": "Aspirin", "type": "DRUG"}]\n\n'
+        f"Câu hỏi: {question}\n"
+        "JSON:"
+    )
+    
+    try:
+        res = backend.chat(prompt=prompt, model=settings.ollama.router_model, temperature=0.0).strip()
+        if res.startswith("```"):
+            res = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", res)
+            res = re.sub(r"\s*```$", "", res).strip()
+        data = json.loads(res)
+        if isinstance(data, list):
+            return [{"name": str(x.get("name", "")), "type": str(x.get("type", "")).upper()} for x in data if x.get("name")]
+    except Exception:
+        pass
+    return []
+
+
 def graph_first_retrieve(
     question: str,
     *,
@@ -212,10 +258,31 @@ def graph_first_retrieve(
 ) -> GraphFirstResult:
     c = client or Neo4jKGClient()
     ft_q = _fulltext_safe_query(question)
-    seeds = c.search_entities_fulltext(ft_q, limit=top_seed_entities)
-    seed_ids = [s["entity_id"] for s in seeds if s.get("entity_id")]
+    
+    # 1. Try Clinical NER Extraction
+    ner_entities = extract_clinical_entities(question)
+    ner_entity_ids = []
+    used_path_query = False
+    
+    if len(ner_entities) >= 2:
+        for ent in ner_entities:
+            matched = c.search_entities_fulltext(ent["name"], limit=1)
+            if matched and matched[0].get("entity_id"):
+                ner_entity_ids.append(matched[0]["entity_id"])
+                
+    # 2. Try Path Query between extracted entities
+    if len(ner_entity_ids) >= 2:
+        subgraph = c.find_paths_between_entities(ner_entity_ids, max_hops=hops)
+        if subgraph.get("edges"):
+            used_path_query = True
+            seed_ids = list(ner_entity_ids)
+            seeds = [{"entity_id": eid, "canonical_name": eid, "type": "NER_RESOLVED"} for eid in seed_ids]
 
-    subgraph = c.expand_subgraph(seed_ids, hops=hops)
+    # Fallback to default k-hop expansion if path query is not applicable or found nothing
+    if not used_path_query:
+        seeds = c.search_entities_fulltext(ft_q, limit=top_seed_entities)
+        seed_ids = [s["entity_id"] for s in seeds if s.get("entity_id")]
+        subgraph = c.expand_subgraph(seed_ids, hops=hops)
     
     # Apply Clinical Graph Validation & Soft Pruning
     subgraph = prune_subgraph(subgraph, seed_ids)

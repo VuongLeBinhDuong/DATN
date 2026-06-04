@@ -534,3 +534,41 @@ class Neo4jKGClient:
         with driver.session(database=db) as session:
             return [dict(r) for r in session.run(cypher, {"skip": int(skip), "limit": int(limit)})]
 
+    def find_paths_between_entities(
+        self,
+        entity_ids: list[str],
+        *,
+        max_hops: int = 2,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """Find direct paths (length 1 to max_hops) linking the specified seed entity IDs in the graph.
+        
+        Returns a subgraph dict: {"entities": [...], "edges": [...]} containing the path nodes and edges.
+        """
+        driver, db = self._connection()
+        max_hops = max(1, min(int(max_hops), 3))
+        if len(entity_ids) < 2:
+            return {"entities": [], "edges": []}
+            
+        cypher = (
+            f"MATCH p=(a:Entity)-[:REL*1..{max_hops}]-(b:Entity) "
+            f"WHERE a.entity_id IN $ids AND b.entity_id IN $ids AND a.entity_id < b.entity_id "
+            f"WITH p LIMIT $lim "
+            f"UNWIND nodes(p) AS n "
+            f"UNWIND relationships(p) AS r "
+            f"WITH collect(distinct n) AS ns, collect(distinct r) AS rs "
+            f"RETURN [e IN ns | {{entity_id: e.entity_id, canonical_name: e.canonical_name, type: coalesce(e.type, ''), aliases: coalesce(e.aliases, [])}}] AS entities, "
+            f"       [x IN rs | {{subject_entity_id: startNode(x).entity_id, object_entity_id: endNode(x).entity_id, "
+            f"                    predicate: x.predicate, confidence: coalesce(x.confidence, 0.5), "
+            f"                    evidence_chunk_id: x.evidence_chunk_id}}] AS edges"
+        )
+        with driver.session(database=db) as session:
+            res = session.run(cypher, {"ids": entity_ids, "lim": int(limit)}).single()
+            if res:
+                return {
+                    "entities": res["entities"] or [],
+                    "edges": res["edges"] or []
+                }
+        return {"entities": [], "edges": []}
+
+

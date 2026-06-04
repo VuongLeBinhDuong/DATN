@@ -42,21 +42,21 @@ Một số ví dụ sinh viên có thể tham khảo dưới đây, trong trư�
 Việc sử dụng danh sách trong LaTeX khá đơn giản và không yêu cầu sinh viên phải thêm bất kỳ gói bổ sung nào. LaTeX cung cấp hai môi trường liệt kê đó là:
 \begin{itemize}
 \item Đánh dấu (bullet) là kiểu liệt kê không có thứ tự. Để sử dụng kiểu liệt kê đánh dấu, chúng ta khai báo như sau\\ 
-\verb$\begin{itemize}$\\
- \verb$\item$ Nội dung thứ nhất được viết ở đây.\\
-\verb$\item$ Nội dung thứ hai được viết ở đây.\\
- \verb$\item$ ...\\
-\verb$\end{itemize}$
+\texttt{\textbackslash begin\{itemize\}}\\
+ \texttt{\textbackslash item} Nội dung thứ nhất được viết ở đây.\\
+\texttt{\textbackslash item} Nội dung thứ hai được viết ở đây.\\
+ \texttt{\textbackslash item} ...\\
+\texttt{\textbackslash end\{itemize\}}
 \item Đánh số (numering) là kiểu liệt kê có thứ tự. Để sử dụng kiểu liệt kê đánh số, chúng ta khai báo như sau\\
-\verb$\begin{enumerate}$\\
- \verb$\item$ Nội dung thứ nhất được viết ở đây.\\
-\verb$\item$ Nội dung thứ hai được viết ở đây.\\
- \verb$\item$ ...\\
-\verb$\end{enumerate}$
+\texttt{\textbackslash begin\{enumerate\}}\\
+ \texttt{\textbackslash item} Nội dung thứ nhất được viết ở đây.\\
+\texttt{\textbackslash item} Nội dung thứ hai được viết ở đây.\\
+ \texttt{\textbackslash item} ...\\
+\texttt{\textbackslash end\{enumerate\}}
 \end{itemize}
-Chú ý các nội dung trình bày trong cả hai môi trường liệt kê theo sau lệnh \verb$\item$. Ngoài ra LaTeX còn cung cấp một số kiểu liệt kê khác, sinh viên có thể tham khảo tại \url{https://www.overleaf.com/learn/latex/Lists}
+Chú ý các nội dung trình bày trong cả hai môi trường liệt kê theo sau lệnh \texttt{\textbackslash item}. Ngoài ra LaTeX còn cung cấp một số kiểu liệt kê khác, sinh viên có thể tham khảo tại \url{https://www.overleaf.com/learn/latex/Lists}
 \section{Table insertion}
-\begin{table}[h!]
+\begin{table}[H]
 \centering
 \begin{tabular}{||c c c c||} 
  \hline
@@ -76,7 +76,7 @@ Bảng \ref{table:1} là ví dụ về cách tạo bảng. Tất cả các bản
 Sinh viên có thể tìm hiểu sâu hơn về cách chèn ảnh trong Latex tại link \url{https://www.overleaf.com/learn/latex/Tables}.
 
 \section{Figure Insertion}
-\begin{figure}
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.75\linewidth]{Figure/IoT.png}
 \caption{Internet vạn vật}
@@ -90,7 +90,7 @@ Chú ý, tất cả các hình vẽ phải được đề cập đến trong ph�
 \section{Reference}
 \paragraph{Listing}\mbox{}
 
-Áp dụng cách liệt kê theo quy định của IEEE. Ví dụ của việc trích dẫn như sau \cite{scott2013sdn}. Cụ thể, sinh viên sử dụng lệnh \verb!\cite{}! như sau \cite{ashton2009internet}. Chỉ những tài liệu được trích dẫn thì mới xuất hiện trong phần Tài liệu tham khảo. Tài liệu tham khảo cần có nguồn gốc rõ ràng và phải từ nguồn đáng tin cậy. Hạn chế trích dẫn tài liệu tham khảo từ các website, từ wikipedia.
+Áp dụng cách liệt kê theo quy định của IEEE. Ví dụ của việc trích dẫn như sau \cite{scott2013sdn}. Cụ thể, sinh viên sử dụng lệnh \texttt{\textbackslash cite\{\}} như sau \cite{ashton2009internet}. Chỉ những tài liệu được trích dẫn thì mới xuất hiện trong phần Tài liệu tham khảo. Tài liệu tham khảo cần có nguồn gốc rõ ràng và phải từ nguồn đáng tin cậy. Hạn chế trích dẫn tài liệu tham khảo từ các website, từ wikipedia.
 \paragraph{Types of Reference}\mbox{}
 
 Các nguồn tài liệu tham khảo chính là sách, bài báo trong các tạp chí, bài báo trong các hội nghị khoa học và các tài liệu tham khảo khác trên internet.
@@ -108,7 +108,7 @@ Phương trình này thể hiện phép biến đổi Fourier rời rạc ngư�
 
 \section{Qui cách đóng quyển}
 Phần bìa trước chế bản theo qui định; bìa trước và bìa sau là giấy liền khổ. Sử dụng keo nhiệt để dán gáy khi đóng quyển thay vì sử dụng băng dính và dập ghim như mô tả ở Figure~\ref{fig:Bia}
-\begin{figure}
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.5\linewidth]{Figure/Bia.PNG}
 \caption{Qui cách đóng quyển đồ án}
@@ -120,11 +120,11 @@ Kỳ làm ĐATN - Ngành đào tạo - Họ và tên sinh viên - Mã số sinh 
 2022.1 - KỸ THUẬT MÁY TÍNH - NGUYỄN VĂN A - 20221234
 \end{quote}
 Qui cách ghi chữ phần gáy như hình dưới đây:
-\begin{figure}
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.5\linewidth]{Figure/GayBia.PNG}
 \caption{Qui cách đóng quyển đồ án}
-\label{fig:Bia}
+\label{fig:GayBia}
 \end{figure} 
 
 

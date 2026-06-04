@@ -61,7 +61,7 @@ To represent detailed relationships, the primary use cases are decomposed into s
 \label{subsection:2.2.3}
 A primary contribution of the system is the unified business workflow of processing an uploaded medical file. This sequence combines multiple modules to execute a complete diagnostic consultation:
 
-```text
+\begin{verbatim}
 +-------------+      +--------------+      +------------------+      +--------------------+
 | User Upload | ---> | Text Extract | ---> | Extract Numeric  | ---> | Benchmark Match vs |
 | PDF / Excel |      | (PyMuPDF /   |      | Lab Indicators   |      | Form Reference     |
@@ -74,7 +74,7 @@ A primary contribution of the system is the unified business workflow of process
 | Interactive |      | Images from  |      | Meds & Dosing    |      | for Abnormal Lab   |
 | Reminder    |      | Local DB     |      | (LLM synthesis)  |      | Anomalies Context  |
 +-------------+      +--------------+      +------------------+      +--------------------+
-```
+\end{verbatim}
 
 This business process operates fully offline, preventing sensitive medical logs from leaking to external cloud networks.
 
@@ -92,7 +92,7 @@ The following four core use cases represent the critical operational paths of th
         1. User enters a query (e.g., "Symptoms of Type 2 Diabetes").
         2. FastAPI backend receives the request and triggers `AgentService`.
         3. The `ReActAgent` parses the query, initiates reasoning, and outputs a `Thought`.
-        4. The agent decides to call the `graphrag_query` tool with the entity "Type 2 Diabetes".
+        4. The agent decides to call the \texttt{graphrag\_query} tool with the entity "Type 2 Diabetes".
         5. The tool queries Neo4j directly, finds matches, and returns text chunks as `Observation`.
         6. The agent integrates the observation, formulates a final answer, appends source citations, and sends it to the UI.
     \item **Alternate Flow (Format Recovery)**:
@@ -108,9 +108,9 @@ The following four core use cases represent the critical operational paths of th
     \item **Basic Flow**:
         1. User selects and uploads an Excel sheet containing blood test indicators.
         2. The backend extracts cells using `openpyxl`.
-        3. The system parses numeric readings and printed reference ranges using `compare_extracted_report_on_form`.
+        3. The system parses numeric readings and printed reference ranges using \texttt{compare\_extracted\_report\_on\_form}.
         4. An automated matching engine compares the patient's value to the reference bounds.
-        5. The backend triggers `rag_advice_llm` to fetch Neo4j context relating to any detected abnormal indicators.
+        5. The backend triggers \texttt{rag\_advice\_llm} to fetch Neo4j context relating to any detected abnormal indicators.
         6. The LLM synthesizes a grounded medical explanation in Vietnamese (or English) and displays it alongside the benchmark table on the dashboard.
 \end{itemize}
 
@@ -136,8 +136,8 @@ The following four core use cases represent the critical operational paths of th
     \item **Post-conditions**: Visual pill cards with exact descriptions are rendered on the chat or dashboard screen.
     \item **Basic Flow**:
         1. User asks the agent about a drug or manually types the drug name in the lookup bar.
-        2. The system calls the `pill_image_lookup` tool.
-        3. The backend searches the local directory `web_ui/img/` matching the canonicalized drug name.
+        2. The system calls the \texttt{pill\_image\_lookup} tool.
+        3. The backend searches the local directory \texttt{web\_ui/img/} matching the canonicalized drug name.
         4. The matching image path is returned, and a card showing the physical card (e.g., shape, color, dosage form) is rendered on the UI.
 \end{itemize}
 
@@ -147,7 +147,7 @@ To guarantee system stability, local execution feasibility, and absolute privacy
 \begin{itemize}
     \item **Private, Offline Execution**: The system must run entirely on the user's local machine without sending clinical prompts to external cloud APIs, ensuring compliance with data privacy regulations.
     \item **Response Streaming Speed**: Chat API `/api/agent-query/stream` must yield the first reasoning token within **1.5 seconds** of receiving the user query, and stream chunks continuously to avoid high perceived latency on local hardware.
-    \item **Security and Rate Limiting**: The system implements FastAPI dependency injection rate limiters (`check_rate_limit`) to restrict queries to **10 requests per minute** per IP, preventing denial-of-service loops on local LLM runtimes.
+    \item **Security and Rate Limiting**: The system implements FastAPI dependency injection rate limiters (\texttt{check\_rate\_limit}) to restrict queries to **10 requests per minute** per IP, preventing denial-of-service loops on local LLM runtimes.
     \item **Hardware Feasibility**: The local LLM engine (Ollama Llama-3.1-8B) must execute within standard consumer hardware constraints (requiring a minimum of 8GB VRAM or 16GB system RAM) with an active request timeout limit of **120 seconds**.
 \end{itemize}
 

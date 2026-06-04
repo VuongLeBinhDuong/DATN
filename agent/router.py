@@ -70,7 +70,7 @@ class RetrievalPlan:
     next_pipeline: str | None = None
 
 
-DEFAULT_ROUTER_MODEL = "qwen3:7b"
+DEFAULT_ROUTER_MODEL = "qwen2.5:1.5b-instruct"
 
 
 def _next_pipeline(route: str) -> str:

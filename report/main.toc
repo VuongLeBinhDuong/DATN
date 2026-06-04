@@ -1,0 +1,96 @@
+\ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } CHAPTER \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\ttl@change@v {chapter}{}{}{}\relax 
+\ttl@change@i {\@ne }{section}{0.0cm}{\vspace {0.3cm}}{\thecontentslabel \ }{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\ttl@change@v {section}{}{}{}\relax 
+\ttl@change@i {\@ne }{subsection}{1.0cm}{\vspace {0.3cm}}{\thecontentslabel \ }{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\ttl@change@v {subsection}{}{}{}\relax 
+\thispagestyle {empty}
+\contentsline {chapter}{\numberline {1}INTRODUCTION}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Motivation}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Objectives and Scope of the Graduation Thesis}{2}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Tentative Solution}{3}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Thesis Organization}{3}{section.1.4}%
+\contentsline {chapter}{\numberline {2}REQUIREMENT SURVEY AND ANALYSIS}{5}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Status survey}{5}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Functional Overview}{6}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}General use case diagram}{6}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Detailed use case diagram}{6}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Business process}{7}{subsection.2.2.3}%
+\contentsline {section}{\numberline {2.3}Functional description}{7}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Description of UC-01: Consult Medical Agent}{7}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Description of UC-02: Upload \& Analyze Medical Record}{8}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Description of UC-03: Manage Medication Reminders}{8}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}Description of UC-04: Verify Pill Imagery}{9}{subsection.2.3.4}%
+\contentsline {section}{\numberline {2.4}Non-functional requirement}{9}{section.2.4}%
+\contentsline {chapter}{\numberline {3}THEORETICAL BACKGROUND AND TECHNOLOGIES}{11}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Knowledge Graphs and Labeled Property Graphs (LPG)}{11}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}RDF vs. Labeled Property Graph (LPG)}{11}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Neo4j as the Graph Database Engine}{12}{subsection.3.1.2}%
+\contentsline {section}{\numberline {3.2}Retrieval-Augmented Generation (RAG) and GraphRAG}{14}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Classical Vector RAG}{14}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}The Cognitive Limitations of Vector RAG}{14}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}The Paradigm Shift to GraphRAG}{15}{subsection.3.2.3}%
+\contentsline {subsubsection}{\numberline {a}1. Local Graph-First Retrieval with Clinical NER and Cypher Path Queries}{15}{subsubsection.3.2.3.1}%
+\contentsline {paragraph}{Stage 1: Lightweight LLM-based Clinical NER Extraction}{15}{paragraph*.10}%
+\contentsline {paragraph}{Stage 2: Cypher Path Query Traversal}{16}{paragraph*.11}%
+\contentsline {paragraph}{Fallback to k-Hop Expansion}{16}{paragraph*.12}%
+\contentsline {subsubsection}{\numberline {b}2. Global GraphRAG (Microsoft GraphRAG Paradigm)}{17}{subsubsection.3.2.3.2}%
+\contentsline {section}{\numberline {3.3}Agentic AI and Dialog State Orchestration}{17}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Hybrid Intent Routing Architecture}{17}{subsection.3.3.1}%
+\contentsline {paragraph}{1. Zero-LLM Fast-Path (0ms Latency)}{17}{paragraph*.13}%
+\contentsline {paragraph}{2. Lightweight Parallel SLM Classifier}{18}{paragraph*.14}%
+\contentsline {subsection}{\numberline {3.3.2}The ReAct (Reasoning and Acting) Framework}{18}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Agent Safeguards: Loop-Guards and Format Recovery}{19}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.3.4}Stateful Dialog Orchestration via LangGraph}{19}{subsection.3.3.4}%
+\contentsline {section}{\numberline {3.4}Technical Infrastructure and Development Stack Justification}{20}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}FastAPI Backend (Python 3.10+)}{20}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Local LLM Hosting via Ollama}{20}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}High-Speed Unstructured Data Extractors}{20}{subsection.3.4.3}%
+\contentsline {chapter}{\numberline {4}DESIGN, IMPLEMENTATION, AND EVALUATION}{21}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Architecture design}{21}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Software architecture selection}{21}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Overall design}{21}{subsection.4.1.2}%
+\contentsline {subsection}{\numberline {4.1.3}Detailed package design}{22}{subsection.4.1.3}%
+\contentsline {section}{\numberline {4.2}Detailed design}{23}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}User interface design}{23}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Layer design}{23}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}Database design}{24}{subsection.4.2.3}%
+\contentsline {section}{\numberline {4.3}Application Building}{25}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Libraries and Tools}{25}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Achievement}{25}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}Illustration of main functions}{25}{subsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.3.4}Performance Latency Optimizations}{26}{subsection.4.3.4}%
+\contentsline {section}{\numberline {4.4}Testing}{26}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Deployment}{26}{section.4.5}%
+\contentsline {chapter}{\numberline {5}SOLUTION AND CONTRIBUTION}{28}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Custom Medical Knowledge Graph Construction and Graph-First Retrieval}{28}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Robust ReAct Agent Loop-Guard and Format Recovery}{29}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Multi-Format Clinical Record Parser and Automatic Lab Range Comparison}{30}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Quantitative Evaluation and Benchmarking}{31}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Triangulated Hybrid Retrieval (RRF) and Local Neural Cross-Encoder Reranking}{32}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Hybrid Intent Routing with Zero-LLM Fast-Path and Lightweight LLM Classifier}{33}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Chatbot Conversational Memory and CDSS PDF Report Export}{34}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Clinical Graph Validation and Soft Pruning (Graph Noise Reduction)}{35}{section.5.8}%
+\contentsline {chapter}{\numberline {6}CONCLUSION AND FUTURE WORK}{37}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Conclusion}{37}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Future Work}{38}{section.6.2}%
+\contentsline {chapter}{REFERENCE}{42}{section*.23}%
+\contentsline {chapter}{APPENDIX}{43}{section*.24}%
+\ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\ttl@change@v {chapter}{}{}{}\relax 
+\contentsline {chapter}{\numberline {A}THESIS WRITING GUIDELINE}{43}{appendix.A}%
+\contentsline {section}{\numberline {A.1}General Regulations}{43}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Majoring}{44}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Bulleting and Numbering}{44}{section.A.3}%
+\contentsline {section}{\numberline {A.4}Table insertion}{45}{section.A.4}%
+\contentsline {section}{\numberline {A.5}Figure Insertion}{45}{section.A.5}%
+\contentsline {section}{\numberline {A.6}Reference}{46}{section.A.6}%
+\contentsline {paragraph}{Listing}{46}{paragraph*.27}%
+\contentsline {paragraph}{Types of Reference}{46}{paragraph*.28}%
+\contentsline {section}{\numberline {A.7}Equations}{46}{section.A.7}%
+\contentsline {section}{\numberline {A.8}Qui cách đóng quyển}{46}{section.A.8}%
+\contentsline {chapter}{\numberline {B}USE CASE DESCRIPTIONS}{48}{appendix.B}%
+\contentsline {section}{\numberline {B.1}Use Case UC-01: Consult Medical Agent}{48}{section.B.1}%
+\contentsline {section}{\numberline {B.2}Use Case UC-02: Import and Analyze Multi-format Lab Report}{49}{section.B.2}%
+\contentsline {section}{\numberline {B.3}Use Case UC-03: Manage Medication Schedule and Reminder}{49}{section.B.3}%
+\contentsfinish 

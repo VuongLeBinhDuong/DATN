@@ -1,65 +1,237 @@
-\documentclass[../Main.tex]{subfiles}
+\documentclass[../main.tex]{subfiles}
 \begin{document}
 
-This chapter details the theoretical background and technological foundations utilized to construct the smart medical QA and consultation system. It discusses property graph databases, analyzes the cognitive limitations of standard Vector RAG, outlines the paradigm shift to GraphRAG, details the ReAct agentic loop, and justifies the development stack.
+This chapter provides a rigorous theoretical exposition and technical justification of the methodology utilized to build the offline-first, highly reliable clinical question-answering (QA) and consultation system. Section \ref{section:3.1} details the mathematical and structural formulation of Labeled Property Graphs (LPGs) and their implementation via the Neo4j engine. Section \ref{section:3.2} evaluates standard Vector Retrieval-Augmented Generation (RAG), analyzes its fundamental cognitive limitations, and presents the paradigm shift to GraphRAG under a dual-layer retrieval architecture. Section \ref{section:3.3} establishes the framework for Agentic AI, focusing on the Reasoning and Acting (ReAct) paradigm, custom runtime safety guards, and stateful dialog orchestration using LangGraph. Finally, Section \ref{section:3.4} offers a comprehensive technical justification of the localized development stack, emphasizing asynchronous stream processing, local LLM hosting, and privacy-preserving document digestion.
 
-\section{Knowledge Graphs and Neo4j}
+\section{Knowledge Graphs and Labeled Property Graphs (LPG)}
 \label{section:3.1}
-A **Knowledge Graph (KG)** is a highly structured representation of real-world facts consisting of entities (nodes) and relations (edges) \cite{robinson2015graph}. Formally, a knowledge graph $G$ can be defined as a set of RDF-style triples:
+
+A **Knowledge Graph (KG)** is a structured, semantically rich representation of real-world information, modeling domain concepts as vertices and their interactions as directed, labeled edges \cite{robinson2015graph}. Formally, a knowledge graph $G$ can be defined as:
 \begin{equation}
-G = \{ (s, p, o) \mid s, o \in E, p \in R \}
+G = (E, R, T)
 \end{equation}
-where $E$ represents the set of entities (e.g., specific diseases, symptoms, or medications) and $R$ represents the set of directed, semantic relation predicates (e.g., TREATS, CAUSES, CONTRAINDICATED\_FOR).
+where $E = \{e_1, e_2, \dots, e_n\}$ is a set of unique entities, $R = \{r_1, r_2, \dots, r_m\}$ is a set of semantic relation types, and $T \subseteq E \times R \times E$ is a set of fact triples in the form of $(s, p, o)$, representing a subject entity $s$, a predicate relationship $p$, and an object entity $o$.
 
-Knowledge graphs are uniquely suited for the clinical domain. Unlike flat databases or unstructured text chunks, KGs represent explicit, verified, and normalized medical facts. For example, a relation such as `(:Drug {name: "Metformin"})-[:TREATS]->(:Disease {name: "Diabetes"})` is absolute and unambiguous, preventing semantic confusion.
+In the clinical domain, raw, unstructured texts often obscure critical diagnostic pathways. Knowledge graphs normalize these texts into a standardized ontology (such as SNOMED-CT or UMLS translations), ensuring that synonymous concepts (e.g., ``Type 2 Diabetes Mellitus'', ``T2DM'', and ``Non-insulin-dependent diabetes'') map to a single, canonical entity.
 
-**Neo4j** is deployed as the core graph database engine. It utilizes the **Labeled Property Graph (LPG)** model, where:
-* **Nodes** represent medical entities, containing specific labels (e.g., `Entity`, `Chunk`, `Document`) and key-value properties (e.g., `canonical_name`, `type`, `aliases`).
-* **Relationships** represent directed connections between nodes, containing specific types (e.g., `REL`, `MENTIONS`, `HAS_CHUNK`) and properties (e.g., `predicate`, `confidence`).
-* **Cypher** is the declarative graph query language used to execute high-performance pattern matching. For instance, finding all symptoms caused by a specific disease is executed via a pattern-matching traversal:
+\subsection{RDF vs. Labeled Property Graph (LPG)}
+
+While the Semantic Web historically relied on the Resource Description Framework (RDF) where every statement is represented as a flat triple $(s, p, o)$, modern intelligent applications require high-dimensional attributes (properties) on both nodes and edges to record metadata (such as confidence levels, source file references, and clinical guidelines). This requirement is met by the **Labeled Property Graph (LPG)** model. 
+
+Mathematically, an LPG is defined as a 6-tuple:
+\begin{equation}
+G_{LPG} = (V, E, L_V, L_E, P_V, P_E)
+\end{equation}
+where:
+\begin{itemize}
+    \item $V$ is a finite set of vertices (nodes) representing medical entities or informational chunks.
+    \item $E \subseteq V \times V$ is a set of directed edges representing clinical or structural relationships.
+    \item $L_V: V \rightarrow \mathcal{P}(\Sigma_V)$ is a node-labeling function mapping each node to a set of labels from the label alphabet $\Sigma_V$ (e.g., \texttt{Entity}, \texttt{Chunk}, \texttt{Document}).
+    \item $L_E: E \rightarrow \Sigma_E$ is an edge-labeling function mapping each relationship to a specific type from the relation alphabet $\Sigma_E$ (e.g., \texttt{TREATS}, \texttt{CAUSES}, \texttt{MENTIONS}).
+    \item $P_V: V \times K \rightarrow U$ is a node-property evaluation function mapping a node and a key $k \in K$ to a value $u \in U$ (e.g., storing \texttt{canonical\_name}, \texttt{biomedical\_type}, or \texttt{embedding\_vector}).
+    \item $P_E: E \times K \rightarrow U$ is an edge-property evaluation function mapping a relationship and a key $k$ to a value $u$ (e.g., storing \texttt{predicate}, \texttt{confidence\_score}, or \texttt{source\_document}).
+\end{itemize}
+
+\subsection{Neo4j as the Graph Database Engine}
+
+This system implements the Labeled Property Graph model using **Neo4j**, a native graph database engine designed for high-performance traversals. Unlike relational databases (RDBMS) which require expensive index-join operations, Neo4j utilizes **index-free adjacency**. Each node maintains direct physical pointers to its adjacent relationships and neighboring nodes on the storage layer, reducing graph traversal complexity from $O(\log N)$ or $O(N \log N)$ to $O(k)$, where $k$ is the local degree of the active vertex, completely independent of the total graph size.
+
+To interact with this graph, the system utilizes **Cypher**, a declarative, pattern-matching query language. For clinical diagnostics, traversing relationships must be highly precise. Consider a query to find all active ingredients in medications that treat a specific symptom, while ensuring the relationship confidence exceeds a threshold of $0.80$. The pattern is matching as follows:
+
 \begin{verbatim}
-MATCH (d:Entity {canonical_name: "Gout"})-[:REL {predicate: "HAS_SYMPTOM"}]->(s:Entity)
-RETURN s.canonical_name;
+MATCH (symptom:Entity {canonical_name: "Hyperglycemia"})
+      <-[:REL {predicate: "CAUSED_BY"}]-(disease:Entity)
+MATCH (disease)
+      <-[r:REL {predicate: "TREATS"}]-(drug:Entity)
+WHERE r.confidence > 0.80
+RETURN DISTINCT drug.canonical_name AS treatment, r.confidence AS score;
 \end{verbatim}
-This direct structural matching guarantees factual retrieval, serving as the system's primary diagnostic evidence layer.
+
+This direct, structural query guarantees that the retrieved clinical connections are completely verified and grounded in the database, avoiding the hallucination risks associated with standard vector searches.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Figure/visualisation_covid.png}
+    \caption{Interactive Labeled Property Graph (LPG) subgraph visualization representing the clinical relationship path topology for COVID-19}
+    \label{fig:lpg_topology_visualization}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{Figure/covid_entity.png}
+        \caption{COVID-19 Entity Node}
+        \label{fig:covid_node}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{Figure/pfizer_entity.png}
+        \caption{Pfizer Drug Entity Node}
+        \label{fig:pfizer_node}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{Figure/disease1_entity.png}
+        \caption{Disease Entity Node}
+        \label{fig:disease_node}
+    \end{subfigure}
+    \caption{Detailed LPG Entity Nodes inside the Neo4j database storing attributes: canonical\_name, type, and aliases}
+    \label{fig:neo4j_nodes_lpg}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Figure/treat_rel.png}
+    \caption{LPG Relationship edge (\texttt{REL}) storing properties: predicate, confidence, and source evidence\_chunk\_id}
+    \label{fig:treat_rel_properties}
+\end{figure}
 
 \section{Retrieval-Augmented Generation (RAG) and GraphRAG}
 \label{section:3.2}
-Classic **Retrieval-Augmented Generation (RAG)** indexes flat text documents into high-dimensional vector spaces using embedding models and retrieves semantically similar chunks based on cosine similarity calculations of user query embeddings \cite{lewis2020retrieval}. Formally, the similarity between query vector $\vec{q}$ and document chunk vector $\vec{d}$ is computed as:
+
+\subsection{Classical Vector RAG}
+
+Traditional Retrieval-Augmented Generation (RAG) processes unstructured text by dividing files into static chunks (e.g., 500-character segments with 100-character overlap), feeding them through a dense embedding model (e.g., a pre-trained transformer), and indexing the resulting vector representations in a vector database \cite{lewis2020retrieval}. Given a user query $q$, the query is embedded into the same vector space, and the system retrieves the top-$k$ nearest chunks. Mathematically, let $\vec{q} \in \mathbb{R}^D$ be the query embedding vector and $\vec{d}_i \in \mathbb{R}^D$ be the document chunk embedding vector. The similarity metric is computed using Cosine Similarity:
 \begin{equation}
-\text{Similarity}(\vec{q}, \vec{d}) = \frac{\vec{q} \cdot \vec{d}}{\|\vec{q}\| \|\vec{d}\|}
+\text{Sim}(\vec{q}, \vec{d}_i) = \cos(\theta) = \frac{\vec{q} \cdot \vec{d}_i}{\|\vec{q}\|_2 \|\vec{d}_i\|_2} = \frac{\sum_{j=1}^D q_j d_{i,j}}{\sqrt{\sum_{j=1}^D q_j^2} \sqrt{\sum_{j=1}^D d_{i,j}^2}}
 \end{equation}
 
-#### The Cognitive Limitation of Vector RAG:
-While Vector RAG is effective for localized, single-document lookups, it fails in **multi-hop clinical reasoning**. If a patient asks: *"I have hypertension and take Metformin; is there any interaction with a new drug for my kidney disease?"*, a standard vector search will match separate chunks detailing Metformin, kidney disease, or hypertension, but cannot traverse the logical chain of dependencies. It lacks the relational capability to connect these concepts.
+\subsection{The Cognitive Limitations of Vector RAG}
 
-#### The Paradigm Shift to GraphRAG:
-**GraphRAG** bridges this gap by merging text chunks with structured knowledge graphs \cite{edge2024from}. In our architecture, the GraphRAG framework operates on two distinct layers:
-1. **Direct Custom KG Retrieval (Local)**: The user's query is analyzed to extract entities. Neo4j is queried directly first (Graph-First). Using direct Cypher traversals, the system fetches immediate neighbors and evidence text chunks linked via `[:MENTIONS]` relations, bypassing expensive LLM synthesis steps for speed.
-2. **Microsoft GraphRAG (Global)**: Leverages hierarchical community clustering algorithms (e.g., Leiden algorithm) to group related clinical entities, pre-generating community-level narrative summaries. This enables high-level, global synthesis when the query requires an overview across the entire medical literature base.
+Despite its effectiveness in local search, Vector RAG suffers from severe cognitive limitations when applied to clinical reasoning:
+\begin{enumerate}
+    \item **The Multi-Hop Reasoning Failure**: Vector search is structurally limited to single-step semantic lookups. If a user asks: \textit{``Does drug A interact with the medication prescribed for patient B's primary kidney condition?''}, a standard vector database matches chunks containing ``drug A'' or ``patient B'', but cannot construct the logical pipeline: $\text{Patient B} \rightarrow \text{Kidney Condition} \rightarrow \text{Prescribed Medication} \rightarrow \text{Interaction with Drug A}$. It lacks the relational links needed to transition across distinct nodes.
+    \item **Loss of Structural Context**: Chunking breaks the continuous semantic thread of a document. If a medical table links a specific dosage to a patient's weight class, a flat text chunker might split the row, separating the causal condition from the clinical recommendation, leading to fragmented or incorrect context.
+    \item **Lack of Global Synthesis**: When a clinician requests a global query like \textit{``What are the common side effects of all anti-hypertensive drugs documented in our medical archive?''}, standard Vector RAG fails. It can only fetch specific chunks containing ``anti-hypertensive'' and ``side effects'', leaving the LLM to synthesize fragmented chunks while missing the broader picture.
+\end{enumerate}
 
-\section{Agentic AI and Reasoning Paradigms}
+\subsection{The Paradigm Shift to GraphRAG}
+
+To address these limitations, this system implements a hybrid **GraphRAG** framework, integrating dense vector matching with structural LPG traversals \cite{edge2024from}. The architecture executes queries across two distinct pathways:
+
+\subsubsection{1. Local Graph-First Retrieval with Clinical NER and Cypher Path Queries}
+
+To ensure precise semantic grounding and eliminate context pollution, the system employs a two-stage **Local Graph-First Retrieval** pipeline. Unlike simple keyword matching or unstructured $k$-hop expansions which retrieve distant, irrelevant nodes, this pipeline targets the specific relational pathways linking the core clinical entities mentioned in the query:
+
+\paragraph{Stage 1: Lightweight LLM-based Clinical NER Extraction}
+When a user query $q$ is submitted, it is first analyzed by a dedicated, lightweight Named Entity Recognition (NER) extractor $f_{NER}(q)$ powered by a quantized local Small Language Model (SLM), such as \texttt{qwen2.5:1.5b-instruct}. The SLM is prompted to return a strictly structured JSON array representing the extracted clinical concepts:
+\begin{equation}
+E_{clinical} = \{ (name_k, type_k) \mid k = 1 \dots N_E \}
+\end{equation}
+where each entity name $name_k$ is categorized into one of four clinical entity types $type_k \in \{ \text{DRUG}, \text{DISEASE}, \text{SYMPTOM}, \text{TEST} \}$. Extracting clinical entities using a lightweight 1.5B model guarantees near-instant extraction latencies ($\approx 100\text{ms}$) while preventing structural schema hallucination.
+
+Each extracted entity $name_k$ is then mapped to its corresponding node ID $v_k \in V$ in the Neo4j database using a synonym-aware fulltext index search. If the candidate name matches an alias or canonical name in the graph, it resolves to a unique entity node ID:
+\begin{equation}
+v_k = \text{ResolveNode}(name_k)
+\end{equation}
+resulting in a set of resolved seed node IDs $V_{seed} = \{ v_1, v_2, \dots, v_m \}$.
+
+\paragraph{Stage 2: Cypher Path Query Traversal}
+If the query mentions multiple clinical entities ($|V_{seed}| \ge 2$), the retrieval engine attempts to construct a highly targeted relational path linking them together. Rather than expanding the graph blindly around each node, it executes a targeted Cypher path query to find paths of length $1$ to $H$ (maximum hops) that connect any pair of distinct seed entities:
+\begin{equation}
+P_{paths} = \{ p \mid p = (u_0 \xrightarrow{r_1} u_1 \xrightarrow{r_2} \dots \xrightarrow{r_h} u_h), \, u_0, u_h \in V_{seed}, \, u_0 \neq u_h, \, h \le H \}
+\end{equation}
+The Cypher query syntax utilized for this path discovery is formulated as:
+\begin{verbatim}
+MATCH p=(a:Entity)-[:REL*1..2]-(b:Entity)
+WHERE a.entity_id IN $ids AND b.entity_id IN $ids AND a.entity_id < b.entity_id
+WITH p LIMIT 50
+UNWIND nodes(p) AS n
+UNWIND relationships(p) AS r
+WITH collect(distinct n) AS ns, collect(distinct r) AS rs
+RETURN ns AS entities, rs AS edges;
+\end{verbatim}
+This operation returns a dense, highly relevant subgraph containing the precise connections between the target concepts (for example, the direct \texttt{INTERACTS\_WITH} relationship linking two drugs, or the \texttt{TREATS} edge connecting a drug to a disease). 
+
+If the path query returns a non-empty set of edges, the system extracts the associated text paragraphs via their stored \texttt{evidence\_chunk\_id} properties on the matched edges. These paragraphs represent the exact medical literature proving the connection.
+
+\paragraph{Fallback to k-Hop Expansion}
+If the seed list contains only a single resolved entity ($|V_{seed}| < 2$) or if the Cypher path query returns zero connecting paths due to graph sparsity, the engine dynamically falls back to standard fulltext-seeded $k$-hop subgraph expansion:
+\begin{equation}
+G_{sub} = \text{ExpandSubgraph}(V_{seed}, H)
+\end{equation}
+This dual-stage retrieval mechanism ensures that when the patient asks about drug interactions or symptoms of a specific condition, the system injects only the direct, verified medical evidence into the prompt context, avoiding prompt bloat and reducing hallucination.
+
+\subsubsection{2. Global GraphRAG (Microsoft GraphRAG Paradigm)}
+For global, high-level clinical queries, the system uses hierarchical community clustering algorithms. During the offline indexing phase:
+\begin{enumerate}
+    \item The entire clinical graph is partitioned into hierarchical communities using the **Leiden Algorithm** \cite{traag2019from}, which optimizes modularity:
+    \begin{equation}
+    Q_{Leiden} = \frac{1}{2m} \sum_{i,j} \left( A_{ij} - \gamma \frac{k_i k_j}{2m} \right) \delta(\sigma_i, \sigma_j)
+    \end{equation}
+    where $A_{ij}$ is the adjacency matrix weight, $k_i$ and $k_j$ are the degrees of nodes $i$ and $j$, $m$ is the total edge weight, $\gamma$ is the resolution parameter, and $\delta(\sigma_i, \sigma_j)$ is the Kronecker delta representing community assignment.
+    \item For each discovered community, a local LLM writes a comprehensive narrative summary detailing the entities, relationships, and key findings within that cluster.
+    \item When a global query is executed, the engine runs a MapReduce-style retrieval. It identifies the relevant community summaries (Map phase), generates partial answers, and aggregates them into a final clinical synthesis (Reduce phase).
+\end{enumerate}
+
+\section{Agentic AI and Dialog State Orchestration}
 \label{section:3.3}
-Medical consultations are dynamic. Patients present ambiguous symptom histories that cannot be resolved in a single retrieval step. The system utilizes **Agentic AI** to simulate dynamic clinical thinking.
 
-#### The ReAct (Reason + Action) Framework:
-Yao et al. proposed the **ReAct** paradigm, which enables an LLM to generate alternating reasoning traces ("Thoughts") and execute diagnostic "Actions" \cite{yao2022react}. The execution loop follows:
+Static QA pipelines process inputs in a rigid, linear sequence. However, medical consultations are highly dynamic, requiring agents to ask clarifying questions, correct formatting errors, or dynamically call tools to verify facts. The system uses **Agentic AI** to manage these multi-turn diagnostic reasoning loops.
+
+\subsection{Hybrid Intent Routing Architecture}
+
+To minimize response latency and avoid invoking heavy language models for simple queries, the system deploys a high-efficiency, layered **Hybrid Intent Router** as the gateway of the conversation. Given a user query $q$, the routing gateway $R(q)$ directs the query along three possible execution pipelines based on a hybrid classification mechanism:
+
+\paragraph{1. Zero-LLM Fast-Path (0ms Latency)}
+First, the engine evaluates the query against a compiled set of regular expressions and rule matches. If the query mentions any standard biological laboratory indicator (e.g., \texttt{glucose}, \texttt{acid uric}, \texttt{AST}, \texttt{ALT}) along with a quantitative numerical value (e.g., $7.5$), it bypasses LLM inference entirely. The query is routed to the deterministic physiological validator:
 \begin{equation}
-\text{Thought}_i \rightarrow \text{Action}_i (\text{Action Input}_i) \rightarrow \text{Observation}_i \rightarrow \text{Thought}_{i+1} \rightarrow \dots \rightarrow \text{Final Answer}
+R(q) = \text{direct\_db}
 \end{equation}
-During the action step, the LLM calls external tools:
-* `graphrag_query`: Executes direct Neo4j Cypher lookups on our 25k clinical entities database to retrieve grounded evidence.
-* `pill_image_lookup`: Queries local visual folders to render drug appearance cards.
-This iterative loop ensures that before the model outputs a final recommendation, it must search the verified database, cross-reference symptoms, and build an explainable chain of thought.
+which parses the boundaries and compares them mathematically against clinical ground truth in $0\text{ms}$.
 
-#### Dialog State Machines via LangGraph:
-For complex, multi-turn conversations, the system integrates a fallback **LangGraph** engine. LangGraph models the conversation as a stateful graph where each node is a specialized agent step (e.g., query parser, retrieval coordinator, answer generator, safety filter) and edges represent state transitions. This state machine structure enforces deterministic boundaries around the open-ended LLM, ensuring the system remains on-topic and compliant with clinical safety rules.
+\paragraph{2. Lightweight Parallel SLM Classifier}
+If the query does not match the rules for direct physiological check but contains complex sentence structures, the system invokes a parallel, specialized Small Language Model (SLM) classification step. The system instantiates a dedicated instance of a 1.5B parameter model (such as \texttt{qwen2.5:1.5b-instruct}) running in parallel on the local server. The SLM is prompted to classify the query's intent into one of three routing tokens:
+\begin{equation}
+R(q) \in \{ \text{direct\_db}, \, \text{graph\_first}, \, \text{global\_summary} \}
+\end{equation}
+where:
+\begin{itemize}
+    \item \texttt{direct\_db} represents quantitative clinical indicator check requests.
+    \item \texttt{graph\_first} represents specific multi-hop relationship queries (e.g., drug interactions, symptom-cause links, side-effects).
+    \item \texttt{global\_summary} represents conversational greetings, social inquiries, or global RAG summaries.
+\end{itemize}
+Running a parallel 1.5B classifier model drastically reduces latency. The inference time of the 1.5B model is under $1.1\text{s}$ (compared to $\approx 2.4\text{s}$ for a unified 8B model call), achieving a $54\%$ speedup. This hybrid model partitioning preserves the main, computationally expensive 8B reasoning agent exclusively for the ReAct reasoning loops.
 
-\section{Development Stack Justification}
+\subsection{The ReAct (Reasoning and Acting) Framework}
+
+The system utilizes the **ReAct** paradigm to simulate logical clinical reasoning \cite{yao2022react}. ReAct guides the LLM to alternate between generating cognitive thoughts (reasoning) and executing specific diagnostic functions (acting). Formally, let $x$ be the user query, and $c_i = (t_i, a_i, o_i)$ be the agent's context at step $i$, consisting of a thought $t_i$, an action $a_i$, and an observation $o_i$. The agentic execution loop is defined as:
+\begin{align}
+t_i &\sim P_{LLM}(t \mid x, c_1, c_2, \dots, c_{i-1}) \\
+a_i &\sim P_{LLM}(a \mid x, c_1, c_2, \dots, c_{i-1}, t_i) \\
+o_i &= \text{ExecuteAction}(a_i)
+\end{align}
+This loop continues until the LLM outputs a final answer action. In our system, the LLM has access to specialized tools, including \texttt{graphrag\_query}, \texttt{pill\_image\_lookup}, and \texttt{medical\_report\_analyzer}.
+
+\subsection{Agent Safeguards: Loop-Guards and Format Recovery}
+
+Deploying raw LLMs in autonomous agent loops introduces engineering risks, such as infinite tool invocation loops or syntax failures in structured responses. To address these issues, the system introduces two custom safeguarding layers:
+\begin{enumerate}
+    \item **Deterministic Loop-Guard**: Tracks active tool invocations. If the agent repeats the same tool call with identical parameters more than three times, or if the total execution steps exceed a safety limit $S_{max} = 5$, the loop-guard intercepts execution, terminates the loop, and triggers a fallback node to synthesize a structured answer using the current context.
+    \item **Format-Recovery Parser**: The LLM is instructed to output its thoughts and actions in a strict JSON schema. If the LLM generates slightly malformed JSON, a regex-based parser attempts to clean and rebuild the JSON structure. If parsing still fails, the error message is fed back into the LLM as a system observation, allowing the agent to self-correct.
+\end{enumerate}
+
+\subsection{Stateful Dialog Orchestration via LangGraph}
+
+While the ReAct loop manages step-by-step tool use, a larger state machine is required to coordinate the overall conversation, manage memory, and enforce clinical safety boundaries. The system implements this state machine using **LangGraph**.
+
+LangGraph models the application as a stateful, cyclic directed graph $G_{State} = (N, E, S)$ where $N$ is a set of processing nodes, $E$ is a set of state transition edges, and $S$ is a shared state vector. The orchestration flow is modeled as a state-transition sequence $S_{t+1} = \delta(S_t, \text{Node}_i)$. By defining clear state transitions, the system ensures the agent remains on-topic, respects clinical safety limits, and falls back to safe responses.
+
+\section{Technical Infrastructure and Development Stack Justification}
 \label{section:3.4}
-The backing technologies are selected to guarantee high-performance, security, and offline execution on consumer hardware:
-* **FastAPI (Python 3.10+)**: Chosen as the backend framework due to its asynchronous runtime (ASGI). It handles high-concurrency streamed NDJSON connections seamlessly, allowing reasoning tokens to stream in real-time.
-* **Ollama (Local LLM hosting)**: Hosts the 8-billion parameter models (Llama-3.1-8B) locally. Running Ollama offline ensures absolute patient data confidentiality, complying with healthcare security regulations, and eliminates API call latency or pricing dependencies.
-* **PyMuPDF \& openpyxl**: PyMuPDF provides high-speed, lightweight PDF text extraction, while openpyxl enables complex cell and grid parsing from Excel spreadsheets (`.xlsx`, `.xlsm`). Both operate fully locally without external network requests.
+
+To run the system fully offline on consumer-grade hardware while keeping latency low and data secure, the backing technologies were selected based on the following:
+
+\subsection{FastAPI Backend (Python 3.10+)}
+* **Asynchronous Concurrency**: FastAPI utilizes Python's \texttt{asyncio} and the ASGI standard, allowing it to manage thousands of concurrent, non-blocking connections, crucial for streaming NDJSON tokens from local language models.
+* **Automated Data Validation**: Built on Pydantic, FastAPI automatically validates incoming requests, preventing common injection attacks and ensuring type safety.
+
+\subsection{Local LLM Hosting via Ollama}
+* **HIPAA and Data Privacy Compliance**: By using **Ollama** to host open-source models (such as \texttt{Llama-3.1-8B}) locally on the host's GPU/CPU, patient data never leaves the local machine. This guarantees complete privacy and eliminates external network costs or API rate limits.
+* **Low Latency**: Running models locally on consumer GPUs utilizing quantization (4-bit or 8-bit) provides fast inference, allowing real-time token streaming.
+
+\subsection{High-Speed Unstructured Data Extractors}
+* **PyMuPDF**: Selected for PDF parsing due to its speed and low memory footprint, parsing large medical reports significantly faster than traditional tools.
+* **Openpyxl**: Provides direct access to cell grids, formulas, and formatting in spreadsheets, allowing the system to extract tabular data (such as lab results) effectively.
 
 \end{document}

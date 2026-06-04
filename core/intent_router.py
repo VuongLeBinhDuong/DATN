@@ -103,7 +103,39 @@ def detect_intent(message: str) -> str:
         if not ("uống gì" in msg or "thuốc gì" in msg or "điều trị" in msg or "tác động" in msg):
             return "direct_db"
 
-    # 2. Detect Luồng 2 (Graph-First Search / Local relationships)
+    # 2. Check using lightweight LLM router if not direct_db by regex, and not obvious social/greetings
+    try:
+        from agent.router import is_obvious_pure_social, is_meta_conversational_opener
+        # Fast 0ms rule-based social checks
+        if is_obvious_pure_social(msg) or is_meta_conversational_opener(msg):
+            return "global_summary"
+
+        from core.settings import get_settings
+        from core.llm_backends import OllamaBackend
+        settings = get_settings()
+        backend = OllamaBackend()
+        if backend.is_available():
+            prompt = (
+                "Bạn là Router Agent chuyên nghiệp cho hệ thống y khoa CDSS. Hãy phân loại tin nhắn sau của người dùng vào đúng một trong các nhánh:\n\n"
+                "Nhánh và định nghĩa:\n"
+                "- direct_db: Tin nhắn có chứa tên chỉ số xét nghiệm (như glucose, acid uric, men gan, ast, alt, cholesterol, creatinine, urea) kèm theo một giá trị số cụ thể để đối chiếu chỉ số (Ví dụ: 'đường huyết của tôi là 6.5', 'chỉ số alt là 45').\n"
+                "- graph_first: Tin nhắn hỏi về mối quan hệ giữa các thực thể y khoa cụ thể, tác dụng phụ, tương tác thuốc, chỉ định, chống chỉ định, ảnh hưởng của bệnh lý/triệu chứng đến thuốc hoặc ngược lại (Ví dụ: 'metformin tương tác với aspirin không', 'bị suy thận có dùng được paracetamol', 'tác dụng phụ của kháng sinh').\n"
+                "- global_summary: Tin nhắn chào hỏi xã giao, cảm ơn, tạm biệt, các câu hỏi chung chung không thuộc hai nhóm trên, hoặc câu hỏi tổng quan y khoa (Ví dụ: 'chào bác sĩ', 'hướng dẫn phòng bệnh tiểu đường', 'suy gan là gì').\n\n"
+                "QUY TẮC RÀNG BUỘC:\n"
+                "- Phân tích kỹ nội dung tin nhắn người dùng.\n"
+                "- Chỉ trả lời đúng một từ là tên nhánh: direct_db hoặc graph_first hoặc global_summary.\n"
+                "- Không giải thích gì thêm, không viết hoa, không thêm dấu chấm hay markdown.\n\n"
+                f"Tin nhắn: \"{message}\"\n"
+                "Nhánh phân loại:"
+            )
+            res = backend.chat(prompt=prompt, model=settings.ollama.router_model, temperature=0.0).strip().lower()
+            for val in ["direct_db", "graph_first", "global_summary"]:
+                if val in res:
+                    return val
+    except Exception:
+        pass
+
+    # 3. Fallback Detect Luồng 2 (Graph-First Search / Local relationships)
     # Specific entity relationship queries (contains tags like "thuốc", "bệnh", "tương tác", "ảnh hưởng", "tác dụng phụ")
     relation_keywords = [
         "tương tác", "ảnh hưởng", "tác động", "tác dụng phụ", "chỉ định", "chống chỉ định",
@@ -121,7 +153,7 @@ def detect_intent(message: str) -> str:
     if has_relation_keywords or has_entities:
         return "graph_first"
 
-    # 3. Fallback to Luồng 3 (Global Summary)
+    # 4. Fallback to Luồng 3 (Global Summary)
     return "global_summary"
 
 
