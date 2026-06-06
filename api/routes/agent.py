@@ -22,9 +22,6 @@ class AgentQueryIn(BaseModel):
     """Request body for agent query."""
     message: str = Field(..., min_length=1, max_length=4000)
     strategy: str = Field(default="auto", pattern="^(auto|graph)$")
-    use_langgraph: bool = False
-    use_react: bool = Field(default=True, description="Use ReAct pattern (default)")
-    use_legacy_pipeline: bool = Field(default=False)
     backend: str = Field(default="auto", pattern="^(auto|ollama|openrouter)$", description="LLM backend to use")
     history: list[dict[str, str]] = Field(default=[], description="Previous conversation turns")
 
@@ -60,22 +57,8 @@ async def api_agent_query(
     settings: SettingsDep,
     request: Request = None,
 ) -> AgentQueryOut:
-    """Execute agent query with selected strategy.
-    
-    Strategies:
-    - ReAct (default): Reasoning and acting with tool use
-    - Legacy: Original orchestrator pipeline
-    - LangGraph: Graph-based workflow (if installed)
-    
-    The strategy is selected based on request flags and environment configuration.
-    """
+    """Execute agent query with ReAct strategy."""
     check_rate_limit(request, settings)
-    
-    # Override settings based on request
-    if body.use_legacy_pipeline:
-        settings.agent.use_legacy_pipeline = True
-    if not body.use_react:
-        settings.agent.use_react = False
     
     # Create service with selected backend if specified
     if body.backend != "auto":
@@ -87,8 +70,6 @@ async def api_agent_query(
     result = service.execute(
         message=body.message,
         strategy=body.strategy,
-        use_legacy=body.use_legacy_pipeline,
-        use_langgraph=body.use_langgraph,
         history=body.history,
     )
     
@@ -102,28 +83,8 @@ async def api_agent_query_stream(
     settings: SettingsDep,
     request: Request = None,
 ) -> StreamingResponse:
-    """Stream agent execution events (NDJSON format).
-    
-    **Only supported for ReAct agent.** Returns real-time events:
-    - step: New iteration started
-    - reasoning_delta: Token from LLM stream
-    - parse_retry: Retry due to format error
-    - tool: Tool execution started
-    - tool_done: Tool execution completed  
-    - answer_start: Final answer generation begins
-    - answer_delta: Answer chunk
-    - done: Complete with full result
-    - error: Error occurred
-    
-    Note: Legacy and LangGraph do not support streaming.
-    """
+    """Stream agent execution events (NDJSON format)."""
     check_rate_limit(request, settings)
-    
-    if body.use_legacy_pipeline or not body.use_react:
-        raise HTTPException(
-            status_code=400,
-            detail="Streaming only supported for ReAct agent. Set use_react=true and use_legacy_pipeline=false"
-        )
     
     # Create service with selected backend if specified
     if body.backend != "auto":

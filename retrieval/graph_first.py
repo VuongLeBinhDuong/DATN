@@ -119,8 +119,7 @@ def _cross_encoder_rerank(question: str, chunks: list[dict[str, Any]], top_k: in
     """Local neural cross-encoder reranker with graceful fallback to LLM/lexical ranking."""
     try:
         from sentence_transformers import CrossEncoder
-        # Vietnamese document reranker or default lightweight cross-encoder
-        model_name = os.getenv("KG_RERANKER_MODEL", "dangvantuan/vietnamese-document-reranker")
+        model_name = (os.getenv("KG_RERANKER_MODEL") or "").strip().strip("\\\"'") or "dangvantuan/vietnamese-document-reranker"
         model = CrossEncoder(model_name, max_length=512)
         
         pairs = [[question, (ch.get("text") or "")[:800]] for ch in chunks]
@@ -162,7 +161,7 @@ def prune_subgraph(subgraph: dict[str, Any], seed_ids: list[str]) -> dict[str, A
     
     for ent in entities:
         ent_id = ent.get("entity_id")
-        name = (ent.get("name") or "").strip()
+        name = (ent.get("canonical_name") or ent.get("name") or "").strip()
         ent_type = (ent.get("type") or "").strip().lower()
         
         if not ent_id or not name:
@@ -180,10 +179,10 @@ def prune_subgraph(subgraph: dict[str, Any], seed_ids: list[str]) -> dict[str, A
     connected_entity_ids = set()
     
     for edge in edges:
-        source = edge.get("source")
-        target = edge.get("target")
+        source = edge.get("subject_entity_id") or edge.get("source")
+        target = edge.get("object_entity_id") or edge.get("target")
         
-        if source in valid_entity_ids and target in valid_entity_ids:
+        if source and target and source in valid_entity_ids and target in valid_entity_ids:
             clean_edges.append(edge)
             connected_entity_ids.add(source)
             connected_entity_ids.add(target)

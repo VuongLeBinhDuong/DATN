@@ -20,7 +20,7 @@ Providing reliable medical information requires a highly specialized approach to
 \label{table:retrieval_paradigms}
 \end{table}
 
-Based on this comparative status survey, the proposed system addresses these gaps by combining a **purified Custom Knowledge Graph (Neo4j)** for direct factual queries and **Microsoft GraphRAG** for global summary retrieval, orchestrated by a local **ReAct Agent** to ensure privacy, reasoning transparency, and clinical explainability.
+Based on this comparative status survey, the proposed system addresses these gaps by using a **purified Custom Knowledge Graph (Neo4j)** for precise direct factual queries, orchestrated by a local **ReAct Agent** to ensure privacy, reasoning transparency, and clinical explainability, while bypassing external Microsoft GraphRAG pipelines to minimize system complexity and latency.
 
 \section{Functional Overview}
 \label{section:2.2}
@@ -46,8 +46,8 @@ The main use cases include:
 To represent detailed relationships, the primary use cases are decomposed into specific sub-use cases:
 \begin{itemize}
     \item **UC-01: Consult Medical Agent** is decomposed into:
-        - *Retrieve Context via Cypher* (using Direct Neo4j KG matching).
-        - *Retrieve Microsoft GraphRAG Community Summaries* (for global overview fallbacks).
+        - *Retrieve Context via Cypher Path Queries* (using Direct Neo4j Custom KG matching).
+        - *Retrieve Context via k-Hop Expansion* (for neighborhood entity context).
         - *Execute Tool Calling* (interactively querying pill databases or clinical records).
         - *Stream NDJSON reasoning logs* (providing transparent chain-of-thought outputs on the UI).
     \item **UC-02: Upload \& Analyze Medical Record** is decomposed into:

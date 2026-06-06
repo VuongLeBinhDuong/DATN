@@ -144,7 +144,7 @@ class TestNeo4jRepository:
         from core.cache import clear_query_cache
         clear_query_cache()
         
-        with patch("llm_pipeline.neo4j_graphrag.retrieve_graph_context_with_sources", return_value=(mock_context, mock_hits)):
+        with patch("llm_pipeline.graphrag_query.run_graphrag_query_with_sources", return_value=(mock_context, mock_hits)):
             # 1. Cold query (Cache miss, triggers retrieve)
             res1 = repo.query("Flu query", use_cache=True)
             assert res1.text == "Extracted Neo4j context"
@@ -152,7 +152,7 @@ class TestNeo4jRepository:
             assert res1.metadata["cached"] is False
             
             # 2. Warm query (Cache hit, does not call retrieve)
-            with patch("llm_pipeline.neo4j_graphrag.retrieve_graph_context_with_sources") as mock_retrieve:
+            with patch("llm_pipeline.graphrag_query.run_graphrag_query_with_sources") as mock_retrieve:
                 res2 = repo.query("Flu query", use_cache=True)
                 assert res2.text == "Extracted Neo4j context"
                 assert res2.metadata["cached"] is True

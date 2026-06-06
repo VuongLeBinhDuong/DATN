@@ -158,7 +158,6 @@ class TestAgentEndpoints:
             "/api/agent-query",
             json={
                 "message": "What are flu symptoms?",
-                "use_react": True,
                 "strategy": "auto"
             }
         )
@@ -181,26 +180,12 @@ class TestAgentEndpoints:
         response = client.post(
             "/api/agent-query/stream",
             json={
-                "message": "What are flu symptoms?",
-                "use_react": True,
-                "use_legacy_pipeline": False
+                "message": "What are flu symptoms?"
             }
         )
         
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/x-ndjson"
-
-    def test_agent_stream_legacy_not_supported(self, client):
-        """Test streaming with legacy pipeline returns error."""
-        response = client.post(
-            "/api/agent-query/stream",
-            json={
-                "message": "Test",
-                "use_legacy_pipeline": True,
-                "use_react": False
-            }
-        )
-        assert response.status_code == 400
 
     def test_api_langchain_graph_query(self, client):
         """Test /api/langchain-graph-query endpoints."""

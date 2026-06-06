@@ -1,18 +1,18 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {2.1}{\ignorespaces Comparative analysis of medical retrieval paradigms}}{5}{table.caption.6}%
+\contentsline {table}{\numberline {2.1}{\ignorespaces Comparative analysis of medical retrieval paradigms}}{5}{table.caption.8}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Neo4j Node Labels and Properties}}{24}{table.caption.15}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces Neo4j Relationship Types}}{24}{table.caption.16}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces Libraries and tools used in the system}}{25}{table.caption.17}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces Test case summary}}{26}{table.caption.18}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Neo4j Node Labels and Properties}}{24}{table.caption.19}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Neo4j Relationship Types}}{24}{table.caption.20}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Libraries and tools used in the system}}{24}{table.caption.21}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Test case summary}}{26}{table.caption.22}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces Knowledge Graph statistics before and after entity pruning}}{29}{table.caption.19}%
-\contentsline {table}{\numberline {5.2}{\ignorespaces Custom KG Retrieval Evaluation on 10 clinical queries}}{32}{table.caption.20}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces Knowledge Graph statistics before and after entity pruning}}{28}{table.caption.23}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Custom KG Retrieval Evaluation on 10 clinical queries}}{31}{table.caption.24}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {A.1}{\ignorespaces Table to test captions and labels.}}{45}{table.caption.25}%
+\contentsline {table}{\numberline {A.1}{\ignorespaces Table to test captions and labels.}}{45}{table.caption.30}%
 \addvspace {10\p@ }
 \contentsfinish 
 \contentsfinish 

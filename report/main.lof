@@ -1,17 +1,19 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {3.1}{\ignorespaces Interactive Labeled Property Graph (LPG) subgraph visualization representing the clinical relationship path topology for COVID-19}}{13}{figure.caption.7}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces Detailed LPG Entity Nodes inside the Neo4j database storing attributes: canonical\_name, type, and aliases}}{13}{figure.caption.8}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces LPG Relationship edge (\texttt {REL}) storing properties: predicate, confidence, and source evidence\_chunk\_id}}{14}{figure.caption.9}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Interactive Labeled Property Graph (LPG) subgraph visualization representing the clinical relationship path topology for COVID-19}}{13}{figure.caption.9}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Detailed LPG Entity Nodes inside the Neo4j database storing attributes: canonical\_name, type, and aliases}}{13}{figure.caption.10}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces LPG Relationship edge (\texttt {REL}) storing properties: predicate, confidence, and source evidence\_chunk\_id}}{14}{figure.caption.11}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces System overall package dependency architecture}}{22}{figure.caption.17}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Agent query execution and streaming flow}}{23}{figure.caption.18}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Vis.js interactive subgraph rendered in the UI, mapping the clinical pathway surrounding COVID-19 to provide medical explainability (XAI)}}{35}{figure.caption.25}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {5.1}{\ignorespaces Vis.js interactive subgraph rendered in the UI, mapping the clinical pathway surrounding COVID-19 to provide medical explainability (XAI)}}{36}{figure.caption.21}%
-\addvspace {10\p@ }
-\addvspace {10\p@ }
-\contentsline {figure}{\numberline {A.1}{\ignorespaces Internet vạn vật}}{45}{figure.caption.26}%
-\contentsline {figure}{\numberline {A.2}{\ignorespaces Qui cách đóng quyển đồ án}}{47}{figure.caption.29}%
-\contentsline {figure}{\numberline {A.3}{\ignorespaces Qui cách đóng quyển đồ án}}{47}{figure.caption.30}%
+\contentsline {figure}{\numberline {A.1}{\ignorespaces Internet vạn vật}}{45}{figure.caption.31}%
+\contentsline {figure}{\numberline {A.2}{\ignorespaces Qui cách đóng quyển đồ án}}{47}{figure.caption.34}%
+\contentsline {figure}{\numberline {A.3}{\ignorespaces Qui cách đóng quyển đồ án}}{47}{figure.caption.35}%
 \addvspace {10\p@ }
 \contentsfinish 
 \contentsfinish 

@@ -26,7 +26,7 @@ WHERE size(e.canonical_name) > 30
 DETACH DELETE e;
 \end{verbatim}
 
-A \textbf{Graph-First routing strategy} was then implemented in \texttt{llm\_pipeline/graphrag\_query.py}: every query first hits the Custom KG via direct Cypher traversal. Only when the Custom KG returns insufficient results (fewer than a configurable top-K threshold) does the system fall back to Microsoft GraphRAG community summaries.
+A \textbf{Graph-First routing strategy} was then implemented in \texttt{llm\_pipeline/graphrag\_query.py}: every query hits the Custom KG via direct Cypher traversal. To ensure maximum precision, low latency, and clinical data confidentiality under local execution, routing to external Microsoft GraphRAG community summaries or CLI query commands was completely retired. The system now executes queries exclusively against the custom-pruned knowledge graph.
 
 \subsection*{Results}
 
@@ -52,17 +52,17 @@ The pruned graph retains \textbf{9,989 clinical documents} and \textbf{18,920 te
 \subsection*{Problem}
 Small-parameter local LLMs (e.g., Llama-3.1-8B) exhibit two critical failure modes when deployed in an iterative ReAct loop:
 \begin{enumerate}
-    \item \textbf{Format failures}: The LLM outputs reasoning text that does not conform to the expected ReAct tag structure (\texttt{Action:}, \texttt{Action Input:}, \texttt{Final Answer:}), causing the parser to fail on the very first iteration and returning an empty or error response to the user.
-    \item \textbf{Infinite loops}: The LLM repeatedly generates identical tool calls (same action and same input) across successive iterations, consuming the entire iteration budget without producing a useful final answer.
+\item \textbf{Format failures}: The LLM outputs reasoning text that does not conform to the expected ReAct tag structure (\texttt{Action:}, \texttt{Action Input:}, \texttt{Final Answer:}), causing the parser to fail on the very first iteration and returning an empty or error response to the user.
+\item \textbf{Infinite loops}: The LLM repeatedly generates identical tool calls (same action and same input) across successive iterations, consuming the entire iteration budget without producing a useful final answer.
 \end{enumerate}
 
 \subsection*{Solution}
 Three defensive mechanisms were designed and implemented in \texttt{agent/react/agent.py}:
 
 \begin{enumerate}
-    \item \textbf{Parse-retry with prompt repair}: When the parser detects a format error, it does not immediately fail. Instead, it appends a corrective repair prompt to the message history and re-queries the LLM up to \texttt{parse\_retries} times, giving the model a chance to self-correct its output format.
+\item \textbf{Parse-retry with prompt repair}: When the parser detects a format error, it does not immediately fail. Instead, it appends a corrective repair prompt to the message history and re-queries the LLM up to \texttt{parse\_retries} times, giving the model a chance to self-correct its output format.
 
-    \item \textbf{Recovery-forced GraphRAG (Iteration 1 only)}: If all parse retries are exhausted on the very first iteration — before any context has been retrieved — the system executes a direct fallback query using the original user question as input to \texttt{run\_graphrag\_tool()}. This guarantees that at least one retrieval is always performed, even when the model fails to generate a valid tool call. The synthesized observation is then injected back into the message history as a ``recovery synthetic message''.
+\item \textbf{Recovery-forced Retrieval (Iteration 1 only)}: If all parse retries are exhausted on the very first iteration — before any context has been retrieved — the system executes a direct fallback query using the original user question as input to \texttt{run\_graphrag\_tool()}, which queries the Custom KG. This guarantees that at least one retrieval is always performed, even when the model fails to generate a valid tool call. The synthesized observation is then injected back into the message history as a ``recovery synthetic message''.
 
     \item \textbf{Loop-guard via action signature tracking}: The system tracks each tool call's identity as a tuple \texttt{(action\_name, action\_input.casefold())}. If the same signature appears in two consecutive iterations, the loop-guard fires: it synthesizes a forced final answer from the accumulated graph context and terminates the loop immediately, preventing infinite runtime.
 \end{enumerate}
@@ -127,7 +127,7 @@ To address context dilution, a triangulated hybrid retrieval scoring pipeline wa
     \item \textbf{Reciprocal Rank Fusion (RRF)}: Fuses both candidate lists using standard reciprocal scoring:
     $$\text{RRF\_Score}(d) = \sum_{m \in M} \frac{1}{K + r_m(d)}$$
     where $K = 60$ is the constant smoothing factor, and $r_m(d)$ is the rank of document $d$ in channel $m$.
-    \item \textbf{Neural Cross-Encoder Reranking}: Integrates the local dense deep-learning rerank model \texttt{dangvantuan/vietnamese-document-reranker}. The Cross-Encoder scores the semantic relationship of the top 20 RRF fused candidates directly against the user query, pruning weak matches and selecting only the top-5 highest-scoring paragraphs for prompt injection.
+    \item \textbf{Neural Cross-Encoder Reranking}: Integrates the local dense deep-learning rerank model \texttt{itdainb/PhoRanker}. The Cross-Encoder scores the semantic relationship of the top 20 RRF fused candidates directly against the user query, pruning weak matches and selecting only the top-5 highest-scoring paragraphs for prompt injection.
 \end{enumerate}
 
 \subsection*{Results}

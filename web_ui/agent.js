@@ -531,7 +531,7 @@ function parseSubgraphFromContext(text) {
         }
       }
     } else {
-      const relMatch = line.match(/^[•*+-]\s*(.+?)\s*—\[([\d.\w_-]+)\]→\s*(.+)$/);
+      const relMatch = line.match(/([a-zA-Z0-9_]+)\s*—\[([^\]]+)\]→\s*([a-zA-Z0-9_]+)/);
       if (relMatch) {
         edges.push({
           from: relMatch[1].trim(),
@@ -549,7 +549,7 @@ function parseSubgraphFromContext(text) {
   const uniqueNodes = [];
   const seenNodes = new Set();
   for (const n of nodes) {
-    const key = n.label.toLowerCase();
+    const key = n.id.toLowerCase();
     if (!seenNodes.has(key)) {
       seenNodes.add(key);
       uniqueNodes.push(n);
@@ -560,10 +560,10 @@ function parseSubgraphFromContext(text) {
     const fromLower = e.from.toLowerCase();
     const toLower = e.to.toLowerCase();
     
-    if (!uniqueNodes.some(n => n.label.toLowerCase() === fromLower)) {
+    if (!uniqueNodes.some(n => n.id.toLowerCase() === fromLower)) {
       uniqueNodes.push({ id: e.from, label: e.from, type: "Unknown" });
     }
-    if (!uniqueNodes.some(n => n.label.toLowerCase() === toLower)) {
+    if (!uniqueNodes.some(n => n.id.toLowerCase() === toLower)) {
       uniqueNodes.push({ id: e.to, label: e.to, type: "Unknown" });
     }
   }
@@ -616,15 +616,20 @@ function renderGraphInContainer(containerId, subgraph) {
       };
     }
     
+    const isSeed = n.score > 1.5;
+    const fontSize = isSeed ? 15 : 11;
+    const borderW = isSeed ? 3.0 : 1.2;
+    const margin = isSeed ? 12 : 6;
+    
     return {
       id: n.id,
       label: n.label,
       title: n.description || n.label,
       shape: "box",
-      margin: 8,
-      font: { face: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif", size: 12, bold: true },
+      margin: margin,
+      font: { face: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif", size: fontSize, bold: true },
       color: color,
-      borderWidth: 1.5,
+      borderWidth: borderW,
       shapeProperties: { borderRadius: 6 }
     };
   });
@@ -787,23 +792,17 @@ async function sendAgentQuery() {
       // Format the raw context with sources
       let html = `<div class="chat-bubble-inner">`;
       html += `<div class="chat-answer">`;
-      html += `<pre class="chat-raw-context" style="white-space: pre-wrap; font-family: inherit; background: rgba(128,128,128,0.08); padding: 12px; border-radius: 8px; font-size: 14px; line-height: 1.6;">${escapeHtml(data.answer)}</pre>`;
+      html += `<p style="margin: 0 0 10px 0; font-weight: 500; color: var(--text);">Hệ thống đã truy xuất cơ sở dữ liệu đồ thị tri thức Neo4j và dựng sơ đồ mạng lưới thực thể bên dưới.</p>`;
+      html += `<details class="chat-details" style="margin-top: 8px;">`;
+      html += `<summary style="font-size: 13px; color: var(--muted); cursor: pointer; user-select: none;">Xem chi tiết ${data.sources ? data.sources.length : 0} ngữ cảnh đã truy xuất (raw context)</summary>`;
+      html += `<pre class="chat-raw-context" style="white-space: pre-wrap; font-family: inherit; background: rgba(128,128,128,0.08); padding: 12px; border-radius: 8px; font-size: 13px; line-height: 1.6; margin-top: 8px; max-height: 250px; overflow-y: auto;">${escapeHtml(data.answer)}</pre>`;
+      html += `</details>`;
       html += `</div>`;
       
       // Add dynamic subgraph canvas
       html += buildSubgraphHtml(data.answer);
       
-      // Add sources if available
-      if (data.sources && data.sources.length > 0) {
-        html += `<div class="chat-sources" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(128,128,128,0.15);">`;
-        html += `<strong style="font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.3px;">Nguồn:</strong>`;
-        html += `<ul style="margin: 8px 0 0 0; padding-left: 18px; font-size: 13px;">`;
-        for (const s of data.sources.slice(0, 6)) {
-          html += `<li style="margin-bottom: 4px;">${escapeHtml(s.title || "Unknown")} <span style="color: var(--muted);">(${escapeHtml(s.source || "")})</span></li>`;
-        }
-        html += `</ul></div>`;
-      }
-      
+
       // Add PDF export button
       html += buildPdfExportButtonHtml();
       html += `</div>`;

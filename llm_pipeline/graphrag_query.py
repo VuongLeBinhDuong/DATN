@@ -24,7 +24,7 @@ from llm_pipeline.neo4j_graphrag import (
 from llm_pipeline.terminal_logging import configure_package_terminal_logging
 
 # Custom KG routing (your 123k entities, 987k relations)
-from retrieval.graph_first import graph_first_retrieve, GraphFirstResult
+# from retrieval.graph_first import graph_first_retrieve, GraphFirstResult
 from kg.neo4j_client import Neo4jKGClient
 
 logger = logging.getLogger(__name__)
@@ -92,9 +92,10 @@ def _custom_kg_available() -> bool:
 
 def _run_custom_kg_query(question: str, neo_cfg: dict[str, Any] | None = None) -> tuple[str, list[dict[str, Any]]]:
     """Run query using custom KG (graph-first retrieval)."""
+    from retrieval.graph_first import graph_first_retrieve
     # Create client with config to ensure it works in web server
     client = Neo4jKGClient(cfg=neo_cfg) if neo_cfg else Neo4jKGClient()
-    result = graph_first_retrieve(question, client=client)
+    result = graph_first_retrieve(question, client=client, top_seed_entities=5, hops=1)
     
     # Debug logging
     if _want_graphrag_terminal_log():
@@ -131,7 +132,27 @@ def _run_custom_kg_query(question: str, neo_cfg: dict[str, Any] | None = None) -
     edges = subgraph.get("edges", [])
     
     if entities:
-        ctx += f"\n\n[Thông tin đồ thị: {len(entities)} entities, {len(edges)} relations]"
+        seed_set = set(result.debug.get("seed_entity_ids", []))
+        for i, ent in enumerate(entities[:100]):
+            pid = ent.get("entity_id", "")
+            title = ent.get("canonical_name", pid)
+            typ = ent.get("type", "Entity")
+            aliases = ent.get("aliases", [])
+            desc = f"Aliases: {', '.join(aliases)}" if aliases else f"Custom KG entity: {title}"
+            
+            score = 2.000 if pid in seed_set else 1.000
+            ctx += f"\n\n--- Entity [{i + 1}] (score≈{score:.3f}) id={pid} ---"
+            ctx += f"\ntitle: {title}"
+            ctx += f"\ntype: {typ}"
+            ctx += f"\ndescription: {desc}"
+            
+        if edges:
+            ctx += "\n\n--- Quan hệ (trong tập trên) ---"
+            for edge in edges[:40]:
+                at = edge.get("subject_entity_id", "")
+                bt = edge.get("object_entity_id", "")
+                pred = edge.get("predicate", "RELATED")
+                ctx += f"\n  • {at} —[{pred}]→ {bt}"
     
     return ctx, hits
 
@@ -139,7 +160,7 @@ def _run_custom_kg_query(question: str, neo_cfg: dict[str, Any] | None = None) -
 def run_graphrag_query_with_sources(
     question: str, *, retrieval_query: str | None = None
 ) -> tuple[str, list[dict[str, Any]]]:
-    """Route query to: Custom KG -> Microsoft GraphRAG Neo4j -> CLI GraphRAG."""
+    """Route query exclusively to Custom KG, bypassing Microsoft GraphRAG entirely."""
     configure_package_terminal_logging()
     q = (question or "").strip()
     rq = (retrieval_query or q).strip() or q
@@ -150,7 +171,6 @@ def run_graphrag_query_with_sources(
             (rq[:280] + "…") if len(rq) > 280 else rq,
         )
     
-    # === PRIORITY 1: Custom KG (your 123k entities) ===
     neo_cfg = load_neo4j_config()
     if _custom_kg_available():
         if _want_graphrag_terminal_log():
@@ -163,50 +183,13 @@ def run_graphrag_query_with_sources(
                 except Exception as exc:
                     return f"Custom KG (không gọi được LLM: {exc}):\n\n{ctx}", hits
             return ctx, hits
-        # Custom KG empty, fall through to Microsoft GraphRAG
+        return "Custom KG không tìm thấy ngữ cảnh phù hợp cho câu hỏi này.", []
     
-    # === PRIORITY 2: Microsoft GraphRAG Neo4j ===
-    if neo4j_enabled(neo_cfg) and neo_cfg is not None:
-        if _want_graphrag_terminal_log():
-            logger.info("graphrag_query: routing to Microsoft GraphRAG Neo4j")
-        ctx, hits = retrieve_graph_context_with_sources(rq, neo_cfg)
-        if _want_graphrag_terminal_log():
-            logger.info(
-                "graphrag_query: Neo4j context=%s ký tự, hits=%s, synthesize=%s",
-                len(ctx),
-                len(hits),
-                neo_cfg.get("synthesize_with_ollama", True),
-            )
-        if not ctx.strip():
-            return (
-                (
-                    "Neo4j GraphRAG: không lấy được ngữ cảnh (thường do DB chưa có nút :GraphEntity, "
-                    "sai database/URI so với config, hoặc fulltext index chưa tạo).\n\n"
-                    "Làm lần lượt:\n"
-                    "1) Đảm bảo đã có parquet nguồn (vd: backups/<snapshot>/graphrag_output hoặc graphrag/update_output).\n"
-                    "2) Import vào đúng Neo4j trong config/neo4j.json (uri, database, password):\n"
-                    "   • PowerShell (từ thư mục repo): .\\run_pipeline.ps1 -SyncGraphragToNeo4j\n"
-                    "   • Hoặc: python scripts/graphrag_parquet_to_neo4j.py --output-dir backups\\<snapshot>\\graphrag_output --clear\n"
-                    "     (thay <snapshot> bằng tên thật, ví dụ pre_reindex_20260408_210120).\n"
-                    "3) Script import sẽ tạo fulltext index graphEntityFulltext (và community nếu có). Khởi động lại API sau khi import."
-                ),
-                [],
-            )
-        if neo_cfg.get("synthesize_with_ollama", True):
-            try:
-                return synthesize_graph_answer(q, ctx, neo_cfg), hits
-            except Exception as exc:  # noqa: BLE001
-                return (
-                    f"Neo4j (không gọi được LLM tổng hợp: {exc}). Ngữ cảnh đã truy vấn:\n\n{ctx}",
-                    hits,
-                )
-        return ctx, hits
-
-    # === FALLBACK: CLI GraphRAG (không có structured hits) ===
-    if _want_graphrag_terminal_log():
-        logger.info("graphrag_query: routing to CLI GraphRAG")
-    text = _run_graphrag_query_cli_only(rq)
-    return text, []
+    return (
+        "Custom KG (Cơ sở dữ liệu đồ thị tùy chỉnh) hiện tại không khả dụng hoặc chưa được cấu hình. "
+        "Vui lòng kiểm tra kết nối Neo4j trong cấu hình hệ thống.",
+        []
+    )
 
 
 def _run_graphrag_query_cli_only(rq: str) -> str:

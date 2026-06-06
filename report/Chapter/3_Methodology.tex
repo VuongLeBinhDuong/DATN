@@ -1,7 +1,7 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 
-This chapter provides a rigorous theoretical exposition and technical justification of the methodology utilized to build the offline-first, highly reliable clinical question-answering (QA) and consultation system. Section \ref{section:3.1} details the mathematical and structural formulation of Labeled Property Graphs (LPGs) and their implementation via the Neo4j engine. Section \ref{section:3.2} evaluates standard Vector Retrieval-Augmented Generation (RAG), analyzes its fundamental cognitive limitations, and presents the paradigm shift to GraphRAG under a dual-layer retrieval architecture. Section \ref{section:3.3} establishes the framework for Agentic AI, focusing on the Reasoning and Acting (ReAct) paradigm, custom runtime safety guards, and stateful dialog orchestration using LangGraph. Finally, Section \ref{section:3.4} offers a comprehensive technical justification of the localized development stack, emphasizing asynchronous stream processing, local LLM hosting, and privacy-preserving document digestion.
+This chapter provides a rigorous theoretical exposition and technical justification of the methodology utilized to build the offline-first, highly reliable clinical question-answering (QA) and consultation system. Section \ref{section:3.1} details the mathematical and structural formulation of Labeled Property Graphs (LPGs) and their implementation via the Neo4j engine. Section \ref{section:3.2} evaluates standard Vector Retrieval-Augmented Generation (RAG), analyzes its fundamental cognitive limitations, and presents the paradigm shift to GraphRAG under a dual-layer retrieval architecture. Section \ref{section:3.3} establishes the framework for Agentic AI, focusing on the Reasoning and Acting (ReAct) paradigm, custom runtime safety guards, and simplified stateful dialog orchestration. Finally, Section \ref{section:3.4} offers a comprehensive technical justification of the localized development stack, emphasizing asynchronous stream processing, local LLM hosting, and privacy-preserving document digestion.
 
 \section{Knowledge Graphs and Labeled Property Graphs (LPG)}
 \label{section:3.1}
@@ -153,7 +153,7 @@ G_{sub} = \text{ExpandSubgraph}(V_{seed}, H)
 This dual-stage retrieval mechanism ensures that when the patient asks about drug interactions or symptoms of a specific condition, the system injects only the direct, verified medical evidence into the prompt context, avoiding prompt bloat and reducing hallucination.
 
 \subsubsection{2. Global GraphRAG (Microsoft GraphRAG Paradigm)}
-For global, high-level clinical queries, the system uses hierarchical community clustering algorithms. During the offline indexing phase:
+For global, high-level clinical queries, hierarchical community clustering algorithms (such as the Microsoft GraphRAG paradigm) were evaluated. During the offline indexing phase:
 \begin{enumerate}
     \item The entire clinical graph is partitioned into hierarchical communities using the **Leiden Algorithm** \cite{traag2019from}, which optimizes modularity:
     \begin{equation}
@@ -163,6 +163,7 @@ For global, high-level clinical queries, the system uses hierarchical community 
     \item For each discovered community, a local LLM writes a comprehensive narrative summary detailing the entities, relationships, and key findings within that cluster.
     \item When a global query is executed, the engine runs a MapReduce-style retrieval. It identifies the relevant community summaries (Map phase), generates partial answers, and aggregates them into a final clinical synthesis (Reduce phase).
 \end{enumerate}
+While this global community summarization provides high-level synthesis, executing MapReduce queries against local LLMs incurs extreme latencies (often exceeding 30 seconds per request) and requires massive VRAM resources. Consequently, the active query engine bypasses the Microsoft GraphRAG CLI pipeline, routing queries exclusively to the Custom KG to guarantee real-time, low-latency performance under 1.5 seconds.
 
 \section{Agentic AI and Dialog State Orchestration}
 \label{section:3.3}
@@ -174,11 +175,11 @@ Static QA pipelines process inputs in a rigid, linear sequence. However, medical
 To minimize response latency and avoid invoking heavy language models for simple queries, the system deploys a high-efficiency, layered **Hybrid Intent Router** as the gateway of the conversation. Given a user query $q$, the routing gateway $R(q)$ directs the query along three possible execution pipelines based on a hybrid classification mechanism:
 
 \paragraph{1. Zero-LLM Fast-Path (0ms Latency)}
-First, the engine evaluates the query against a compiled set of regular expressions and rule matches. If the query mentions any standard biological laboratory indicator (e.g., \texttt{glucose}, \texttt{acid uric}, \texttt{AST}, \texttt{ALT}) along with a quantitative numerical value (e.g., $7.5$), it bypasses LLM inference entirely. The query is routed to the deterministic physiological validator:
+First, the engine evaluates the query against a compiled set of regular expressions and rule matches. If the query mentions any standard laboratory indicator (e.g., \texttt{glucose}, \texttt{acid uric}, \texttt{AST}, \texttt{ALT}) along with a quantitative numerical value (e.g., $7.5$), it bypasses LLM inference entirely. The query is routed to the deterministic physiological validator:
 \begin{equation}
 R(q) = \text{direct\_db}
 \end{equation}
-which parses the boundaries and compares them mathematically against clinical ground truth in $0\text{ms}$.
+which parses the boundaries and compares them mathematically against clinical reference ranges in $0\text{ms}$.
 
 \paragraph{2. Lightweight Parallel SLM Classifier}
 If the query does not match the rules for direct physiological check but contains complex sentence structures, the system invokes a parallel, specialized Small Language Model (SLM) classification step. The system instantiates a dedicated instance of a 1.5B parameter model (such as \texttt{qwen2.5:1.5b-instruct}) running in parallel on the local server. The SLM is prompted to classify the query's intent into one of three routing tokens:
@@ -211,11 +212,12 @@ Deploying raw LLMs in autonomous agent loops introduces engineering risks, such 
     \item **Format-Recovery Parser**: The LLM is instructed to output its thoughts and actions in a strict JSON schema. If the LLM generates slightly malformed JSON, a regex-based parser attempts to clean and rebuild the JSON structure. If parsing still fails, the error message is fed back into the LLM as a system observation, allowing the agent to self-correct.
 \end{enumerate}
 
-\subsection{Stateful Dialog Orchestration via LangGraph}
+\subsection{Stateful Dialog Orchestration and Simplified Routing}
 
-While the ReAct loop manages step-by-step tool use, a larger state machine is required to coordinate the overall conversation, manage memory, and enforce clinical safety boundaries. The system implements this state machine using **LangGraph**.
+While the ReAct loop manages step-by-step tool use, coordinating the overall conversation can be modeled as a state machine. In the design phase, stateful orchestration using **LangGraph** was evaluated, representing the application as a stateful, cyclic directed graph $G_{State} = (N, E, S)$ where $N$ is a set of processing nodes, $E$ is a set of state transition edges, and $S$ is a shared state vector.
 
-LangGraph models the application as a stateful, cyclic directed graph $G_{State} = (N, E, S)$ where $N$ is a set of processing nodes, $E$ is a set of state transition edges, and $S$ is a shared state vector. The orchestration flow is modeled as a state-transition sequence $S_{t+1} = \delta(S_t, \text{Node}_i)$. By defining clear state transitions, the system ensures the agent remains on-topic, respects clinical safety limits, and falls back to safe responses.
+However, to optimize the local execution environment and eliminate the computational overhead of state transitions on consumer-grade hardware, the active implementation replaces the LangGraph state machine with a direct, unified FastAPI execution layer and a single-stage ReAct loop. This simplification halves the routing latency while keeping conversational history fully managed in a localized memory array.
+
 
 \section{Technical Infrastructure and Development Stack Justification}
 \label{section:3.4}

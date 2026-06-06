@@ -62,33 +62,6 @@ class TestAgentService:
         assert "KẾT QUẢ ĐỐI CHIẾU CHỈ SỐ LÂM SÀNG TỰ ĐỘNG" in res["answer"]
         assert res["sources"][0]["source"] == "Bộ Y tế Việt Nam / WHO Guidelines"
 
-    def test_execute_legacy_strategy(self, clean_settings_cache):
-        """Test execute runs legacy orchestrator when settings specify it or force flag passed."""
-        mock_llm = MagicMock()
-        service = AgentService(llm_backend=mock_llm)
-        
-        mock_legacy_result = {"answer": "Legacy answer", "plan": {}}
-        
-        # Force legacy through execution flags
-        with patch("services.agent_service.run_agent_demo", return_value=mock_legacy_result) as mock_legacy:
-            res = service.execute("Flu query", use_legacy=True)
-            assert res == mock_legacy_result
-            mock_legacy.assert_called_once()
-
-    def test_execute_langgraph_strategy(self, clean_settings_cache):
-        """Test execute runs LangGraph pipeline when requested and installed."""
-        mock_llm = MagicMock()
-        service = AgentService(llm_backend=mock_llm)
-        
-        mock_lg_result = {"answer": "LangGraph answer"}
-        
-        # Force langgraph
-        with patch.object(service, "_should_use_langgraph", return_value=True):
-            with patch.object(service, "_run_langgraph", return_value=mock_lg_result) as mock_lg:
-                res = service.execute("Flu query", use_langgraph=True)
-                assert res == mock_lg_result
-                mock_lg.assert_called_once_with("Flu query", "auto")
-
     def test_execute_stream_react(self, clean_settings_cache):
         """Test streaming execution yields events via ReAct agent."""
         mock_llm = MagicMock()
@@ -99,18 +72,6 @@ class TestAgentService:
         with patch("agent.react.ReActAgent.run_stream", return_value=iter(events)):
             stream = list(service.execute_stream("Hello"))
             assert stream == events
-
-    def test_execute_stream_legacy_raises(self, clean_settings_cache):
-        """Test streaming raises ValueError for unsupported legacy pipeline."""
-        mock_llm = MagicMock()
-        service = AgentService(llm_backend=mock_llm)
-        
-        # Settings trigger legacy
-        service.settings.agent.use_legacy_pipeline = True
-        
-        with pytest.raises(ValueError) as exc_info:
-            list(service.execute_stream("Hello"))
-        assert "Streaming not supported for legacy" in str(exc_info.value)
 
 
 class TestRetrievalService:
