@@ -1,11 +1,11 @@
 # Phân hệ Tác tử Hội thoại Nhận thức (Cognitive Agent Module)
-> **Trái tim tư duy lâm sàng** của hệ thống CDSS, chịu trách nhiệm tiếp nhận câu hỏi y tế, lập kế hoạch, truy vấn tri thức đồ thị Neo4j, kiểm duyệt và sinh câu trả lời đồng thuận chuẩn xác.
+> **Trái tim tư duy lâm sàng** của hệ thống CDSS, chịu trách nhiệm tiếp nhận câu hỏi y tế, phân loại định tuyến, lập kế hoạch, truy vấn tri thức đồ thị Neo4j, và sinh câu trả lời đồng thuận chuẩn xác.
 
 ---
 
 ## 1. Tổng quan Kiến trúc Bộ phận
 
-Thư mục `agent/` đóng vai trò là lõi xử lý lập luận nhận thức trong hệ thống CDSS. Nó hỗ trợ ba chế độ thực thi đa dạng tùy thuộc vào nhu cầu nghiên cứu và môi trường triển khai.
+Thư mục `agent/` đóng vai trò là lõi xử lý lập luận nhận thức trong hệ thống CDSS. Để giảm thiểu độ trễ tối đa (từ ~15 giây xuống dưới 1.5 giây), luồng chạy LangGraph cồng kềnh và luồng Legacy cũ đã được **loại bỏ** trong quá trình tối ưu hóa. Hiện tại hệ thống vận hành duy nhất một luồng chẩn đoán tối ưu: **Hybrid Intent Router kết hợp ReAct Agent Core**.
 
 ### Sơ đồ Luồng Hoạt động Toàn trình (Bản vẽ tay bằng Ký tự ASCII)
 
@@ -18,28 +18,27 @@ Thư mục `agent/` đóng vai trò là lõi xử lý lập luận nhận thức
                     +---------------------------+
                     |    ROUTER CHIẾN LƯỢC      |
                     +---------------------------+
-                      /           |           \
-         [Legacy]   /             | [ReAct]     \  [LangGraph]
-                  /               |               \
-                 v                v                v
-      +------------------+  +-----------+  +-------------------+
-      | Orchestrator Cũ  |  | Vòng Lặp  |  | State Machine     |
-      | (Tuần tự tuyến   |  | ReAct     |  | LangGraph         |
-      |  tính thô)       |  | Core      |  | (Tuyến tính hóa)  |
-      +------------------+  +-----------+  +-------------------+
-              |                   |                  |
-              |                   v                  |
-              +-----------> [ HẠ TẦNG ] <------------+
-                            | - Neo4j / GraphRAG CLI |
-                            | - Dược điển cục bộ     |
-                            +------------------------+
-                                  |
-                                  v
-                    +---------------------------+
-                    |  Câu trả lời chuẩn y khoa  |
-                    |  - Ảnh minh họa thuốc     |
-                    |  - Bản đối chiếu sinh học |
-                    +---------------------------+
+                      /                       \
+        [Ý định direct_db]                 [Ý định RAG / Chẩn đoán]
+                    /                           \
+                   v                             v
+        +---------------------+       +-----------------------+
+        | Định tuyến nhanh 0ms|       | Vòng Lặp Lập Luận Lõi |
+        | (So khớp chỉ số)    |       | ReAct Agent Core      |
+        +---------------------+       +-----------------------+
+                   |                             |
+                   v                             v
+                   +-------> [ HẠ TẦNG CDSS ] <--+
+                             | - Neo4j / Graph-First Retrieval
+                             | - Dược điển cục bộ (Pill store)
+                             +------------------------+
+                                         |
+                                         v
+                           +---------------------------+
+                           |  Câu trả lời chuẩn y khoa  |
+                           |  - Sơ đồ mạng lưới Vis.js |
+                           |  - Ảnh minh họa thuốc     |
+                           +---------------------------+
 ```
 
 ---
@@ -120,10 +119,10 @@ Mạch ReAct (Reason + Action) vận hành dựa trên cơ chế lặp để k�
 - **`react/prompts.py`**: Hệ thống prompts học thuật định hướng bằng tiếng Việt, thiết lập ngữ cảnh chuyên gia y khoa CDSS và cơ chế hướng dẫn định dạng.
 - **`react/tools.py`**: Lớp trung gian thực thi công cụ đặc hiệu của ReAct (truy vấn đồ thị tri thức, tìm kiếm thuốc).
 
-### B. Thành phần bổ trợ & Các biến thể chiến lược
+### B. Thành phần bổ trợ (Legacy / Experimental)
 - **`__main__.py`**: Điểm bắt đầu (CLI entry point) cho phép chạy thử nghiệm và đánh giá chất lượng Agent từ Command Line.
-- **`orchestrator.py`**: Luồng xử lý tuần tự truyền thống (Legacy Pipeline): Phác thảo kế hoạch -> Gọi GraphRAG -> Rút trích chỉ số thuốc -> Tổng hợp kết quả.
-- **`langgraph_app.py`**: State machine sử dụng LangGraph để thiết kế luồng xử lý tuần tự tuyến tính: router -> graphrag -> synthesize.
+- **`orchestrator.py` (Legacy)**: Luồng xử lý tuần tự truyền thống (đã nghỉ hưu trong uvicorn server).
+- **`langgraph_app.py` (Legacy)**: State machine sử dụng LangGraph thiết kế luồng tuần tự (đã nghỉ hưu trong uvicorn server).
 - **`router.py`**: Hệ thống phân loại câu hỏi (Social conversational vs. Medical RAG) sử dụng kỹ thuật Heuristics kết hợp LLM Prompting kiểu NeMo Guardrails để chuyển hướng yêu cầu chính xác.
 - **`retrieval_confidence.py`**: Thuật toán đánh giá độ tin cậy của ngữ cảnh RAG (`Level: cao/trung/thap`) dựa trên mật độ ký tự, điểm số truy xuất cao nhất và tính sẵn có của tài liệu nguồn.
 - **`medication_tools.py`**: Công cụ trích xuất thực thể dược học lâm sàng tự động từ văn bản truy xuất và lập lịch nhắc uống thuốc mẫu.

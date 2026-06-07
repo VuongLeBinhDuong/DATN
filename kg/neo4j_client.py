@@ -287,7 +287,7 @@ class Neo4jKGClient:
             return [dict(r) for r in session.run(cypher, {"limit": int(limit), "skip": int(skip), "doc_id": doc_id})]
 
     def search_entities_fulltext(self, query: str, *, limit: int = 12, index_name: str = "kgEntityFulltext") -> list[dict[str, Any]]:
-        """Search entities by canonical_name AND aliases (synonym-aware).
+        """Search entities by canonical_name AND aliases (synonym-aware) with term-matching scoring.
         
         Supports medical synonyms: tiểu đường = đái tháo đường = diabetes
         """
@@ -299,26 +299,35 @@ class Neo4jKGClient:
 
         # Build pattern for word matching
         words = [w for w in q.split() if len(w) >= 2]
-        if not words:
-            words = [q]
+        # Filter out common Vietnamese stop words to avoid noise from generic terms
+        stop_words = {
+            "bị", "và", "có", "để", "ăn", "uống", "những", "gì", "như", "thế", "nào", 
+            "an", "toàn", "cần", "bệnh", "nhân", "độ", "của", "tôi", "là", "cho", "với",
+            "trong", "các", "nhưng", "hoặc", "vì", "nên", "thì", "mà", "này", "kia"
+        }
+        filtered_words = [w for w in words if w not in stop_words and not w.endswith("?")]
+        if not filtered_words:
+            filtered_words = words if words else [q]
 
-        # Search both canonical_name AND aliases for synonym matching
-        # Example: query "tiểu đường" matches entity with canonical_name "đái tháo đường" 
-        # if "tiểu đường" is in aliases
+        # Build a term matching score query
+        terms_count = len(filtered_words)
+        sum_expr = " + ".join([
+            f"CASE WHEN toLower(e.canonical_name) CONTAINS $word{i} OR ANY(alias IN coalesce(e.aliases, []) WHERE toLower(alias) CONTAINS $word{i}) THEN 1.0 ELSE 0.0 END"
+            for i in range(terms_count)
+        ])
+
         cypher = (
             "MATCH (e:Entity) "
-            "WHERE " + " OR ".join([
-                f"(toLower(e.canonical_name) CONTAINS $word{i} "
-                f" OR ANY(alias IN coalesce(e.aliases, []) WHERE toLower(alias) CONTAINS $word{i}))"
-                for i in range(len(words))
-            ]) + " "
+            f"WITH e, ({sum_expr}) AS match_score "
+            "WHERE match_score > 0.0 "
             "RETURN e.entity_id AS entity_id, e.canonical_name AS canonical_name, "
             "       coalesce(e.type,'') AS type, coalesce(e.aliases, []) AS aliases, "
-            "       1.0 AS score "
+            "       match_score AS score "
+            "ORDER BY score DESC "
             "LIMIT $lim"
         )
 
-        params = {f"word{i}": w for i, w in enumerate(words)}
+        params = {f"word{i}": w for i, w in enumerate(filtered_words)}
         params["lim"] = int(limit) * 3
 
         with driver.session(database=db) as session:

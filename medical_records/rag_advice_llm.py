@@ -213,7 +213,7 @@ def fetch_graphrag_context(
         except Exception as exc_fb:  # noqa: BLE001
             meta["retrieval_fallback_error"] = str(exc_fb)
 
-    max_ctx = int(os.getenv("MEDICAL_RECORD_GRAPHRAG_MAX_CONTEXT_CHARS", "48000"))
+    max_ctx = int(os.getenv("MEDICAL_RECORD_GRAPHRAG_MAX_CONTEXT_CHARS", "12000"))
     if len(ctx) > max_ctx:
         ctx = ctx[:max_ctx] + "\n\n[… đã cắt bớt ngữ cảnh GraphRAG theo MEDICAL_RECORD_GRAPHRAG_MAX_CONTEXT_CHARS]"
 
@@ -362,6 +362,15 @@ If **no** abnormal results: brief routine follow-up.
 """
 
     try:
+        try:
+            from core.settings import get_settings
+            num_ctx = get_settings().ollama.num_ctx
+        except Exception:
+            try:
+                num_ctx = int(os.getenv("OLLAMA_NUM_CTX", "16384"))
+            except ValueError:
+                num_ctx = 16384
+
         url = host + "/api/chat"
         sys_msg = (
             _SYSTEM_NO_INSTRUCTION_ECHO_VI
@@ -375,7 +384,10 @@ If **no** abnormal results: brief routine follow-up.
                 {"role": "user", "content": prompt},
             ],
             "stream": False,
-            "options": {"temperature": 0.15},
+            "options": {
+                "temperature": 0.15,
+                "num_ctx": num_ctx,
+            },
         }
         resp = requests.post(url, json=payload, timeout=timeout)
         if meta_out is not None:

@@ -52,6 +52,20 @@ def _skip_on_form_compare() -> bool:
     )
 
 
+def _disable_llm() -> bool:
+    """Tắt toàn bộ LLM (GraphRAG + narrative) khi MEDICAL_RECORD_DISABLE_LLM=1.
+
+    Dùng để debug nhanh hoặc khi Ollama chưa sẵn sàng.
+    Đặt trong .env: MEDICAL_RECORD_DISABLE_LLM=1
+    """
+    return os.getenv("MEDICAL_RECORD_DISABLE_LLM", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
 def _classify(value: float, low: float, high: float) -> str:
     if value < low:
         return "below_reference"
@@ -178,12 +192,24 @@ Write a brief response in three parts:
 Avoid definitive diagnosis when evidence is thin; do not invent lab values."""
 
     try:
+        try:
+            from core.settings import get_settings
+            num_ctx = get_settings().ollama.num_ctx
+        except Exception:
+            try:
+                num_ctx = int(os.getenv("OLLAMA_NUM_CTX", "16384"))
+            except ValueError:
+                num_ctx = 16384
+
         url = host + "/api/chat"
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "stream": False,
-            "options": {"temperature": 0.2},
+            "options": {
+                "temperature": 0.2,
+                "num_ctx": num_ctx,
+            },
         }
         resp = requests.post(url, json=payload, timeout=timeout)
         resp.raise_for_status()
@@ -271,18 +297,19 @@ def analyze_medical_file(
         on_form_lab = compare_extracted_report_on_form(text, patient_sex=patient_sex)
     preview = text[:text_preview_max] + ("..." if len(text) > text_preview_max else "")
     do_llm = with_llm if with_llm is not None else os.getenv("USE_OLLAMA", "").lower() in ("1", "true", "yes")
+    llm_disabled = _disable_llm()
     narrative = None
-    if do_llm and use_internal_reference:
+    if do_llm and use_internal_reference and not llm_disabled:
         narrative = build_llm_summary(preview, comparisons, disclaimer)
     narrative_report_compare = None
-    if with_report_compare_llm and text.strip():
+    if with_report_compare_llm and text.strip() and not llm_disabled:
         narrative_report_compare = llm_compare_result_to_reference_on_report(
             text,
             language=report_compare_language,
         )
     narrative_extract_and_graphrag = None
     graphrag_advice_meta: dict[str, Any] | None = None
-    if text.strip():
+    if text.strip() and not llm_disabled:
         try:
             gr_top_k = int(os.getenv("MEDICAL_RECORD_GRAPHRAG_TOP_K", "6"))
         except ValueError:
@@ -311,6 +338,8 @@ def analyze_medical_file(
         )
         if graphrag_advice_meta is not None:
             graphrag_advice_meta["lab_compare_block_chars"] = len(lab_for_llm)
+    elif llm_disabled:
+        graphrag_advice_meta = {"disabled": True, "reason": "MEDICAL_RECORD_DISABLE_LLM=1"}
     suggested_medications = extract_suggested_drugs_from_narrative(narrative_extract_and_graphrag)
     suggested_medications = enrich_suggested_medications_with_pill_images(suggested_medications)
     upload_root = medical_record_upload_dir()

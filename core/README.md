@@ -14,6 +14,7 @@
 |---|---|
 | `settings.py` | Cấu hình toàn hệ thống bằng Pydantic Settings |
 | `llm_backends.py` | Interface và implementation backend (Ollama/OpenRouter) |
+| `intent_router.py` | Bộ phân loại và định tuyến ý định chẩn đoán (Fast-Path/SLM) |
 | `cache.py` | Query cache và thống kê hit/miss |
 | `connection_pool.py` | Theo dõi/điều phối kết nối driver |
 

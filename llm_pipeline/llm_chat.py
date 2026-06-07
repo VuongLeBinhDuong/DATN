@@ -25,6 +25,15 @@ def chat_ollama(
     temperature: float,
     num_predict: int,
 ) -> str:
+    try:
+        from core.settings import get_settings
+        num_ctx = get_settings().ollama.num_ctx
+    except Exception:
+        try:
+            num_ctx = int(os.getenv("OLLAMA_NUM_CTX", "16384"))
+        except ValueError:
+            num_ctx = 16384
+
     url = host.rstrip("/") + "/api/chat"
     payload: dict = {
         "model": model,
@@ -33,6 +42,7 @@ def chat_ollama(
         "options": {
             "temperature": temperature,
             "num_predict": num_predict,
+            "num_ctx": num_ctx,
         },
     }
     resp = requests.post(url, json=payload, timeout=timeout)

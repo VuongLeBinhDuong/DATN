@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import shutil
 import tempfile
@@ -137,7 +138,8 @@ async def analyze_medical_record(
             and use_internal_reference.strip().lower() in ("1", "true", "yes", "on")
         )
         sheet = (sheet_name or "").strip() or None
-        result = analyze_medical_file(
+        result = await asyncio.to_thread(
+            analyze_medical_file,
             tmp,
             page_spec=pages,
             crop_norm=crop_norm,

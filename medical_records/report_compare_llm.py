@@ -56,12 +56,24 @@ Cấu trúc gợi ý (markdown):
 --- KẾT THÚC PHIẾU ---"""
 
     try:
+        try:
+            from core.settings import get_settings
+            num_ctx = get_settings().ollama.num_ctx
+        except Exception:
+            try:
+                num_ctx = int(os.getenv("OLLAMA_NUM_CTX", "16384"))
+            except ValueError:
+                num_ctx = 16384
+
         url = host + "/api/chat"
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "stream": False,
-            "options": {"temperature": 0.15},
+            "options": {
+                "temperature": 0.15,
+                "num_ctx": num_ctx,
+            },
         }
         resp = requests.post(url, json=payload, timeout=timeout)
         resp.raise_for_status()

@@ -215,6 +215,10 @@ def extract_clinical_entities(question: str) -> list[dict[str, str]]:
     if not backend.is_available():
         return []
         
+    q_trimmed = question.strip()
+    if len(q_trimmed) > 800:
+        q_trimmed = q_trimmed[:800] + "..."
+        
     prompt = (
         "Bạn là một trợ lý y khoa AI chuyên nghiệp có nhiệm vụ trích xuất các thực thể lâm sàng từ câu hỏi của người dùng.\n"
         "Hãy trích xuất tất cả các thực thể thuộc một trong các loại sau:\n"
@@ -229,7 +233,7 @@ def extract_clinical_entities(question: str) -> list[dict[str, str]]:
         "Ví dụ:\n"
         "User: Bị tiểu đường uống Metformin và Aspirin cùng lúc được không?\n"
         '[{"name": "tiểu đường", "type": "DISEASE"}, {"name": "Metformin", "type": "DRUG"}, {"name": "Aspirin", "type": "DRUG"}]\n\n'
-        f"Câu hỏi: {question}\n"
+        f"Câu hỏi: {q_trimmed}\n"
         "JSON:"
     )
     
@@ -244,6 +248,7 @@ def extract_clinical_entities(question: str) -> list[dict[str, str]]:
     except Exception:
         pass
     return []
+
 
 
 def graph_first_retrieve(

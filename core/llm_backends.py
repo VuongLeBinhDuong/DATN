@@ -153,6 +153,7 @@ class OllamaBackend(LLMBackend):
         settings = get_settings()
         self.host = (host or settings.ollama.host).rstrip("/")
         self.default_model = settings.ollama.model
+        self.num_ctx = settings.ollama.num_ctx
 
     def _get_default_headers(self) -> dict[str, str]:
         return {"Content-Type": "application/json"}
@@ -202,7 +203,10 @@ class OllamaBackend(LLMBackend):
             "model": model_name,
             "messages": [{"role": "user", "content": prompt}],
             "stream": False,
-            "options": {"temperature": temperature},
+            "options": {
+                "temperature": temperature,
+                "num_ctx": self.num_ctx,
+            },
         }
 
         # Ollama uses num_predict instead of max_tokens
@@ -258,7 +262,10 @@ class OllamaBackend(LLMBackend):
             "model": model_name,
             "messages": messages,
             "stream": True,
-            "options": {"temperature": temperature},
+            "options": {
+                "temperature": temperature,
+                "num_ctx": self.num_ctx,
+            },
         }
 
         if max_tokens is not None:

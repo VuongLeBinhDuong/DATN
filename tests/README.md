@@ -12,6 +12,10 @@ Mục tiêu chính: phát hiện lỗi sớm khi thay đổi code (route, agent,
 | `test_core_llm_backends.py` | `OllamaBackend`, `OpenRouterBackend`, `get_llm_backend()` |
 | `test_repositories.py` | Repository pattern, factory chọn backend |
 | `test_agent_react.py` | Parser/tool/flow ReAct (thường dùng mock LLM) |
+| `test_agent_router.py` | Heuristic router và phân loại chẩn đoán của Agent |
+| `test_intent_router.py` | Định tuyến nhanh Fast-Path (Regex) và SLM Router |
+| `test_clinical_ner_path.py` | Trích xuất thực thể NER y khoa lâm sàng và Cypher Path |
+| `test_services.py` | Các service điều phối (AgentService, RetrievalService) |
 | `test_api_routes.py` | Endpoint FastAPI qua `TestClient` |
 
 ## Cấu trúc thư mục

@@ -3,8 +3,21 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pymupdf as fitz  # not bare "fitz" — wrong PyPI package can shadow PyMuPDF
+
+# Singleton cache — easyocr.Reader tải model lần đầu (~vài giây); tái sử dụng cho các lần sau.
+_easyocr_reader: Any | None = None
+
+
+def _get_easyocr_reader():
+    """Trả về singleton easyocr.Reader (khởi tạo một lần duy nhất)."""
+    global _easyocr_reader
+    if _easyocr_reader is None:
+        import easyocr  # type: ignore
+        _easyocr_reader = easyocr.Reader(['vi', 'en'], gpu=False)
+    return _easyocr_reader
 
 
 def parse_page_spec(spec: str | None, n_pages: int) -> list[int]:
@@ -40,26 +53,23 @@ def run_ocr_on_page(page) -> str:
         img = Image.open(io.BytesIO(img_data))
         text = pytesseract.image_to_string(img, lang="vie+eng")
         return text
-    except ImportError:
+    except Exception:
         try:
-            import easyocr  # type: ignore
             import numpy as np
             import io
             from PIL import Image
-            
+
             pix = page.get_pixmap(dpi=150)
             img_data = pix.tobytes("png")
             img = Image.open(io.BytesIO(img_data))
             img_np = np.array(img)
-            
-            # Initialize reader (caches models for 'vi' and 'en')
-            reader = easyocr.Reader(['vi', 'en'], gpu=False)
+
+            # Dùng singleton để tránh load model lại mỗi lần.
+            reader = _get_easyocr_reader()
             results = reader.readtext(img_np, detail=0)
             return "\n".join(results)
         except Exception:
             return ""
-    except Exception:
-        return ""
 
 
 def extract_text_from_pdf(

@@ -1,0 +1,31 @@
+## Phân tích chỉ số lệch và gợi ý
+
+### Glucose
+
+* Tóm tắt: KQ = 6,7 mmol/L (tham chiếu là 4-6 mmol/L)
+* Nguyên nhân / yếu tố có thể: glucose cao có thể do chế độ ăn uống không phù hợp, bệnh tiểu đường hoặc các vấn đề về tuyến tụy.
+* Cách xử lý: cần theo dõi và kiểm soát lượng đường trong máu, thay đổi chế độ ăn uống để giảm lượng đường tiêu thụ. Nếu cần thiết, có thể phải điều trị bằng thuốc.
+* Thuốc: metformin (liều tham khảo 500-1000 mg/ngày), glipizide (liều tham khảo 5-10 mg/ngày)
+
+### Insulin
+
+* Tóm tắt: KQ = 23 U/L (tham chiếu là 1,9-23 U/L)
+* Nguyên nhân / yếu tố có thể: insulin cao có thể do bệnh tiểu đường hoặc các vấn đề về tuyến tụy.
+* Cách xử lý: cần theo dõi và kiểm soát lượng đường trong máu, thay đổi chế độ ăn uống để giảm lượng đường tiêu thụ. Nếu cần thiết, có thể phải điều trị bằng thuốc.
+* Thuốc: metformin (liều tham khảo 500-1000 mg/ngày), glipizide (liều tham khảo 5-10 mg/ngày)
+
+### TSH
+
+* Tóm tắt: KQ = 2,5 μU/mL (tham chiếu là 0,4-4,0 μU/mL)
+* Nguyên nhân / yếu tố có thể: TSH cao có thể do bệnh tuyến giáp hoặc các vấn đề về hormone.
+* Cách xử lý: cần theo dõi và kiểm soát lượng hormone trong máu, thay đổi chế độ ăn uống để giảm lượng iod tiêu thụ. Nếu cần thiết, có thể phải điều trị bằng thuốc.
+* Thuốc: levothyroxine (liều tham khảo 50-100 μg/ngày)
+
+### G6PD
+
+* Tóm tắt: KQ = 10 U/g Hb (tham chiếu là 5-15 U/g Hb)
+* Nguyên nhân / yếu tố có thể: G6PD cao có thể do bệnh thiếu men G6PD hoặc các vấn đề về máu.
+* Cách xử lý: cần theo dõi và kiểm soát lượng enzyme trong máu, thay đổi chế độ ăn uống để giảm lượng vitamin C tiêu thụ. Nếu cần thiết, có thể phải điều trị bằng thuốc.
+* Thuốc: n-acetylcysteine (liều tham khảo 50-100 mg/kg/ngày)
+
+Lưu ý: các chỉ số trên chỉ là một phần của phân tích và gợi ý. Cần phải xem xét toàn bộ tình trạng sức khỏe của bệnh nhân để đưa ra quyết định điều trị chính xác.

@@ -512,24 +512,27 @@ async function submitMedical(ev) {
   $("splitLayout").classList.remove("hidden");
   $("medicalSkeleton").classList.remove("hidden");
   $("medicalResult").classList.add("hidden");
-  
-  // Try to render PDF preview if applicable
+  // Try to render PDF preview if applicable (elements may not exist on all pages)
   const previewPlaceholder = $("filePreviewPlaceholder");
   const iframe = $("pdfPreviewIframe");
   if (f.type === "application/pdf") {
     const objectUrl = URL.createObjectURL(f);
-    iframe.src = objectUrl;
-    iframe.classList.remove("hidden");
-    previewPlaceholder.classList.add("hidden");
+    if (iframe) {
+      iframe.src = objectUrl;
+      iframe.classList.remove("hidden");
+    }
+    if (previewPlaceholder) previewPlaceholder.classList.add("hidden");
   } else {
     // Excel or other
-    iframe.classList.add("hidden");
-    previewPlaceholder.classList.remove("hidden");
-    previewPlaceholder.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      <p style="font-weight: 600; color: var(--accent); margin-top: 10px;">${escapeHtml(f.name)}</p>
-      <p class="muted small">Tập tin Bảng tính Excel (Không thể hiển thị PDF trực tiếp. Đang chuẩn bị phân tích các ô chỉ số xét nghiệm...)</p>
-    `;
+    if (iframe) iframe.classList.add("hidden");
+    if (previewPlaceholder) {
+      previewPlaceholder.classList.remove("hidden");
+      previewPlaceholder.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <p style="font-weight: 600; color: var(--accent); margin-top: 10px;">${escapeHtml(f.name)}</p>
+        <p class="muted small">Tập tin Bảng tính Excel (Không thể hiển thị PDF trực tiếp. Đang chuẩn bị phân tích các ô chỉ số xét nghiệm...)</p>
+      `;
+    }
   }
 
   $("comparisonsBody").innerHTML = "";
@@ -562,17 +565,15 @@ async function submitMedical(ev) {
       const detail = data.detail ?? data.message ?? r.statusText;
       throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
     }
-    
-    // Hide skeleton and render real results
-    $("medicalSkeleton").classList.add("hidden");
     renderMedicalResult(data);
   } catch (e) {
-    $("medicalSkeleton").classList.add("hidden");
     $("medicalResult").classList.remove("hidden");
     $("medicalSummary").innerHTML = `<p class="pill-status err">Lỗi: ${escapeHtml(e.message || String(e))}</p>`;
     $("comparisonsBody").innerHTML = "";
     $("rawJson").textContent = "";
   } finally {
+    // Luôn ẩn skeleton dù thành công hay lỗi
+    $("medicalSkeleton").classList.add("hidden");
     btn.disabled = false;
   }
 }

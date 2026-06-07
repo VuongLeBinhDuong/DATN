@@ -1,0 +1,27 @@
+## Phân tích chỉ số lệch và gợi ý
+
+### Glucose (KQ: 6,7 mmol/L) - cao hơn tham chiếu (4,5-6,1 mmol/L)
+
+* Nguyên nhân: có thể do chế độ ăn uống không phù hợp, hoặc bệnh lý liên quan đến đường huyết.
+* Cách xử lý: cần theo dõi và kiểm soát lượng đường trong máu, thay đổi chế độ ăn uống để giảm lượng đường hấp thụ. Nếu cần thiết, có thể phải sử dụng thuốc điều trị.
+* Thuốc: Metformin (liều tham khảo 500-1000 mg/ngày), hoặc Insulin (liều tham khảo 10-20 đơn vị/ngày).
+
+### Insulin (KQ: 2,5 IU/L) - cao hơn tham chiếu (1,9-23 IU/L)
+
+* Nguyên nhân: có thể do bệnh lý liên quan đến tuyến tụy, hoặc sử dụng thuốc insulin không đúng cách.
+* Cách xử lý: cần kiểm tra và điều trị nguyên nhân gây tăng insulin. Nếu cần thiết, có thể phải thay đổi chế độ ăn uống và tập luyện để giảm lượng đường hấp thụ.
+* Thuốc: Metformin (liều tham khảo 500-1000 mg/ngày), hoặc Pioglitazone (liều tham khảo 15-30 mg/ngày).
+
+### TSH (KQ: 2,5 μU/mL) - cao hơn tham chiếu (0,4-4,0 μU/mL)
+
+* Nguyên nhân: có thể do bệnh lý liên quan đến tuyến giáp.
+* Cách xử lý: cần kiểm tra và điều trị nguyên nhân gây tăng TSH. Nếu cần thiết, có thể phải thay đổi chế độ ăn uống và tập luyện để giảm lượng hormone giáp hấp thụ.
+* Thuốc: Levothyroxine (liều tham khảo 50-100 μg/ngày).
+
+### GFR (KQ: 60 mL/min/1,73 m²) - thấp hơn tham chiếu (60-120 mL/min/1,73 m²)
+
+* Nguyên nhân: có thể do bệnh lý liên quan đến thận.
+* Cách xử lý: cần kiểm tra và điều trị nguyên nhân gây giảm GFR. Nếu cần thiết, có thể phải thay đổi chế độ ăn uống và tập luyện để giảm lượng chất độc hại hấp thụ.
+* Thuốc: không có thuốc đặc hiệu cho bệnh lý này.
+
+Nếu không có chỉ số lệch, một số câu theo dõi định kỳ sẽ giúp bạn kiểm soát sức khỏe tốt hơn.

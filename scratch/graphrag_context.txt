@@ -1,0 +1,241 @@
+[1] chunk_id=chunk_d83a464aaabfa597, doc=doc_vihealthqa_test_1319:
+g và số lượng tinh trùng có ảnh hưởng phần nào đến khả năng có thai của các cặp vợ chồng. Tuy nhiên, với sự tiến bộ của y học gần đây, đặc biệt là kỹ thuật hỗ trợ sinh sản, chúng tôi tự tin có thể giúp bạn đạt được ước mơ được làm cha chính chủ. Những trường hợp bất thường về di truyền hoặc các nguy cơ có thể ảnh hưởng đến chất lượng phôi, khả năng có thai (ví dụ: phân mảnh DNA tinh trùng) sẽ được chúng tôi sàng lọc và có những chiến lược điều trị hữu hiệu.
+
+[2] chunk_id=chunk_631fac078fbfb331, doc=doc_vihealthqa_test_599:
+# Khi thực hiện IVF, IUI có thể biết giới tính của con không?
+
+Câu hỏi: Khi thực hiện IVF, IUI có thể biết giới tính của con không?
+
+Trả lời: Hiện nay, pháp luật Việt Nam nghiêm cấm mọi hình thức lựa chọn giới tính thai nhi. Về mặt khoa học, các kỹ thuật trong chuyên ngành hỗ trợ sinh sản có rất nhiều tiến bộ nhưng để biết được giới tính của em bé chỉ có một kỹ thuật duy nhất có thể thực hiện là PGT hay nói cách khác là Kỹ thuật sinh thiết phôi. Tuy nhiên, kỹ thuật này ra đời nhằm mục đích giúp
+
+[3] chunk_id=chunk_f5908b76c78f71db, doc=doc_vihealthqa_train_2806:
+n xuất về các trường hợp tiêm vaccine cần khoảng cách bao lâu trước khi mang thai. Để vaccine đạt hiệu quả tốt nhất và sinh miễn dịch, chị nên hoãn thành 2 mũi vaccine Covid-19 ít nhất 1 tháng trước khi thực hiện IVF. Hiện nay, theo hướng dẫn của Bộ Y tế, chúng ta sẽ hoãn tiêm đối phụ nữ đang mang thai. Quy định hiện nay không khuyến cáo làm xét nghiệm dị ứng trước khi tiêm vaccine để tránh sốc phản vệ. Người được tiêm cần phải theo dõi tại cơ sở y tế ít nhất 30 phút và tiếp tục theo dõi tại nhà
+
+[4] chunk_id=chunk_02c39a9aa6273a8b, doc=doc_vihealthqa_train_1967:
+i bác sĩ tư vấn là tôi bị dị ứng thuốc kháng sinh có tiêm được vaccine Covid hay không? Tôi đang cư trú ở Lào Cai, nếu tiêm được vaccine Covid-19, tôi nên đến đâu tiêm là tiện lợi nhất? Cần những thủ tục gì mang theo?
+
+Trả lời: Nếu mức độ dị ứng với kháng sinh của bạn nhẹ, bạn có thể tiêm vaccine ngừa Covid-19 tại các cơ sở bệnh viện. Bạn cần liên hệ với y tế cơ sở tại địa phương để nắm được những thông tin cần thiết về việc tiêm chủng tại địa phương.
+
+[5] chunk_id=chunk_03c6b5ea9e971f65, doc=doc_vihealthqa_train_460:
+cơ địa, dị ứng thuốc, dị ứng vaccine, sốc phản vệ, dị ứng thức ăn, dị ứng latex, dị ứng nọc côn trùng. . . là những người dễ dị ứng/phản vệ với vaccine hơn so với những người khác. Tuy nhiên, bất kỳ ai cũng có thể bị phản vệ sau tiêm vaccine dù không có tiền sử dị ứng. Trong trường hợp của anh/chị nên được tiêm vaccine Covid-19 ở khối bệnh viện hoặc cơ sở y tế có đủ năng lực hồi sức cấp cứu ban đầu. Để giảm thiểu rủi ro do phản vệ, điều quan trọng là cần chú ý theo dõi, phát hiện và xử trí sớm
+
+[6] chunk_id=chunk_fef7729752fe5a09, doc=doc_vihealthqa_train_540:
+pirin hoặc phenacetin, dùng kháng sinh thuộc nhóm Sulfonamide và Sullfone, các thuốc kháng sốt rét như quinine, chloroquine, primaquine, sử dụng vitamin K để điều trị nhiễm khuẩn tiết niệu, ăn các loại thức ăn chế biến từ đậu tằm, tránh tiếp xúc với băng phiến, long não, và không nên hiến máu.Cha mẹ người thân cần nhớ những điều sau khi có con/người nhà bị thiếu men G6PD:Không sử dụng các loại dược phẩm, thức ăn hoặc những chất có thể gây tan huyếtNhắc nhớ nhân viên y tế về tình trạng thiếu men
+
+[7] chunk_id=chunk_c9c69d356c623076, doc=doc_vihealthqa_train_246:
+hông phải tất cả những người có tiền sử dị ứng sẽ phản vệ với vaccine. Điều quan trọng là anh cần phải biết các triệu chứng phản vệ sớm để thông báo hoặc đến ngay cơ sở y tế để được xử trí kịp thời. Vì vậy, khi khám sàng lọc trước tiêm, anh cần thông báo với bác sĩ về tình trạng dị ứng của anh cũng như các triệu chứng mà anh gặp phải để bác sĩ có thể quyết định chỉ định tiêm chủng và tư vấn cho anh.
+
+[8] chunk_id=chunk_27eaa29caed907b3, doc=doc_vihealthqa_validation_502:
+triệu chứng dị ứng mà bạn mô tả bạn có biểu hiện dị ứng với 1 số đồ ăn và phải sử dụng thuốc để điều trị thì theo QĐ 2995- BYT bạn sẽ tiêm phòng tại bệnh viện hoặc cơ sở y tế đủ năng lực hỗ trợ cấp cứu và bạn cần liên hệ với nơi cư trú gần nhất hoặc cơ quan công tác về việc chọn lựa địa điểm tiêm chủng nào theo thông báo từ Bộ Y tế hoặc CDC địa phương.
+
+--- Entity [1] (score≈2.000) id=ent_c60cd87511c3c95c ---
+title: kháng sinh được
+type: Drug
+description: Custom KG entity: kháng sinh được
+
+--- Entity [2] (score≈2.000) id=ent_23148315ef8e2e43 ---
+title: kháng sinh thuộc
+type: Drug
+description: Custom KG entity: kháng sinh thuộc
+
+--- Entity [3] (score≈2.000) id=ent_bd3f603ca3a23d80 ---
+title: PGT
+type: Test
+description: Aliases: Kỹ thuật sinh thiết phôi
+
+--- Entity [4] (score≈2.000) id=ent_4ad95f8eb90977f1 ---
+title: loại thuốc kháng sinh
+type: Chemical
+description: Custom KG entity: loại thuốc kháng sinh
+
+--- Entity [5] (score≈2.000) id=ent_c37a28fd3291ab59 ---
+title: kỹ thuật hỗ trợ sinh sản
+type: Treatment
+description: Aliases: hỗ trợ sinh sản
+
+--- Entity [6] (score≈1.000) id=ent_c881e8f2d5dbfabd ---
+title: pirin
+type: Drug
+description: Custom KG entity: pirin
+
+--- Entity [7] (score≈1.000) id=ent_52c678ca0a98a11f ---
+title: vaccine
+type: Disease
+description: Custom KG entity: vaccine
+
+--- Entity [8] (score≈1.000) id=ent_b83b1f9456dc39d1 ---
+title: IUI
+type: Treatment
+description: Custom KG entity: IUI
+
+--- Entity [9] (score≈1.000) id=ent_980a1e756fe262e1 ---
+title: não
+type: Anatomy
+description: Custom KG entity: não
+
+--- Entity [10] (score≈1.000) id=ent_a5736bb354de489a ---
+title: IVF
+type: Treatment
+description: Custom KG entity: IVF
+
+--- Entity [11] (score≈1.000) id=ent_d61471e1e1aa8774 ---
+title: chloroquine
+type: Drug
+description: Custom KG entity: chloroquine
+
+--- Entity [12] (score≈1.000) id=ent_9e1ea867b9264897 ---
+title: viêm họng
+type: Symptom
+description: Custom KG entity: viêm họng
+
+--- Entity [13] (score≈1.000) id=ent_44650aa9e964999c ---
+title: Hiệu ứng Steven Johnson
+type: Symptom
+description: Custom KG entity: Hiệu ứng Steven Johnson
+
+--- Entity [14] (score≈1.000) id=ent_ed4678fe74721581 ---
+title: G6PD
+type: Disease
+description: Aliases: thiếu men G6PD
+
+--- Entity [15] (score≈1.000) id=ent_e62e2e96fcf5ff2d ---
+title: viêm mũi dị ứng
+type: Disease
+description: Custom KG entity: viêm mũi dị ứng
+
+--- Entity [16] (score≈1.000) id=ent_04e714c2c71602cd ---
+title: Sulfonamide
+type: Drug
+description: Aliases: sulphonamide
+
+--- Entity [17] (score≈1.000) id=ent_7433da7955c85af8 ---
+title: Ciprofraxacin
+type: Drug
+description: Aliases: ciprofloxacin
+
+--- Entity [18] (score≈1.000) id=ent_41cabd244628b099 ---
+title: phân mảnh DNA tinh trùng
+type: Symptom
+description: Custom KG entity: phân mảnh DNA tinh trùng
+
+--- Entity [19] (score≈1.000) id=ent_2cb0f0df57e40eaf ---
+title: thắt ống dẫn tinh
+type: Treatment
+description: Aliases: vasectomy
+
+--- Entity [20] (score≈1.000) id=ent_c57fea0bc19baa41 ---
+title: Sullfone
+type: Drug
+description: Custom KG entity: Sullfone
+
+--- Entity [21] (score≈1.000) id=ent_c309d6bb5a4a0445 ---
+title: kháng sinh
+type: Drug
+description: Custom KG entity: kháng sinh
+
+--- Entity [22] (score≈1.000) id=ent_1539d4e22af08b3b ---
+title: dị ứng
+type: Disease
+description: Custom KG entity: dị ứng
+
+--- Entity [23] (score≈1.000) id=ent_4b01a1c58330e087 ---
+title: Sinh thiết
+type: Test
+description: Custom KG entity: Sinh thiết
+
+--- Entity [24] (score≈1.000) id=ent_070b7ccb08c2ed48 ---
+title: viêm xoang
+type: Disease
+description: Custom KG entity: viêm xoang
+
+--- Entity [25] (score≈1.000) id=ent_652f9a2f9a17d413 ---
+title: tiêm chủng
+type: Disease
+description: Custom KG entity: tiêm chủng
+
+--- Entity [26] (score≈1.000) id=ent_405d3b5294eb4e9a ---
+title: Sổ mũi
+type: Symptom
+description: Custom KG entity: Sổ mũi
+
+--- Entity [27] (score≈1.000) id=ent_ea9284b91687dbba ---
+title: phenacetin
+type: Drug
+description: Custom KG entity: phenacetin
+
+--- Entity [28] (score≈1.000) id=ent_0c8189162d27a64d ---
+title: primaquine
+type: Drug
+description: Custom KG entity: primaquine
+
+--- Entity [29] (score≈1.000) id=ent_99833f7618d90cf6 ---
+title: COVID-19
+type: Disease
+description: Custom KG entity: COVID-19
+
+--- Entity [30] (score≈1.000) id=ent_a8e41d066763da1a ---
+title: thuốc kháng
+type: Drug
+description: Custom KG entity: thuốc kháng
+
+--- Entity [31] (score≈1.000) id=ent_e1b84857b898d7da ---
+title: AstraZeneca
+type: Drug
+description: Aliases: vaccine AstraZeneca
+
+--- Entity [32] (score≈1.000) id=ent_c7880bfe2c47d1f3 ---
+title: quinine
+type: Drug
+description: Custom KG entity: quinine
+
+--- Entity [33] (score≈1.000) id=ent_c76f14d2df23cc11 ---
+title: sốt
+type: Symptom
+description: Custom KG entity: sốt
+
+--- Entity [34] (score≈1.000) id=ent_c48d4d0b998228cb ---
+title: vitamin K
+type: Treatment
+description: Custom KG entity: vitamin K
+
+--- Quan hệ (trong tập trên) ---
+  • ent_99833f7618d90cf6 —[RELATED_TO]→ ent_e1b84857b898d7da
+  • ent_e62e2e96fcf5ff2d —[RELATED_TO]→ ent_070b7ccb08c2ed48
+  • ent_c76f14d2df23cc11 —[RELATED_TO]→ ent_c309d6bb5a4a0445
+  • ent_070b7ccb08c2ed48 —[RELATED_TO]→ ent_44650aa9e964999c
+  • ent_9e1ea867b9264897 —[RELATED_TO]→ ent_405d3b5294eb4e9a
+  • ent_e62e2e96fcf5ff2d —[RELATED_TO]→ ent_44650aa9e964999c
+  • ent_99833f7618d90cf6 —[RELATED_TO]→ ent_405d3b5294eb4e9a
+  • ent_99833f7618d90cf6 —[RELATED_TO]→ ent_a5736bb354de489a
+  • ent_9e1ea867b9264897 —[RELATED_TO]→ ent_c309d6bb5a4a0445
+  • ent_e1b84857b898d7da —[RELATED_TO]→ ent_9e1ea867b9264897
+  • ent_405d3b5294eb4e9a —[RELATED_TO]→ ent_c309d6bb5a4a0445
+  • ent_e1b84857b898d7da —[RELATED_TO]→ ent_405d3b5294eb4e9a
+  • ent_e1b84857b898d7da —[RELATED_TO]→ ent_c309d6bb5a4a0445
+  • ent_52c678ca0a98a11f —[TREATS]→ ent_652f9a2f9a17d413
+  • ent_070b7ccb08c2ed48 —[RELATED_TO]→ ent_99833f7618d90cf6
+  • ent_99833f7618d90cf6 —[PART_OF]→ ent_1539d4e22af08b3b
+  • ent_52c678ca0a98a11f —[CAUSES]→ ent_c76f14d2df23cc11
+  • ent_652f9a2f9a17d413 —[CAUSES]→ ent_1539d4e22af08b3b
+  • ent_652f9a2f9a17d413 —[PREVENTS]→ ent_1539d4e22af08b3b
+  • ent_7433da7955c85af8 —[RELATED_TO]→ ent_44650aa9e964999c
+  • ent_c309d6bb5a4a0445 —[CAUSES]→ ent_1539d4e22af08b3b
+  • ent_e62e2e96fcf5ff2d —[RELATED_TO]→ ent_7433da7955c85af8
+  • ent_652f9a2f9a17d413 —[CAUSES]→ ent_c76f14d2df23cc11
+  • ent_c76f14d2df23cc11 —[SYMPTOM_OF]→ ent_99833f7618d90cf6
+  • ent_070b7ccb08c2ed48 —[RELATED_TO]→ ent_7433da7955c85af8
+  • ent_652f9a2f9a17d413 —[SYMPTOM_OF]→ ent_52c678ca0a98a11f
+  • ent_e1b84857b898d7da —[TREATS]→ ent_52c678ca0a98a11f
+  • ent_e62e2e96fcf5ff2d —[RELATED_TO]→ ent_e1b84857b898d7da
+  • ent_99833f7618d90cf6 —[CAUSES]→ ent_52c678ca0a98a11f
+  • ent_99833f7618d90cf6 —[SYMPTOM_OF]→ ent_52c678ca0a98a11f
+  • ent_99833f7618d90cf6 —[CAUSES]→ ent_652f9a2f9a17d413
+  • ent_52c678ca0a98a11f —[TREATS]→ ent_99833f7618d90cf6
+  • ent_a5736bb354de489a —[RELATED_TO]→ ent_bd3f603ca3a23d80
+  • ent_652f9a2f9a17d413 —[TREATS]→ ent_52c678ca0a98a11f
+  • ent_652f9a2f9a17d413 —[TREATS]→ ent_99833f7618d90cf6
+  • ent_b83b1f9456dc39d1 —[RELATED_TO]→ ent_bd3f603ca3a23d80
+  • ent_e62e2e96fcf5ff2d —[RELATED_TO]→ ent_99833f7618d90cf6
+  • ent_652f9a2f9a17d413 —[CAUSES]→ ent_99833f7618d90cf6
+  • ent_52c678ca0a98a11f —[CAUSES]→ ent_1539d4e22af08b3b
+  • ent_1539d4e22af08b3b —[CAUSES]→ ent_652f9a2f9a17d413

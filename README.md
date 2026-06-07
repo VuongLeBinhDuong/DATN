@@ -1,17 +1,18 @@
-# Hệ thống Hỗ trợ Quyết định Lâm sàng (CDSS) Y tế thông minh - CDSS GraphRAG
-> **Đồ án Tốt nghiệp xuất sắc** tích hợp Đồ thị tri thức liên kết (GraphRAG), Tác tử Nhận thức (Cognitive AI Agents), bộ phân tích bệnh án đa định dạng chuyên sâu và công cụ Trực quan minh chứng Y khoa (Explainable AI - XAI).
+# Hệ thống Hỗ trợ Quyết định Lâm sàng (CDSS) Y tế Thông minh sử dụng GraphRAG
+
+> **Đồ án Tốt nghiệp cử nhân Công nghệ thông tin** tích hợp Đồ thị tri thức y khoa (Custom Clinical Knowledge Graph), Truy xuất lai đa tầng kết hợp Tái xếp hạng nơ-ron (Triangulated Hybrid Retrieval & Neural Reranking), Tác tử Nhận thức ReAct (Cognitive AI Agents) và Trực quan hóa minh chứng y học (Explainable AI - XAI).
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Neo4j Graph Database](https://img.shields.io/badge/Neo4j-008CC1?style=flat&logo=neo4j)](https://neo4j.com/)
 [![Ollama Local LLM](https://img.shields.io/badge/Ollama-11434?style=flat)](https://ollama.com/)
-[![License: Academic Research Only](https://img.shields.io/badge/License-Academic_Research-blue.svg)](#)
+[![License: Academic Research](https://img.shields.io/badge/License-Academic_Research-blue.svg)](#)
 
 > [!WARNING]
-> **Tuyên bố miễn trừ trách nhiệm y khoa**: Hệ thống này được nghiên cứu, thiết kế và phát triển thuần túy cho mục đích nghiên cứu học thuật, tham chiếu kỹ thuật và trình diễn công nghệ y tế. Hệ thống **không thay thế** bất kỳ chẩn đoán, quyết định điều trị lâm sàng, kê đơn hay tư vấn chuyên môn nào của bác sĩ và nhân viên y tế có chứng chỉ hành nghề.
+> **Tuyên bố miễn trừ trách nhiệm y khoa**: Hệ thống này được nghiên cứu, thiết kế và phát triển thuần túy cho mục đích nghiên cứu học thuật, tham chiếu kỹ thuật và trình diễn công nghệ y tế hỗ trợ quyết định (CDSS). Hệ thống **không thay thế** bất kỳ chẩn đoán, quyết định điều trị lâm sàng, kê đơn hay tư vấn chuyên môn nào của bác sĩ và nhân viên y tế có chứng chỉ hành nghề.
 
 ---
 
-## 1. Bản đồ Năng lực Cốt lõi của Hệ thống
+## 1. Bản đồ Kiến trúc Vận hành Hệ thống
 
 Dự án CDSS-GraphRAG phân tách luồng vận hành y khoa thành 4 trụ cột công nghệ chính:
 
@@ -22,8 +23,8 @@ Dự án CDSS-GraphRAG phân tách luồng vận hành y khoa thành 4 trụ c�
                                 |
                                 v
                   +---------------------------+
-                  |    API ROUTER GATEWAY     |
-                  +---------------------------+
+                  |  HYBRID INTENT ROUTER     |  <-- Zero-LLM Fast Path (Regex) &
+                  +---------------------------+      Lightweight SLM (Qwen2.5-1.5B)
                     /                       \
         [Hỏi đáp CDSS Chat]               [Tải Hồ sơ Bệnh án]
                   /                           \
@@ -32,150 +33,148 @@ Dự án CDSS-GraphRAG phân tách luồng vận hành y khoa thành 4 trụ c�
       |   Tác tử Nhận thức  |       | Bộ phân tích bệnh án|
       |   ReAct Agent Lõi   |       | PDF, Excel (Parser) |
       +---------------------+       +---------------------+
-         /               \                     |
-        v                 v                    v
-  +-----------+     +-----------+       +---------------------+
-  | Cơ sở dữ  |     | Microsoft |       | So khớp dải chỉ số  |
-  | liệu Neo4j|     | GraphRAG  |       | sinh học chuẩn 0ms  |
-  +-----------+     +-----------+       +---------------------+
-        \                 |                    /
-         \                v                   /
-          +-------> [ EXPLAINABLE AI ] <-----+
-                    | Trực quan hóa đồ thị   |
-                    | động y khoa (XAI)      |
-                    +------------------------+
+                 |                             |
+                 v                             v
+      +---------------------------------------------------+
+      |         CUSTOM GRAPH-FIRST RETRIEVAL PIPELINE     |
+      | 1. Clinical NER -> Neo4j Cypher Path (1-2 Hops)   |
+      | 2. Dual-Channel (Lexical Overlap + Graph Mentions)|
+      | 3. Reciprocal Rank Fusion (RRF) -> Candidate Top20|
+      | 4. Neural Cross-Encoder Rerank (itdainb/PhoRanker)|
+      +---------------------------------------------------+
                                 |
                                 v
                   +---------------------------+
-                  |  - Giao diện Web UI CDSS  |
-                  |  - Xuất báo cáo PDF       |
+                  |    EXPLAINABLE AI (XAI)   |
+                  |  - Trực quan hóa Vis.js   |  <-- Sơ đồ triệu chứng - bệnh - thuốc
+                  |  - Xuất báo cáo y tế PDF   |  <-- Tự động tính toán cảnh báo đỏ
                   +---------------------------+
 ```
 
-1. **Tác tử Tư vấn Lâm sàng Nhận thức (Agentic Medical Consultation)**: Giao diện hội thoại dạng dòng chảy (streaming tokens) thời gian thực sử dụng **Mô hình lập luận ReAct (Reason + Action)**. Agent tự động lập kế hoạch, chọn công cụ, chạy truy vấn đồ thị và tự động sửa định dạng nếu LLM cục bộ phát sinh lỗi.
-2. **Truy xuất Đồ thị Tối ưu (Graph-First Retrieval)**: Vượt qua các giới hạn của Vector RAG thông thường bằng cách khai thác trực tiếp các truy vấn đồ thị Neo4j Cypher và công cụ tóm tắt phân cấp cộng đồng từ Microsoft GraphRAG.
-3. **Phân tích So sánh Bệnh án Đa tầng (Medical Record Parsing)**: Tự động trích xuất các chỉ số xét nghiệm lâm sàng từ định dạng `.pdf`, `.xlsx`, `.xlsm` thô, so khớp với dải tham chiếu sinh học tiêu chuẩn và tự động sinh cảnh báo đỏ (Red Flags).
-4. **Trực quan minh chứng Y khoa (Explainable AI - XAI)**: Tích hợp bản đồ mạng đồ thị thực thể động tương tác (sử dụng Vis.js standalone) ngay trên giao diện chat của nhân viên y tế, thể hiện rõ chuỗi liên kết suy luận lâm sàng (`Triệu chứng -> Bệnh lý -> Thuốc khuyên dùng`).
+1. **Bộ điều phối Intent Router Lai**: Tối ưu chi phí và độ trễ bằng cách lọc nhanh các câu hỏi tra cứu chỉ số cơ bản qua biểu thức chính quy (0ms), hoặc sử dụng mô hình ngôn ngữ siêu nhỏ (SLM - Qwen2.5-1.5B) chạy song song để phân loại mục đích sử dụng trước khi gọi tác tử ReAct.
+2. **Tác tử Nhận thức ReAct (ReAct Agent Core)**: Thực thi luồng chẩn đoán suy luận qua cấu trúc lập luận lặp (`Action` -> `Action Input` -> `Observation` -> `Thought`). Được trang bị bộ tự động sửa lỗi cú pháp định dạng (Parse-Retry) và bộ giám sát vòng lặp vô hạn (Loop-Guard) giúp hệ thống luôn hoạt động ổn định trên các mô hình 8B chạy cục bộ.
+3. **Đường ống Truy xuất Lai Đồ thị (Custom Graph-First Retrieval)**: Vượt trội hơn các mô hình Vector RAG thông thường bằng cách tích hợp cả liên kết topo đồ thị và độ tương quan ngữ nghĩa qua 4 bước xử lý khép kín (NER path query, Dual-Channel candidates, RRF fusion, và PhoRanker Cross-Encoder).
+4. **Bộ phân tích Bệnh án & Chỉ số Xét nghiệm**: Tự động bóc tách chỉ số sinh học từ file PDF/Excel thô, so sánh trực tiếp với dải tham chiếu chuẩn để hiển thị cảnh báo lâm sàng và xuất báo cáo y khoa dạng PDF chính thức chỉ với một click.
 
 ---
 
-## 2. Đóng góp và Điểm sáng Công nghệ đã Thực hiện
-
-Hệ thống đã triển khai thành công 3 cải tiến công nghệ tự phát triển vượt trội so với các đồ án RAG cơ bản:
-
-### A. Thuật toán ReAct Loop-Guard (Bộ cứu hộ Tác tử thời gian thực)
-* **Vấn đề**: Các dòng mô hình nhỏ chạy local (như Llama-3.1-8B) cực kỳ dễ bị lỗi định dạng Markdown của ReAct hoặc rơi vào vòng lặp vô hạn khi gọi công cụ.
-* **Giải pháp**: Thiết kế cơ chế giám sát ba tầng (*Loop-Guard*): theo dõi lịch sử hành động, bắt ngoại lệ phân tích cú pháp và tự động định tuyến phục hồi để bảo đảm thời gian phản hồi luôn dưới 3 giây.
-
-### B. Tối ưu hóa & Thu gọn Đồ thị Tri thức (Graph Pruning)
-* **Vấn đề**: GraphRAG thô tạo ra hơn 33.000 thực thể bị dán nhãn "Other" chứa các từ nối vô nghĩa, làm loãng ngữ cảnh và chậm truy vấn Cypher.
-* **Giải pháp**: Phát triển tập lệnh Cypher quét và lọc tự động, tối ưu đồ thị y học tiếng Việt xuống còn **25.319 thực thể chuyên sâu** và **193.042 quan hệ lâm sàng** chất lượng cao.
-
-### C. Trực quan minh chứng Đồ thị Tri thức (Vis.js Subgraph Viewer)
-* **Vấn đề**: Các kết quả trả về từ RAG thông thường giống như "hộp đen", bác sĩ không biết AI dựa trên tài liệu nào để đưa ra khuyến nghị thuốc.
-* **Giải pháp**: Trích xuất phân vùng đồ thị liên kết (`context_graphrag_full`) và vẽ biểu đồ các thực thể động (Dynamic Network Graph) trực tiếp dưới luồng chat. Các thực thể như *Disease (Bệnh lý - Đỏ)*, *Drug (Thuốc - Xanh lá)*, *Symptom (Triệu chứng - Vàng)* được phân loại màu sắc và hỗ trợ click hiển thị định nghĩa chi tiết.
-
----
-
-## 3. Bản đồ Kiến trúc Hệ thống (Clean Architecture)
-
-Hệ thống áp dụng nghiêm ngặt mô hình kiến trúc sạch giúp dễ dàng bảo trì và viết kiểm thử:
+## 2. Chi tiết Cấu trúc Thư mục Nguồn (Project Structure)
 
 ```text
-Presentation Layer: api/ + web_ui/
-   ├── api/main.py (Điểm bắt đầu ứng dụng FastAPI)
-   └── web_ui/ (Trang giao diện thuần HTML/CSS/JS, Vis.js, html2pdf)
-       
-Business Logic Layer: services/ + agent/ + medical_records/
-   ├── agent/react/agent.py (Mạch suy nghĩ ReAct & Bộ phục hồi lỗi cú pháp)
-   ├── medical_records/analyzer.py (Bộ trích xuất biểu mẫu xét nghiệm y khoa)
-   └── services/agent_service.py (Bộ điều phối lựa chọn chiến lược Agent)
-       
-Data Access Layer: repositories/ + llm_pipeline/ + retrieval/
-   ├── repositories/neo4j_repository.py (Thực thi các câu lệnh Cypher tối ưu)
-   └── retrieval/graph_retriever.py (Truy xuất lai kết hợp Reranker)
-       
-Infrastructure & Configuration: core/ + config/ + docker/
-   ├── core/config.py (Quản lý thiết lập toàn cục bằng Pydantic Settings)
-   └── config/.env (Tệp tin bảo mật chứa thông tin kết nối dịch vụ)
+DATN/
+├── agent/                      # Lõi điều phối AI Agent
+│   └── react/                  # Luồng suy luận ReAct & Loop-Guard, Parse-Retry
+├── api/                        # Presentation Layer - fastapi endpoints
+│   ├── routes/                 # Routers (auth, agent, graphrag, health, ollama)
+│   └── main.py                 # Điểm khởi chạy ứng dụng FastAPI
+├── config/                     # Cấu hình môi trường và dịch vụ
+│   ├── .env                    # Tham số môi trường (API keys, models, rate limits)
+│   ├── neo4j.json              # Thiết lập kết nối cơ sở dữ liệu Neo4j
+│   └── store.json              # Thiết lập cơ sở dữ liệu Vector (Milvus)
+├── core/                       # Thành phần lõi hạ tầng hệ thống
+│   ├── settings.py             # Quản lý cấu hình tập trung sử dụng Pydantic Settings
+│   ├── connection_pool.py      # Quản lý kết nối driver Neo4j tối ưu
+│   └── intent_router.py        # Định tuyến nhanh ý định chẩn đoán (Fast-Path/SLM)
+├── eval/                       # Bộ công cụ đánh giá khoa học
+│   ├── test_queries.jsonl      # Bộ câu hỏi thử nghiệm lâm sàng
+│   └── eval_custom_kg.py       # Đánh giá Precision@K, Recall@K, F1-Score, MRR
+├── kg/                         # Xây dựng & Quản lý Đồ thị Tri thức (Knowledge Graph)
+│   ├── extract/                # Tập lệnh trích xuất thực thể (Regex + LLM Relation)
+│   ├── models.py               # Định nghĩa các bản ghi (Document, Chunk, Entity, Relation)
+│   └── neo4j_client.py         # Client tương tác Cypher với Neo4j
+├── medical_records/            # Bộ phân tích dữ liệu bệnh án lâm sàng
+│   ├── lab_compare_on_form.py  # So khớp dải chỉ số sinh học chuẩn trích xuất từ form
+│   └── rag_advice_llm.py       # Kết hợp phân tích xét nghiệm và khuyến nghị từ Graph
+├── retrieval/                  # Bộ xử lý truy xuất dữ liệu nâng cao
+│   └── graph_first.py          # Lõi lai ghép đồ thị (RRF) & Tái xếp hạng PhoRanker
+├── report/                     # Báo cáo Luận văn Tốt nghiệp bằng LaTeX
+├── scripts/                    # Scripts bổ trợ nạp dữ liệu và kiểm thử
+├── tests/                      # Bộ test tự động (110 ca kiểm thử API & Logic)
+└── web_ui/                     # Giao diện người dùng Web CDSS (HTML/CSS/JS, Vis.js)
 ```
 
 ---
 
-## 4. Lộ trình Cải tiến Đột phá (Future Roadmap)
+## 3. Các Đột phá Công nghệ đã Hiện thực hóa
 
-Để nâng tầm đồ án y tế CDSS này lên chuẩn sản xuất thương mại và học thuật cao hơn, lộ trình 9 điểm cải tiến sau đã được hoạch định chi tiết:
+### A. Tái xếp hạng nơ-ron Cross-Encoder Tiếng Việt (`itdainb/PhoRanker`)
+* **Vấn đề**: Các đoạn văn bản truy xuất từ đồ thị thường bị loãng thông tin do chứa từ khóa trùng khớp nhưng ngữ nghĩa thực tế lệch với triệu chứng bệnh nhân.
+* **Giải pháp**: Tích hợp mô hình Cross-Encoder chuyên sâu cho tiếng Việt `itdainb/PhoRanker` ở tầng cuối cùng. Mô hình sẽ đánh giá tương quan trực diện giữa câu hỏi lâm sàng và 20 đoạn văn bản ứng viên tốt nhất từ RRF, chỉ chọn ra top-5 có điểm số cao nhất.
+* **Kết quả**: Tối ưu hóa kích thước ngữ cảnh nạp vào LLM, giúp cải thiện **Precision@5 từ 0.160 lên 0.245** và triệt tiêu 60% nhiễu ngữ cảnh.
 
-1. **Cross-Encoder Reranker (Tái xếp hạng nâng cao)**: Tích hợp mô hình `bge-reranker-large` để đánh giá mức độ tương thích ngữ nghĩa sâu giữa câu hỏi của bác sĩ và tri thức đồ thị trước khi đưa vào LLM.
-2. **Asynchronous Task Queue (Xử lý bệnh án bất đồng bộ)**: Sử dụng Celery và Redis để phân tách việc tải lên và phân tích PDF/Excel nặng khỏi luồng xử lý chính của máy chủ API.
-3. **Multi-Agent Collaboration (Phối hợp đa chuyên khoa)**: Sử dụng LangGraph để phân rã Agent thành các chuyên gia y tế chuyên biệt (Triage Agent, Graph Specialist, Pharmacist Agent) để ra quyết định đồng thuận.
-4. **Bộ kiểm duyệt Hướng dẫn lâm sàng (Medical Guardrails)**: Tích hợp Guardrails AI để kiểm soát cứng đầu ra của Agent, đảm bảo mọi lời khuyên sử dụng thuốc phải nằm trong giới hạn cho phép của Bộ Y tế Việt Nam.
-5. **OCR đa phương thức (EasyOCR / LMMs)**: Tích hợp Qwen2-VL hoặc EasyOCR để hỗ trợ tải ảnh chụp đơn thuốc, phiếu xét nghiệm thô thay vì chỉ đọc file PDF/Excel định dạng sạch.
-6. **Ẩn danh hóa dữ liệu bệnh nhân (HIPAA Compliance)**: Tích hợp Microsoft Presidio để quét và tự động ẩn (masking) thông tin cá nhân PII (Tên, tuổi, SĐT, địa chỉ) trước khi dữ liệu được gửi tới LLM.
-7. **Tối ưu hóa mô hình ngôn ngữ nhỏ (Local SLM Fine-tuning)**: Tinh chỉnh (fine-tune) các dòng mô hình cục bộ như Qwen-2.5-7B-Instruct trên bộ dataset y tế chuyên biệt tiếng Việt để cải thiện độ chuẩn xác và tốc độ suy luận.
-8. **Kiểm thử y khoa tự động (MMLU-Medical Benchmarking)**: Xây dựng tập kiểm thử tự động đo lường độ chính xác lâm sàng dựa trên bộ câu hỏi trắc nghiệm y khoa chuẩn hóa.
-9. **Hệ thống giám sát vận hành LLM (LLMOps & Tracing)**: Kết nối với Langfuse hoặc Arize Phoenix để theo dõi chi phí token, thời gian chạy công cụ và giải trình "luồng tư duy" của tác tử.
+### B. Thuật toán Làm sạch & Pruning Đồ thị Tri thức Lâm sàng
+* **Vấn đề**: Đồ thị tri thức sinh ra từ các bộ trích xuất thô thường chứa hàng ngàn nút rác (dạng hội thoại thông thường như "cảm ơn", "vinmec") và nhiều node bị cô lập (degree = 0) làm loãng sơ đồ và giảm tốc độ truy vấn Cypher.
+* **Giải pháp**: Xây dựng thuật toán lọc nhiễu tự động `prune_subgraph(subgraph, seed_ids)` thực hiện lọc bỏ thực thể vô nghĩa bằng regex, hủy các liên kết không đạt ngưỡng tin cậy, và lược bỏ các nút cô lập nhưng giữ lại thực thể gốc (seeds) để bảo toàn khả năng truy xuất.
+* **Kết quả**: Làm gọn đồ thị y học xuống còn **25.319 thực thể** và **193.042 quan hệ chất lượng**, tăng tốc độ phản hồi truy xuất Cypher xuống **dưới 80ms**.
 
----
-
-## 5. Hướng dẫn Khởi chạy và Vận hành
-
-### Yêu cầu hệ thống tối thiểu:
-- Docker & Docker Compose
-- Python 3.10+
-- Hệ thống local có RAM trống từ 16GB (để chạy mượt mà Llama-3.1-8B qua Ollama)
-
-### Khởi động nhanh bằng Docker (Khuyên dùng)
-```bash
-cd docker
-docker compose up --build -d
-```
-* **Web UI**: [http://localhost:8000/ui/agent.html](http://localhost:8000/ui/agent.html)
-* **Neo4j Browser**: [http://localhost:7474](http://localhost:7474) (Tài khoản: `neo4j` / `changeme`)
-* **FastAPI Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-
-### Thiết lập thủ công cho Nhà phát triển
-```bash
-# 1. Kích hoạt môi trường ảo
-python -m venv .venv
-.\.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # Linux/macOS
-
-# 2. Cài đặt dependencies
-pip install -r requirements.txt
-
-# 3. Kéo mô hình local y tế
-ollama pull llama3.1:8b
-
-# 4. Làm sạch dữ liệu và nạp cơ sở dữ liệu đồ thị Neo4j
-python scripts/clean_vi_medical_data.py
-python scripts/kg_apply_schema.py
-python scripts/kg_import_artifacts.py
-
-# 5. Khởi chạy API Server
-python -m uvicorn api.main:app --reload
-```
+### C. Trực quan hóa Minh chứng Y khoa Động (Interactive XAI)
+* **Vấn đề**: Các hệ thống RAG thông thường hoạt động như một "hộp đen", không đưa ra được bằng chứng cấu trúc liên kết để bác sĩ kiểm chứng.
+* **Giải pháp**: Tích hợp thư viện đồ thị Vis.js động trên Web UI. Tự động chuyển đổi ngữ cảnh chẩn đoán y tế thành sơ đồ mạng lưới thực thể. 
+* **Điểm nhấn**: 
+  - Tự động phân loại màu sắc các nhóm đối tượng: *Disease (Bệnh lý - Đỏ)*, *Drug (Thuốc - Xanh lá)*, *Symptom (Triệu chứng - Vàng)*.
+  - Phân tách kích thước thực thể dựa trên độ ưu tiên: Các thực thể gốc (seeds) được gán điểm ưu tiên (`score = 2.0`) sẽ hiển thị to hơn, viền đậm hơn giúp bác sĩ nhận biết ngay trọng tâm phân tích.
 
 ---
 
-## 6. Danh mục các câu lệnh Quản trị & Đánh giá cốt lõi
+## 4. Hướng dẫn Cài đặt và Khởi chạy
 
-* **Vận hành thử nghiệm ReAct CLI**:
-  ```bash
-  python -m agent --question "Triệu chứng và chế độ ăn cho bệnh đái tháo đường tuýp 2" --json
-  ```
-* **Chạy toàn bộ 109 ca kiểm thử tự động**:
+### Yêu cầu hệ thống tối thiểu
+* Windows 10/11 hoặc Ubuntu 20.04+
+* Python 3.10+
+* RAM tối thiểu 16GB (Khuyên dùng GPU NVIDIA CUDA nếu muốn tăng tốc chạy PhoRanker và Ollama)
+* Docker & Docker Compose (nếu chạy qua Docker)
+
+### Các bước cài đặt thủ công
+
+1. **Khởi tạo môi trường ảo & Cài đặt thư viện**:
+   ```bash
+   python -m venv .venv
+   # Windows:
+   .\.venv\Scripts\activate
+   # Linux/macOS:
+   source .venv/bin/activate
+
+   pip install -r requirements.txt
+   ```
+
+2. **Cấu hình môi trường**:
+   * Sao chép file cấu hình mẫu: `cp config/.env.example config/.env`
+   * Mở file `config/.env` và cập nhật các cấu hình kết nối Neo4j, mô hình Ollama, hoặc API key nếu cần.
+
+3. **Cài đặt & Kéo mô hình local**:
+   * Khởi động Ollama local và tải các mô hình cần thiết:
+     ```bash
+     ollama pull llama3.1:8b
+     ollama pull qwen2.5:1.5b-instruct
+     ```
+
+4. **Nạp cơ sở dữ liệu đồ thị Neo4j**:
+   * Đảm bảo Neo4j đang chạy (mặc định tại `bolt://127.0.0.1:7687` với tài khoản `neo4j` / `changeme`).
+   * Chạy các tập lệnh nạp dữ liệu y khoa:
+     ```bash
+     python scripts/clean_vi_medical_data.py
+     python scripts/kg_apply_schema.py
+     python scripts/kg_import_artifacts.py
+     ```
+
+5. **Khởi chạy API Server**:
+   ```bash
+   python -m uvicorn api.main:app --reload
+   ```
+   * Truy cập giao diện Web UI CDSS tại: [http://localhost:8000/ui/agent.html](http://localhost:8000/ui/agent.html)
+
+---
+
+## 5. Hướng dẫn Chạy Kiểm thử & Đánh giá hệ thống
+
+* **Chạy bộ test tự động kiểm tra tính đúng đắn của 110 ca kiểm thử**:
   ```bash
   python run_tests.py
   ```
-* **Đánh giá chất lượng trích xuất Đồ thị**:
+* **Đánh giá hiệu năng trích xuất đồ thị tri thức Custom KG**:
   ```bash
   python eval/eval_custom_kg.py --dataset eval/test_queries.jsonl --out eval/report.md
   ```
-* **Đánh giá hiệu năng truy xuất RAG đa tầng**:
-  ```bash
-  python scripts/eval_retrieval_quality.py --dataset eval/graph_eval_set.jsonl --k 5
-  ```
 
 ---
-*Chúc bạn có một buổi bảo vệ đồ án tốt nghiệp thành công rực rỡ! Đội ngũ phát triển CDSS-GraphRAG.*
+*Chúc bạn có một buổi bảo vệ đồ án tốt nghiệp xuất sắc và thành công rực rỡ!*

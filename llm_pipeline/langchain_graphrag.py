@@ -223,7 +223,7 @@ Lưu ý:
 - Ưu tiên cụm từ dài hơn (ví dụ: "sốt cao" thay vì chỉ "sốt")"""
 
     try:
-        response = chat_ollama(prompt, host=host, model=model, timeout=30, num_predict=512)
+        response = chat_ollama(prompt, host=host, model=model, timeout=30, temperature=0.1, num_predict=512)
         
         # Try to parse JSON from response
         # LLM might wrap in markdown code blocks, try to extract
@@ -710,9 +710,10 @@ Trả lời:"""
         if synthesis_backend() == "openrouter":
             # Use default OpenRouter config
             from llm_pipeline.llm_chat import chat_openrouter
-            return chat_openrouter(prompt, timeout=60)
+            or_model = os.getenv("OPENROUTER_MODEL") or None
+            return chat_openrouter(prompt, model=or_model, timeout=60, temperature=0.2, max_tokens=1024)
         else:
-            return chat_ollama(prompt, host=host, model=model, timeout=60, num_predict=1024)
+            return chat_ollama(prompt, host=host, model=model, timeout=60, temperature=0.2, num_predict=1024)
     except Exception as e:
         logger.error(f"Synthesis failed: {e}")
         return f"Lỗi khi tổng hợp câu trả lời: {e}"
