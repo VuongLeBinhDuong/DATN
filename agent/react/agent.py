@@ -106,7 +106,6 @@ def _build_result_bundle(
         "strategy": "react",
         "plan": {"type": "react", "steps": steps},
         "errors": errors,
-        "context_milvus_preview": "",
         "context_graphrag_preview": (graph_context[:800] + "…") if len(graph_context) > 800 else graph_context,
         "context_graphrag_full": graph_context,
         "context_graphrag_total_chars": len(graph_context),
@@ -183,12 +182,17 @@ class ReActAgent:
         Returns:
             Tuple of (observation, updated_image_urls, retrieval_hits)
         """
+        if tool_name == "medical_calculator":
+            from agent.react.tools import run_medical_calculator_tool
+            obs = run_medical_calculator_tool(tool_input)
+            return obs, current_image_urls, []
+
         if tool_name == "pill_image_lookup":
             obs, urls = run_pill_image_tool(tool_input)
             return obs, urls, []
 
-        # graphrag_query
-        obs, hits = run_graphrag_tool(tool_input, original_question)
+        # graphrag_query (tắt Query Expansion trong ReAct để tối ưu hóa tốc độ)
+        obs, hits = run_graphrag_tool(tool_input, original_question, use_expansion=False)
 
         # Merge with auto-detected pill images
         merged_obs, updated_urls = merge_pill_observation(

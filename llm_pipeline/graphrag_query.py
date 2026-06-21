@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
-import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -36,14 +33,6 @@ def _want_graphrag_terminal_log() -> bool:
         return False
     return True
 
-
-def _resolve_graphrag_data_dir(graphrag_root: Path) -> Path | None:
-    """Thư mục chứa entities.parquet (sau index hoặc update). Ưu tiên update_output rồi output."""
-    for name in ("update_output", "output"):
-        d = graphrag_root / name
-        if (d / "entities.parquet").is_file():
-            return d
-    return None
 
 
 def _custom_kg_available() -> bool:
@@ -95,7 +84,15 @@ def _run_custom_kg_query(question: str, neo_cfg: dict[str, Any] | None = None) -
     from retrieval.graph_first import graph_first_retrieve
     # Create client with config to ensure it works in web server
     client = Neo4jKGClient(cfg=neo_cfg) if neo_cfg else Neo4jKGClient()
-    result = graph_first_retrieve(question, client=client, top_seed_entities=5, hops=1)
+    
+    # Read dynamic parameters from Neo4j config (defaults to 8 seeds and 2 hops for better recall)
+    top_seeds = 8
+    hops = 2
+    if neo_cfg:
+        top_seeds = neo_cfg.get("top_k_nodes", top_seeds)
+        hops = neo_cfg.get("neighbor_hops", hops)
+        
+    result = graph_first_retrieve(question, client=client, top_seed_entities=top_seeds, hops=hops)
     
     # Debug logging
     if _want_graphrag_terminal_log():
@@ -191,77 +188,6 @@ def run_graphrag_query_with_sources(
         []
     )
 
-
-def _run_graphrag_query_cli_only(rq: str) -> str:
-    """Luồng GraphRAG CLI (không Neo4j)."""
-    root = _repo_root()
-    graphrag_root = root / "graphrag"
-    if not graphrag_root.is_dir():
-        return "GraphRAG: folder 'graphrag/' not found at repository root."
-
-    data_dir = _resolve_graphrag_data_dir(graphrag_root)
-    if data_dir is None:
-        return (
-            "GraphRAG: chua tim thay index (khong co entities.parquet trong graphrag/update_output hoac graphrag/output). "
-            "Chay index hoac update, vi du: python -m graphrag index -r graphrag -m standard"
-        )
-
-    if _want_graphrag_terminal_log():
-        logger.info("graphrag_query: GraphRAG CLI, data_dir=%s", data_dir)
-
-    cmd = [
-        sys.executable,
-        "-m",
-        "graphrag",
-        "query",
-        "-r",
-        str(graphrag_root),
-        "-d",
-        str(data_dir),
-        rq,
-    ]
-    env = dict(os.environ)
-    env["PYTHONIOENCODING"] = "utf-8"
-    proc = subprocess.run(cmd, check=False, capture_output=True, text=False, env=env)
-    out = (proc.stdout or b"").decode("utf-8", errors="replace")
-    err = (proc.stderr or b"").decode("utf-8", errors="replace")
-    if proc.returncode == 0:
-        text = out.strip() or "(GraphRAG returned empty output.)"
-        if _want_graphrag_terminal_log():
-            logger.info("graphrag_query: CLI trả về %s ký tự", len(text))
-        return text
-
-    stderr = (err or "").strip()
-    stdout_tail = (out or "").strip()
-    hint = ""
-    if "No module named graphrag" in stderr:
-        hint = "\nGợi ý: cài graphrag trong đúng venv đang chạy server (`pip install graphrag`)."
-
-    last_exit = proc.returncode
-    report = stderr or stdout_tail
-
-    exe = shutil.which("graphrag")
-    if exe:
-        proc2 = subprocess.run(
-            [exe, "query", "-r", str(graphrag_root), "-d", str(data_dir), rq],
-            check=False,
-            capture_output=True,
-            text=False,
-            env=env,
-        )
-        out2 = (proc2.stdout or b"").decode("utf-8", errors="replace")
-        err2 = (proc2.stderr or b"").decode("utf-8", errors="replace")
-        if proc2.returncode == 0:
-            text2 = out2.strip() or "(GraphRAG returned empty output.)"
-            if _want_graphrag_terminal_log():
-                logger.info("graphrag_query: CLI (graphrag.exe) trả về %s ký tự", len(text2))
-            return text2
-        last_exit = proc2.returncode
-        combined2 = (err2 or "").strip() or (out2 or "").strip()
-        if combined2:
-            report = combined2
-
-    return f"GraphRAG query failed (exit {last_exit}):\n{report}{hint}"
 
 
 def run_graphrag_query(question: str, *, retrieval_query: str | None = None) -> str:

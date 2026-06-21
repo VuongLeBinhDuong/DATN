@@ -97,11 +97,9 @@
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \field{pages}{9459\bibrangedash 9474}
-    \field{title}{Retrieval-Augmented Generation for Knowledge-Intensive NLP
-  Tasks}
+    \field{title}{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}
     \field{volume}{33}
-    \field{journaltitle}{Advances in Neural Information Processing Systems
-  (NeurIPS)}
+    \field{journaltitle}{Advances in Neural Information Processing Systems (NeurIPS)}
     \field{year}{2020}
   \endentry
 
@@ -160,8 +158,7 @@
     \strng{fullhash}{EDTHCNBJCAMATSLJ1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{title}{From Local to Global: A Graph RAG Approach to Query-Focused
-  Summarization}
+    \field{title}{From Local to Global: A Graph RAG Approach to Query-Focused Summarization}
     \field{journaltitle}{arXiv preprint arXiv:2404.16130}
     \field{year}{2024}
   \endentry
@@ -248,10 +245,44 @@
     \strng{fullhash}{YSZJYDDNSINKCY1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{booktitle}{International Conference on Learning Representations
-  (ICLR)}
+    \field{booktitle}{International Conference on Learning Representations (ICLR)}
     \field{title}{ReAct: Synergizing Reasoning and Acting in Language Models}
     \field{year}{2023}
+  \endentry
+
+  \entry{traag2019from}{article}{}{}
+    \name{author}{3}{}{%
+      {{hash=TVA}{%
+         family={Traag},
+         familyi={T\bibinitperiod},
+         given={Vincent\bibnamedelima A.},
+         giveni={V\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+      {{hash=WL}{%
+         family={Waltman},
+         familyi={W\bibinitperiod},
+         given={Ludo},
+         giveni={L\bibinitperiod},
+      }}%
+      {{hash=vENJ}{%
+         prefix={van},
+         prefixi={v\bibinitperiod},
+         family={Eck},
+         familyi={E\bibinitperiod},
+         given={Nees\bibnamedelima Jan},
+         giveni={N\bibinitperiod\bibinitdelim J\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{TVA+1}
+    \strng{fullhash}{TVAWLENJv1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{number}{1}
+    \field{pages}{5233}
+    \field{title}{From Louvain to Leiden: guaranteeing well-connected communities}
+    \field{volume}{9}
+    \field{journaltitle}{Scientific Reports}
+    \field{year}{2019}
   \endentry
 \enddatalist
 \endinput

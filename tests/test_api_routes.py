@@ -143,7 +143,6 @@ class TestAgentEndpoints:
             "plan": {},
             "errors": [],
             "sources": [],
-            "context_milvus_preview": "",
             "context_graphrag_preview": "",
             "context_graphrag_full": "",
             "context_graphrag_total_chars": 0,

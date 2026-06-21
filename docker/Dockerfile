@@ -59,8 +59,9 @@ WORKDIR /app
 COPY --chown=app:app . .
 RUN find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
-# Create necessary directories
+# Create necessary directories and configure entrypoint
 RUN mkdir -p /app/graphrag/output /app/graphrag/input /app/upload /app/logs && \
+    chmod +x /app/docker/entrypoint.sh && \
     chown -R app:app /app
 
 # Switch to non-root user
@@ -73,5 +74,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Start application
-CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start application via entrypoint script
+ENTRYPOINT ["/app/docker/entrypoint.sh"]

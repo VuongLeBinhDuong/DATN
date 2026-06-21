@@ -145,3 +145,102 @@ def merge_pill_observation(
         + extra
     )
     return merged, updated_urls
+
+
+def run_medical_calculator_tool(action_input: str | None) -> str:
+    """Execute medical_calculator tool.
+    
+    Computes BMI or Kidney Function (eGFR Cockcroft-Gault) based on inputs.
+    Action Input must be a JSON string like:
+    {"type": "bmi", "weight": 70, "height": 175}
+    or
+    {"type": "egfr", "age": 65, "weight": 70, "creatinine": 1.2, "gender": "male"}
+    """
+    import json
+    import re
+    
+    inp = (action_input or "").strip()
+    if not inp:
+        return "Error: Action Input is empty. Please provide a JSON input."
+        
+    try:
+        # Clean JSON string (remove markdown block wrapper if present)
+        if inp.startswith("```"):
+            inp = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", inp)
+            inp = re.sub(r"\s*```$", "", inp).strip()
+            
+        data = json.loads(inp)
+    except Exception as e:
+        return f"Error parsing JSON input: {e}. Example format: {{\"type\": \"bmi\", \"weight\": 70, \"height\": 175}}"
+        
+    calc_type = str(data.get("type") or "").lower()
+    if calc_type == "bmi":
+        weight = data.get("weight")
+        height = data.get("height")
+        if not weight or not height:
+            return "Error: Please provide both 'weight' (kg) and 'height' (cm)."
+        try:
+            w = float(weight)
+            h = float(height) / 100.0  # convert to meters
+            bmi = w / (h * h)
+            
+            # Classification based on WHO criteria
+            if bmi < 18.5:
+                status = "Gầy (Cân nặng thấp)"
+            elif bmi < 25.0:
+                status = "Bình thường (Cân nặng lý tưởng)"
+            elif bmi < 30.0:
+                status = "Tiền béo phì"
+            else:
+                status = "Béo phì"
+                
+            return f"Kết quả tính BMI: {bmi:.1f} kg/m² - Trạng thái: {status}."
+        except Exception as e:
+            return f"Error calculating BMI: {e}"
+            
+    elif calc_type == "egfr":
+        age = data.get("age")
+        weight = data.get("weight")
+        creatinine = data.get("creatinine")
+        gender = str(data.get("gender") or "").lower()
+        
+        if not all([age, weight, creatinine, gender]):
+            return "Error: Please provide 'age', 'weight' (kg), 'creatinine' (mg/dL), and 'gender' ('male' or 'female')."
+            
+        try:
+            a = float(age)
+            w = float(weight)
+            cr = float(creatinine)
+            
+            # Normalise gender input for Vietnamese and English
+            g_lower = gender.strip().lower()
+            if g_lower in ("male", "nam", "m"):
+                is_female = False
+            elif g_lower in ("female", "nữ", "nu", "f"):
+                is_female = True
+            else:
+                return f"Error: Invalid 'gender' value '{gender}'. Must be 'male' or 'female'."
+                
+            # Cockcroft-Gault Formula
+            egfr = ((140 - a) * w) / (72 * cr)
+            if is_female:
+                egfr *= 0.85
+                
+            # eGFR Classification (Kidney function)
+            if egfr >= 90:
+                status = "Giai đoạn 1: Chức năng lọc thận bình thường hoặc tăng cao"
+            elif egfr >= 60:
+                status = "Giai đoạn 2: Suy giảm chức năng lọc thận mức độ nhẹ"
+            elif egfr >= 30:
+                status = "Giai đoạn 3: Suy giảm chức năng lọc thận mức độ trung bình"
+            elif egfr >= 15:
+                status = "Giai đoạn 4: Suy giảm chức năng lọc thận mức độ nặng"
+            else:
+                status = "Giai đoạn 5: Suy thận mạn giai đoạn cuối (Cần tham khảo bác sĩ chuyên khoa lọc máu)"
+                
+            return f"Kết quả tính eGFR (Cockcroft-Gault): {egfr:.1f} mL/min - Phân loại chức năng thận: {status}."
+        except Exception as e:
+            return f"Error calculating eGFR: {e}"
+            
+    else:
+        return f"Error: Unknown calculator type '{calc_type}'. Supported types: 'bmi', 'egfr'."

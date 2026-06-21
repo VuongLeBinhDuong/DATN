@@ -133,9 +133,8 @@ class TestComparativeEvaluatorExecution:
         with patch("sys.argv", test_args):
             # Enforce offline mode in module global
             esc.OFFLINE_MODE = True
-            with pytest.raises(SystemExit) as exit_info:
-                esc.main()
-            assert exit_info.value.code == 0
+            res = esc.main()
+            assert res == 0
 
         # Check outputs
         assert report_file.is_file()

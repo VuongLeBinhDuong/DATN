@@ -143,7 +143,7 @@ class TestReActAgent:
             assert len(result["plan"]["steps"]) == 2
             assert result["plan"]["steps"][0]["type"] == "tool"
             assert result["plan"]["steps"][1]["type"] == "finish"
-            mock_tool.assert_called_once_with("flu symptoms", "What are flu symptoms?")
+            mock_tool.assert_called_once_with("flu symptoms", "What are flu symptoms?", use_expansion=False)
 
     def test_run_sync_max_iterations_reached(self):
         """Test ReAct agent gracefully handles when max iterations are exceeded."""
@@ -218,3 +218,32 @@ class TestReActTools:
             mock_repo.query.assert_called_once_with("Original question")
         finally:
             set_repository(None)
+
+    def test_medical_calculator_tool_bmi(self):
+        """Test medical_calculator tool for BMI calculations."""
+        from agent.react.tools import run_medical_calculator_tool
+        
+        # Test valid BMI calculation
+        input_data = '{"type": "bmi", "weight": 70, "height": 175}'
+        res = run_medical_calculator_tool(input_data)
+        assert "BMI: 22.9" in res
+        assert "Bình thường" in res
+
+        # Test invalid input
+        assert "Error" in run_medical_calculator_tool('{"type": "bmi", "weight": 70}')
+
+    def test_medical_calculator_tool_egfr(self):
+        """Test medical_calculator tool for eGFR calculations."""
+        from agent.react.tools import run_medical_calculator_tool
+        
+        # Test valid eGFR calculation for male
+        input_data = '{"type": "egfr", "age": 65, "weight": 70, "creatinine": 1.2, "gender": "male"}'
+        res = run_medical_calculator_tool(input_data)
+        assert "eGFR (Cockcroft-Gault): 60.8" in res
+        assert "Giai đoạn 2" in res
+
+        # Test valid eGFR calculation for female
+        input_data_female = '{"type": "egfr", "age": 65, "weight": 70, "creatinine": 1.2, "gender": "female"}'
+        res_female = run_medical_calculator_tool(input_data_female)
+        assert "eGFR (Cockcroft-Gault): 51.6" in res_female
+        assert "Giai đoạn 3" in res_female

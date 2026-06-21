@@ -291,6 +291,11 @@ class Neo4jKGClient:
         
         Supports medical synonyms: tiểu đường = đái tháo đường = diabetes
         """
+        # Try native fulltext index first for sub-millisecond speeds
+        native_res = self.search_entities_native_fulltext(query, limit=limit, index_name=index_name)
+        if native_res is not None and len(native_res) > 0:
+            return native_res
+
         driver, db = self._connection()
 
         q = (query or "").strip().lower()
@@ -347,13 +352,17 @@ class Neo4jKGClient:
         self, query: str, *, limit: int = 12, index_name: str = "kgEntityFulltext"
     ) -> list[dict[str, Any]] | None:
         """Try native Neo4j fulltext index. Returns None if index doesn't exist."""
+        import re
         driver, db = self._connection()
         q = (query or "").strip()
         if not q or q == "*":
             return []
         
-        # Escape special characters for fulltext query
-        escaped = q.replace('"', '\\"').replace("'", "\\'")
+        # Clean query: replace Lucene syntax characters with spaces to prevent parser syntax exceptions
+        cleaned = re.sub(r'[+\-&|!(){}\[\]^"~*?:\\/]', ' ', q)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        if not cleaned:
+            return []
         
         cypher = (
             f"CALL db.index.fulltext.queryNodes($index, $query) "
@@ -368,7 +377,7 @@ class Neo4jKGClient:
             with driver.session(database=db) as session:
                 results = [
                     dict(r) 
-                    for r in session.run(cypher, {"index": index_name, "query": escaped, "lim": int(limit)})
+                    for r in session.run(cypher, {"index": index_name, "query": cleaned, "lim": int(limit)})
                 ]
                 return results
         except Exception:

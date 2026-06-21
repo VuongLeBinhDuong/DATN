@@ -115,25 +115,6 @@ def reciprocal_rank_fusion(
     return [chunk_map[cid] for cid in sorted_cids]
 
 
-def _cross_encoder_rerank(question: str, chunks: list[dict[str, Any]], top_k: int) -> list[dict[str, Any]]:
-    """Local neural cross-encoder reranker with graceful fallback to LLM/lexical ranking."""
-    try:
-        from sentence_transformers import CrossEncoder
-        model_name = (os.getenv("KG_RERANKER_MODEL") or "").strip().strip("\\\"'") or "dangvantuan/vietnamese-document-reranker"
-        model = CrossEncoder(model_name, max_length=512)
-        
-        pairs = [[question, (ch.get("text") or "")[:800]] for ch in chunks]
-        scores = model.predict(pairs)
-        
-        for ch, score in zip(chunks, scores):
-            ch["rerank_score"] = float(score)
-            
-        return sorted(chunks, key=lambda x: x.get("rerank_score", -9999.0), reverse=True)[:top_k]
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning("CrossEncoder rerank failed, falling back to LLM rerank: %s", e)
-        return _llm_rerank(question, chunks, top_k)
-
 
 @dataclass(frozen=True)
 class GraphFirstResult:
@@ -335,15 +316,11 @@ def graph_first_retrieve(
     # 3. Reciprocal Rank Fusion (RRF)
     fused_ranked = reciprocal_rank_fusion(graph_ranked, lexical_ranked)
 
-    # 4. Reranking Layer (Neural Cross-Encoder or LLM agent choice)
-    use_reranker = (os.getenv("KG_USE_RERANKER") or "").strip().lower() in ("1", "true", "yes", "on", "active")
+    # 4. Reranking Layer (LLM agent choice or direct RRF top_k)
     use_llm_rerank = (os.getenv("KG_USE_LLM_RERANK") or "").strip().lower() in ("1", "true", "yes", "on")
 
     if fused_ranked:
-        if use_reranker:
-            candidates = fused_ranked[:20]
-            top = _cross_encoder_rerank(question, candidates, top_k=evidence_k)
-        elif use_llm_rerank:
+        if use_llm_rerank:
             top = _llm_rerank(question, fused_ranked, top_k=evidence_k)
         else:
             top = fused_ranked[:evidence_k]
@@ -358,7 +335,6 @@ def graph_first_retrieve(
         "evidence_from_edges": len(chunks_from_edges),
         "evidence_from_mentions": len(mention_chunks),
         "use_rrf_fusion": True,
-        "use_reranker": use_reranker,
         "use_llm_rerank": use_llm_rerank,
     }
     return GraphFirstResult(evidence_chunks=top, subgraph=subgraph, debug=debug)

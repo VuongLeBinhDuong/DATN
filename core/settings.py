@@ -107,31 +107,6 @@ class AgentSettings(BaseSettings):
     trace: bool = Field(default=True, description="Enable agent tracing logs")
 
 
-class VectorStoreSettings(BaseSettings):
-    """Milvus/Zilliz vector store configuration."""
-
-    model_config = SettingsConfigDict(
-        env_prefix="STORE_",
-        extra="ignore",
-    )
-
-    uri: str = Field(default="http://localhost:19530", description="Milvus server URI")
-    collection: str = Field(default="chunks", description="Default collection name")
-    config_path: Path = Field(default=Path("config/store.json"), description="Config file path")
-    embedding_model: str = Field(
-        default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        description="Embedding model name",
-    )
-
-    # Legacy env var support
-    @field_validator("uri", mode="before")
-    @classmethod
-    def legacy_milvus_uri(cls, v: str | None) -> str:
-        """Support legacy MILVUS_URI env var."""
-        if v is None:
-            return os.getenv("MILVUS_URI", "http://localhost:19530")
-        return v
-
 
 class CorsSettings(BaseSettings):
     """CORS middleware configuration."""
@@ -166,7 +141,6 @@ class Settings(BaseSettings):
     neo4j: Neo4jSettings = Field(default_factory=Neo4jSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     agent: AgentSettings = Field(default_factory=AgentSettings)
-    vector_store: VectorStoreSettings = Field(default_factory=VectorStoreSettings)
     cors: CorsSettings = Field(default_factory=CorsSettings)
 
     # General

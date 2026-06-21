@@ -1,19 +1,19 @@
-\documentclass[../Main.tex]{subfiles}
+\documentclass[../main.tex]{subfiles}
 \begin{document}
 
 In recent years, the rapid advancement of Artificial Intelligence (AI) and Large Language Models (LLMs) has opened up revolutionary paradigms across numerous domains, with the clinical and healthcare sectors being among the most promising yet highly sensitive areas of application. However, deploying general-purpose LLMs in medical consultation faces critical bottlenecks. Medical information requires absolute precision; a minor inaccuracy or factual hallucination can lead to life-threatening clinical consequences. Standard generative models frequently suffer from "hallucinations", lack explainable tracing to credible medical literature, and cannot keep pace with rapidly updating pharmacological databases. 
 
 Furthermore, local data privacy regulations and patient confidentiality laws present a severe constraint on utilizing commercial, cloud-based LLM APIs. Consequently, there is an urgent research and engineering demand to build localized, private, and structurally-grounded intelligent consultation systems that can analyze clinical data, cross-reference medical literature, and interact with patients in a reliable, secure, and explainable manner.
 
-This thesis presents the design, implementation, and evaluation of a **Smart Medical QA \& Consultation System** utilizing Graph Retrieval-Augmented Generation (GraphRAG) and Agentic AI. 
+This thesis presents the design, implementation, and evaluation of a \textbf{Smart Medical QA \& Consultation System} utilizing Graph Retrieval-Augmented Generation (GraphRAG) and Agentic AI. 
 
 \section{Motivation}
 \label{section:1.1}
 The primary challenge of utilizing LLMs in healthcare lies in ensuring factuality and grounding. Conventional text retrieval methods (Vector RAG) index clinical documents into high-dimensional vector spaces and match query embeddings to retrieve relevant chunks \cite{lewis2020retrieval}. While effective for finding superficial semantic matches, Vector RAG fails to capture the underlying structural relationships between clinical concepts, such as drug-to-drug interactions, symptom-to-disease causality, and anatomic dependencies. 
 
-To overcome these limitations, **Graph Retrieval-Augmented Generation (GraphRAG)** has emerged as a state-of-the-art framework \cite{edge2024from}. By structuring clinical literature into a relational Knowledge Graph (KG) where nodes represent medical entities (e.g., diseases, drugs, symptoms, lab tests) and edges represent normalized clinical predicates (e.g., TREATS, CAUSES, CONTRAINDICATED\_FOR), the system preserves structural and relational contexts \cite{robinson2015graph}. Integrating a high-density, purified medical knowledge graph allows for highly precise context retrieval. 
+To overcome these limitations, \textbf{Graph Retrieval-Augmented Generation (GraphRAG)} has emerged as a state-of-the-art framework \cite{edge2024from}. By structuring clinical literature into a relational Knowledge Graph (KG) where nodes represent medical entities (e.g., diseases, drugs, symptoms, lab tests) and edges represent normalized clinical predicates (e.g., TREATS, CAUSES, CONTRAINDICATED\_FOR), the system preserves structural and relational contexts \cite{robinson2015graph}. Integrating a high-density, purified medical knowledge graph allows for highly precise context retrieval. 
 
-Moreover, medical consultation is not a simple one-step search. It requires dynamic, step-by-step reasoning. An intelligent agent utilizing the **Reasoning and Acting (ReAct)** paradigm can iteratively formulate thoughts, call specific tools (such as searching the custom Neo4j graph, querying clinical document extractors, or checking pill databases), observe findings, and recursively refine its diagnostic suggestions \cite{yao2022react}. Deploying such an agentic loop locally ensures complete patient data confidentiality while maintaining an explainable chain of thought. This combination of structural GraphRAG and Agentic AI serves as the core motivation for this graduation thesis.
+Moreover, medical consultation is not a simple one-step search. It requires dynamic, step-by-step reasoning. An intelligent agent utilizing the \textbf{Reasoning and Acting (ReAct)} paradigm can iteratively formulate thoughts, call specific tools (such as searching the custom Neo4j graph, querying clinical document extractors, or checking pill databases), observe findings, and recursively refine its diagnostic suggestions \cite{yao2022react}. Deploying such an agentic loop locally ensures complete patient data confidentiality while maintaining an explainable chain of thought. This combination of structural GraphRAG and Agentic AI serves as the core motivation for this graduation thesis.
 
 \section{Objectives and Scope of the Graduation Thesis}
 \label{section:1.2}
@@ -21,22 +21,22 @@ The primary objective of this graduation thesis is to design, implement, and val
 
 To achieve this objective, the scope of this graduation thesis is defined across the following core boundaries:
 \begin{itemize}
-    \item **Purified Clinical Knowledge Graph Construction**: Building and deploying a localized clinical knowledge graph containing **25,319 nodes** and **193,042 relations** on Neo4j. The graph is optimized by pruning conversational noise and generic entities to maximize search speed and context precision.
-    \item **Graph-First Hybrid Retrieval Engine**: Implementing an optimized retrieval pipeline. The engine leverages direct Cypher path traversals and k-hop neighborhood expansion on the custom Neo4j KG for precise, localized medical queries, bypassing external Microsoft GraphRAG community summarization wrappers to achieve low retrieval latency.
-    \item **Resilient ReAct Agent Design**: Implementing a robust reasoning-acting agent loop powered by a local Ollama LLM backend. The agent is reinforced with custom loop-guards to prevent infinite tool invocations and format-recovery parsers to correct syntactical LLM errors.
-    \item **Multi-Format Clinical Document Analyzer**: Creating a pipeline that extracts text from medical files (PDFs and Excel sheets) via PyMuPDF and openpyxl, extracts lab results, automatically benchmarks them against printed reference ranges, and generates customized, graph-grounded consultations.
-    \item **Visual Medication Check and Scheduling**: Enriching suggested medications with pill images from a local database and enabling automated scheduling for prescription intake reminders.
-    \item **Responsive User Interface**: Developing a responsive, clean, and intuitive Web UI to allow patients and clinicians to chat with the agent, upload medical files, view structural citations, and manage schedules.
+    \item \textbf{Purified Clinical Knowledge Graph Construction}: Building and deploying a localized clinical knowledge graph containing \textbf{25,319 nodes} and \textbf{193,042 relations} on Neo4j. The graph is optimized by pruning conversational noise and generic entities to maximize search speed and context precision.
+    \item \textbf{Graph-First Hybrid Retrieval Engine}: Implementing an optimized retrieval pipeline. The engine leverages direct Cypher path traversals and k-hop neighborhood expansion on the custom Neo4j KG for precise, localized medical queries, bypassing external Microsoft GraphRAG community summarization wrappers to achieve low retrieval latency.
+    \item \textbf{Resilient ReAct Agent Design}: Implementing a robust reasoning-acting agent loop powered by a local Ollama LLM backend. The agent is reinforced with custom loop-guards to prevent infinite tool invocations and format-recovery parsers to correct syntactical LLM errors.
+    \item \textbf{Multi-Format Clinical Document Analyzer}: Creating a pipeline that extracts text from medical files (PDFs and Excel sheets) via PyMuPDF and openpyxl, extracts lab results, automatically benchmarks them against printed reference ranges, and generates customized, graph-grounded consultations.
+    \item \textbf{Visual Medication Check and Scheduling}: Enriching suggested medications with pill images from a local database and enabling automated scheduling for prescription intake reminders.
+    \item \textbf{Responsive User Interface}: Developing a responsive, clean, and intuitive Web UI to allow patients and clinicians to chat with the agent, upload medical files, view structural citations, and manage schedules.
 \end{itemize}
 
 \section{Tentative Solution}
 \label{section:1.3}
 To fulfill the objectives and scope, this thesis proposes an offline-first, highly-integrated system architecture. The proposed framework is structured into four primary layers:
 \begin{enumerate}
-    \item **Presentation Layer**: Built using lightweight, high-performance Vanilla Web technologies (HTML5, responsive CSS3, and modern asynchronous Javascript). This layer provides live streamed chat responses, interactive document upload logs, and pill identification cards.
-    \item **Business Logic Layer**: Developed in Python using the **FastAPI** framework to handle high-concurrency asynchronous endpoints. The core orchestration consists of the `AgentService` executing the custom `ReActAgent` loop, and the `MedicalRecordService` managing document extraction and automatic lab indicator benchmarking.
-    \item **Data Access Layer**: Managing the retrieval pipelines. Structured clinical queries are resolved by querying the **Neo4j** graph database using specialized Cypher templates, while conversational configurations are fetched from SQLite repositories.
-    \item **Infrastructure \& LLM Engine Layer**: Running entirely offline via **Docker Compose**. A local **Ollama** runner hosts open-source models (such as Llama-3.1-8B) to execute reasoning steps and synthesize final clinical answers.
+    \item \textbf{Presentation Layer}: Built using lightweight, high-performance Vanilla Web technologies (HTML5, responsive CSS3, and modern asynchronous Javascript). This layer provides live streamed chat responses, interactive document upload logs, and pill identification cards.
+    \item \textbf{Business Logic Layer}: Developed in Python using the \textbf{FastAPI} framework to handle high-concurrency asynchronous endpoints. The core orchestration consists of the \texttt{AgentService} executing the custom \texttt{ReActAgent} loop, and the \texttt{MedicalRecordService} managing document extraction and automatic lab indicator benchmarking.
+    \item \textbf{Data Access Layer}: Managing the retrieval pipelines. Structured clinical queries are resolved by querying the \textbf{Neo4j} graph database using specialized Cypher templates, while conversational configurations are fetched from SQLite repositories.
+    \item \textbf{Infrastructure \& LLM Engine Layer}: Running entirely offline via \textbf{Docker Compose}. A local \textbf{Ollama} runner hosts open-source models (such as Llama-3.1-8B) to execute reasoning steps and synthesize final clinical answers.
 \end{enumerate}
 This tentative architecture guarantees data confidentiality, enforces structural factual grounding via Neo4j KG matching, and optimizes runtime speed by purging generic nodes from the retrieval loop.
 
@@ -44,11 +44,11 @@ This tentative architecture guarantees data confidentiality, enforces structural
 \label{section:1.4}
 The remainder of this graduation thesis is organized systematically as follows:
 \begin{itemize}
-    \item **Chapter 2: REQUIREMENT SURVEY AND ANALYSIS** conducts a status survey comparing standard search, Vector RAG, and GraphRAG. It defines the general and detailed use cases, models business workflows, outlines use case specifications, and lists functional and non-functional requirements.
-    \item **Chapter 3: THEORETICAL BACKGROUND AND TECHNOLOGIES** presents the fundamental concepts of Knowledge Graphs, Neo4j, Vector RAG, GraphRAG, the ReAct reasoning paradigm, dialog state orchestration, and justifies the selection of local open-source LLMs and FastAPI.
-    \item **Chapter 4: DESIGN, IMPLEMENTATION, AND EVALUATION** details the clean architecture layers, package layouts, class structures, sequence diagrams, database schemas, and presents system testing cases, integration benchmarks, and Docker deployment.
-    \item **Chapter 5: SOLUTION AND CONTRIBUTION** highlights the core scientific and engineering contributions of this work: the construction and pruning of the 25k node clinical graph, the implementation of ReAct loop-guards and format-recovery parsers, the multi-format clinical table parser, and presents the quantitative benchmarking metrics.
-    \item **Chapter 6: CONCLUSION AND FUTURE WORK** summarizes the achievements of the thesis, discusses technical limitations, and outlines future research paths, including hybrid rerankers and asynchronous task queues.
+    \item \textbf{Chapter 2: REQUIREMENT SURVEY AND ANALYSIS} conducts a status survey comparing standard search, Vector RAG, and GraphRAG. It defines the general and detailed use cases, models business workflows, outlines use case specifications, and lists functional and non-functional requirements.
+    \item \textbf{Chapter 3: THEORETICAL BACKGROUND AND TECHNOLOGIES} presents the fundamental concepts of Knowledge Graphs, Neo4j, Vector RAG, GraphRAG, the ReAct reasoning paradigm, dialog state orchestration, and justifies the selection of local open-source LLMs and FastAPI.
+    \item \textbf{Chapter 4: DESIGN, IMPLEMENTATION, AND EVALUATION} details the clean architecture layers, package layouts, class structures, sequence diagrams, database schemas, and presents system testing cases, integration benchmarks, and Docker deployment.
+    \item \textbf{Chapter 5: SOLUTION AND CONTRIBUTION} highlights the core scientific and engineering contributions of this work: the construction and pruning of the 25k node clinical graph, the implementation of ReAct loop-guards and format-recovery parsers, the multi-format clinical table parser, and presents the quantitative benchmarking metrics.
+    \item \textbf{Chapter 6: CONCLUSION AND FUTURE WORK} summarizes the achievements of the thesis, discusses technical limitations, and outlines future research paths, including hybrid rerankers and asynchronous task queues.
 \end{itemize}
 
 \end{document}

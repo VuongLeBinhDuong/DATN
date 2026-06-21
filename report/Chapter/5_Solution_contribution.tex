@@ -1,13 +1,50 @@
-\documentclass[../Main.tex]{subfiles}
+\documentclass[../main.tex]{subfiles}
 \begin{document}
 
 This chapter presents the core scientific and engineering contributions developed during this graduation thesis. Each contribution addresses a specific problem encountered during development and delivers a concrete, measurable solution. The discussion follows the structure: (i) problem statement, (ii) proposed solution, and (iii) achieved results.
+
+
+Figure \ref{fig:contribution_map} groups the thesis contributions into four connected layers. The knowledge layer provides curated clinical facts, the retrieval layer selects trustworthy evidence, the agent layer controls reasoning behavior, and the application layer converts results into usable CDSS functions for clinicians and patients.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.98\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=0.85cm and 1.0cm,
+        layer/.style={rectangle, draw=blue!70!black, fill=blue!5, thick, rounded corners=4pt, minimum width=3.4cm, minimum height=0.9cm, align=center, font=\small\sffamily},
+        item/.style={rectangle, draw=teal!70!black, fill=teal!5, thick, rounded corners=3pt, minimum width=3.3cm, minimum height=0.8cm, align=center, font=\scriptsize\sffamily},
+        arrow/.style={-{Stealth[scale=1.0]}, thick, draw=gray!80!black}
+    ]
+        \node[layer] (kg) {Knowledge Layer};
+        \node[item, below=of kg] (kg1) {Custom medical KG};
+        \node[item, below=0.35cm of kg1] (kg2) {Entity pruning};
+        \node[layer, right=of kg] (retrieval) {Retrieval Layer};
+        \node[item, below=of retrieval] (r1) {Graph-first Cypher paths};
+        \node[item, below=0.35cm of r1] (r2) {RRF + reranking};
+        \node[layer, right=of retrieval] (agent) {Agent Layer};
+        \node[item, below=of agent] (a1) {ReAct loop-guard};
+        \node[item, below=0.35cm of a1] (a2) {Hybrid intent router};
+        \node[layer, right=of agent] (app) {Application Layer};
+        \node[item, below=of app] (p1) {Record parser + lab range};
+        \node[item, below=0.35cm of p1] (p2) {Memory + PDF report};
+        \draw[arrow] (kg) -- (retrieval);
+        \draw[arrow] (retrieval) -- (agent);
+        \draw[arrow] (agent) -- (app);
+        \draw[arrow] (kg1) -- (kg2);
+        \draw[arrow] (r1) -- (r2);
+        \draw[arrow] (a1) -- (a2);
+        \draw[arrow] (p1) -- (p2);
+    \end{tikzpicture}%
+    }
+    \caption{Contribution map of the proposed AI Agents and GraphRAG-based CDSS system}
+    \label{fig:contribution_map}
+\end{figure}
 
 \section{Custom Medical Knowledge Graph Construction and Graph-First Retrieval}
 \label{section:5.1}
 
 \subsection*{Problem}
-Commercial GraphRAG implementations (e.g., Microsoft GraphRAG) rely entirely on LLM-based entity extraction during ingestion, limiting their scalable entity count to approximately 10,000–20,000 nodes and requiring significant inference compute time per document. Moreover, applying standard LLM entity extraction to conversational medical Q\&A datasets — which contain large volumes of generic phrases (e.g., ``\textit{Please consult a doctor}'', ``\textit{Thank you for your question}'') — introduces thousands of semantically meaningless ``Other'' type entities into the graph. These noisy nodes pollute retrieval results: when a query word such as ``\textit{uống}'' (drink) is matched against a node whose canonical name is an entire sentence like ``\textit{Nên uống với thời gian đều đặn}'' (Should drink at regular intervals), the returned chunks carry no diagnostic value.
+Commercial GraphRAG implementations (e.g., Microsoft GraphRAG) rely entirely on LLM-based entity extraction during ingestion, limiting their scalable entity count to approximately 10,000--20,000 nodes and requiring significant inference compute time per document. Moreover, applying standard LLM entity extraction to conversational medical Q\&A datasets---which contain large volumes of generic phrases (e.g., \textit{``Please consult a doctor''}, \textit{``Thank you for your question''})---introduces thousands of semantically meaningless \texttt{Other} type entities into the graph. These noisy nodes pollute retrieval results: when a query word such as \textit{``uống''} (drink) is matched against a node whose canonical name is an entire sentence like \textit{``Nên uống với thời gian đều đặn''} (Should drink at regular intervals), the returned chunks carry no diagnostic value.
 
 \subsection*{Solution}
 This thesis constructs a custom Clinical Knowledge Graph by combining two extraction strategies:
@@ -16,7 +53,7 @@ This thesis constructs a custom Clinical Knowledge Graph by combining two extrac
     \item \textbf{LLM-based relation extraction} (\texttt{kg/extract/entity\_extractor.py}): For relational triplets (subject, predicate, object), a local Ollama LLM is used selectively on the most clinically relevant document sections, normalizing extracted predicates through a canonical ontology defined in \texttt{kg/ontology.py}.
 \end{enumerate}
 
-A critical post-processing step — \textbf{entity pruning} — was designed and executed to remove noisy ``Other'' type entities. Specifically, entities of type ``Other'' with \texttt{canonical\_name} lengths exceeding a defined character threshold, or containing conversational markers (e.g., \textit{``cảm ơn''}, \textit{``vinmec''}, \textit{``xin hỏi bác sĩ''}), were systematically deleted from the graph. The Cypher query used for this operation is:
+A critical post-processing step---\textbf{entity pruning}---was designed and executed to remove noisy \texttt{Other} type entities. Specifically, entities of type \texttt{Other} with \texttt{canonical\_name} lengths exceeding a defined character threshold, or containing conversational markers (e.g., \textit{``cảm ơn''}, \textit{``vinmec''}, \textit{``xin hỏi bác sĩ''}), were systematically deleted from the graph. The Cypher query used for this operation is:
 
 \begin{verbatim}
 MATCH (e:Entity {type: "Other"})
@@ -38,13 +75,13 @@ A \textbf{Graph-First routing strategy} was then implemented in \texttt{llm\_pip
 Total Entities & 46,527 & \textbf{25,319} \\ \hline
 Total Relations & 348,643 & \textbf{193,042} \\ \hline
 Total Mentions & 113,538 & \textbf{91,298} \\ \hline
-Entity noise ratio (``Other'' type) & $\approx 72\%$ & $< 15\%$ \\ \hline
+Entity noise ratio (\texttt{Other} type) & $\approx 72\%$ & $< 15\%$ \\ \hline
 \end{tabular}
 \caption{Knowledge Graph statistics before and after entity pruning}
 \label{table:kg_stats}
 \end{table}
 
-The pruned graph retains \textbf{9,989 clinical documents} and \textbf{18,920 text chunks}, preserving full knowledge coverage while reducing graph traversal time and neo4j memory overhead significantly. Post-pruning Cypher CONTAINS queries on \texttt{canonical\_name} execute in under 80ms on average, compared to over 400ms before pruning on the same hardware.
+Table \ref{table:kg_stats} quantifies the effect of pruning noisy generic entities from the knowledge graph. The pruned graph retains \textbf{9,989 clinical documents} and \textbf{18,920 text chunks}, preserving full knowledge coverage while reducing graph traversal time and Neo4j memory overhead significantly. Post-pruning Cypher CONTAINS queries on \texttt{canonical\_name} execute in under 80ms on average, compared to over 400ms before pruning on the same hardware.
 
 \section{Robust ReAct Agent Loop-Guard and Format Recovery}
 \label{section:5.2}
@@ -62,7 +99,7 @@ Three defensive mechanisms were designed and implemented in \texttt{agent/react/
 \begin{enumerate}
 \item \textbf{Parse-retry with prompt repair}: When the parser detects a format error, it does not immediately fail. Instead, it appends a corrective repair prompt to the message history and re-queries the LLM up to \texttt{parse\_retries} times, giving the model a chance to self-correct its output format.
 
-\item \textbf{Recovery-forced Retrieval (Iteration 1 only)}: If all parse retries are exhausted on the very first iteration — before any context has been retrieved — the system executes a direct fallback query using the original user question as input to \texttt{run\_graphrag\_tool()}, which queries the Custom KG. This guarantees that at least one retrieval is always performed, even when the model fails to generate a valid tool call. The synthesized observation is then injected back into the message history as a ``recovery synthetic message''.
+\item \textbf{Recovery-forced Retrieval (Iteration 1 only)}: If all parse retries are exhausted on the very first iteration---before any context has been retrieved---the system executes a direct fallback query using the original user question as input to \texttt{run\_graphrag\_tool()}, which queries the Custom KG. This guarantees that at least one retrieval is always performed, even when the model fails to generate a valid tool call. The synthesized observation is then injected back into the message history as a \textit{``recovery synthetic message''}.
 
     \item \textbf{Loop-guard via action signature tracking}: The system tracks each tool call's identity as a tuple \texttt{(action\_name, action\_input.casefold())}. If the same signature appears in two consecutive iterations, the loop-guard fires: it synthesizes a forced final answer from the accumulated graph context and terminates the loop immediately, preventing infinite runtime.
 \end{enumerate}
@@ -74,15 +111,15 @@ In empirical testing across 10 manually constructed adversarial queries (designe
 \label{section:5.3}
 
 \subsection*{Problem}
-Real-world clinical lab reports are provided in two formats: scanned or digitally generated PDFs, and structured Excel spreadsheets. Standard text extraction from these formats yields raw, unstructured strings. A naive RAG system applied to this raw output would retrieve irrelevant chunks when the patient asks ``\textit{Is my cholesterol normal?}'', as the retrieved text is just a flat string representation of the table cells.
+Real-world clinical lab reports are provided in two formats: scanned or digitally generated PDFs, and structured Excel spreadsheets. Standard text extraction from these formats yields raw, unstructured strings. A naive RAG system applied to this raw output would retrieve irrelevant chunks when the patient asks \textit{``Is my cholesterol normal?''}, because the retrieved text is just a flat string representation of the table cells.
 
 Furthermore, lab reference ranges are printed directly on clinical forms by the laboratory. These reference ranges vary across laboratories, so hardcoding a static JSON reference table is insufficient and error-prone.
 
 \subsection*{Solution}
 A pure-Python, zero-LLM benchmarking module was designed in \texttt{medical\_records/lab\_compare\_on\_form.py}. This module:
 \begin{enumerate}
-    \item Parses the extracted text to identify rows containing a lab indicator name, a numeric patient value, and a reference range string (e.g., \textit{``3.5 -- 5.0''}) printed directly on the form.
-    \item Performs regex-based boundary extraction to recover the numeric lower and upper bounds from the reference string, handling multiple common formats (e.g., \textit{``< 5.0''}, \textit{``3.5-5.0''}, \textit{``3.5 -- 5.0 mmol/L''}).
+    \item Parses the extracted text to identify rows containing a lab indicator name, a numeric patient value, and a reference range string (e.g., \texttt{3.5--5.0}) printed directly on the form.
+    \item Performs regex-based boundary extraction to recover the numeric lower and upper bounds from the reference string, handling multiple common formats (e.g., \texttt{< 5.0}, \texttt{3.5-5.0}, \texttt{3.5--5.0 mmol/L}).
     \item Classifies the patient's value as \texttt{within\_reference}, \texttt{above\_reference}, or \texttt{below\_reference} by direct numeric comparison.
     \item Returns a structured result list containing each indicator's status, value, and reference bounds.
 \end{enumerate}
@@ -109,7 +146,7 @@ K = 10 & 0.090 & 0.433 & 0.149 & 0.262 \\ \hline
 \label{table:eval_metrics}
 \end{table}
 
-The results indicate that while Recall@K improves substantially as K increases (from 0.383 at K=5 to 0.433 at K=10), Precision@K decreases correspondingly due to the inclusion of lower-confidence entities in wider retrieval windows. The MRR of 0.262 reflects that the first truly relevant entity is retrieved, on average, at approximately the 4th rank position. 
+Table \ref{table:eval_metrics} presents the quantitative retrieval metrics for the custom knowledge graph. The results indicate that while Recall@K improves substantially as K increases (from 0.383 at K=5 to 0.433 at K=10), Precision@K decreases correspondingly due to the inclusion of lower-confidence entities in wider retrieval windows. The MRR of 0.262 reflects that the first truly relevant entity is retrieved, on average, at approximately the 4th rank position. 
 
 These metrics are consistent with the expected behavior of a graph-based retrieval system on a noisy clinical conversational corpus. The entity pruning step described in Section \ref{section:5.1} is expected to further improve precision in future evaluation runs by eliminating erroneous entity matches. The comparative advantage of the Custom KG over Microsoft GraphRAG is its low latency and explicit structural traceability, even at the cost of lower recall on polysemous or ambiguous queries.
 
@@ -170,7 +207,7 @@ The conversational memory enables seamless follow-up diagnostic sessions (e.g., 
 \label{section:5.8}
 
 \subsection*{Problem}
-During local Cypher expansion queries on Neo4j, the retrieved subgraphs often include isolated nodes (entities with a degree of 0 that have no relationships in the active context) and noisy textual components (e.g., entities containing special characters like ``!!!'', generic tags like ``other'', or isolated digits). These elements pollute the context injected into the LLM, leading to prompt bloat and diluting inference quality. Furthermore, rendering these noisy, isolated entities in the front-end network graph (Vis-Network) clutters the UI and reduces explainability for clinicians.
+During local Cypher expansion queries on Neo4j, the retrieved subgraphs often include isolated nodes (entities with a degree of 0 that have no relationships in the active context) and noisy textual components (e.g., entities containing special characters like \texttt{!!!}, generic tags like \texttt{other}, or isolated digits). These elements pollute the context injected into the LLM, leading to prompt bloat and diluting inference quality. Furthermore, rendering these noisy, isolated entities in the front-end network graph (Vis-Network) clutters the UI and reduces explainability for clinicians.
 
 \subsection*{Solution}
 A custom graph-pruning middleware was designed and implemented in \texttt{retrieval/graph\_first.py} under the function \texttt{prune\_subgraph(subgraph, seed\_ids)}:
@@ -189,5 +226,7 @@ In integration testing, the pruning middleware successfully isolated connected c
     \caption{Vis.js interactive subgraph rendered in the UI, mapping the clinical pathway surrounding COVID-19 to provide medical explainability (XAI)}
     \label{fig:subgraph_ui_visualisation}
 \end{figure}
+
+Figure \ref{fig:subgraph_ui_visualisation} demonstrates how the pruned subgraph is rendered in the chat interface to support visual explainability for end users.
 
 \end{document}

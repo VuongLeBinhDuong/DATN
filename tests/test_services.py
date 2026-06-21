@@ -70,7 +70,7 @@ class TestAgentService:
         events = [{"event": "step", "content": "1"}]
         
         with patch("agent.react.ReActAgent.run_stream", return_value=iter(events)):
-            stream = list(service.execute_stream("Hello"))
+            stream = list(service.execute_stream("Flu symptoms"))
             assert stream == events
 
 

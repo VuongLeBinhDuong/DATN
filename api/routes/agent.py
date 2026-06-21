@@ -41,7 +41,6 @@ class AgentQueryOut(BaseModel):
     plan: dict = {}
     errors: list[str] = []
     sources: list[SourceOut] = []
-    context_milvus_preview: str = ""
     context_graphrag_preview: str = ""
     context_graphrag_full: str = ""
     context_graphrag_total_chars: int = 0
