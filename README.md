@@ -144,7 +144,7 @@ DATN/
 3. **Cài đặt & Kéo mô hình local**:
    * Khởi động Ollama local và tải các mô hình cần thiết:
      ```bash
-     ollama pull llama3.1:8b
+     ollama pull llama3.2:3b
      ollama pull qwen2.5:1.5b-instruct
      ```
 

@@ -28,7 +28,7 @@ class OllamaSettings(BaseSettings):
     )
 
     host: str = Field(default="http://localhost:11434", description="Ollama server URL")
-    model: str = Field(default="llama3.1:8b", description="Default model name")
+    model: str = Field(default="llama3.2:3b", description="Default model name")
     timeout: int = Field(default=120, ge=1, le=600, description="Request timeout in seconds")
     router_model: str = Field(default="qwen2.5:1.5b-instruct", description="Model for routing decisions")
     num_ctx: int = Field(default=8192, ge=1024, le=131072, description="Context window size")

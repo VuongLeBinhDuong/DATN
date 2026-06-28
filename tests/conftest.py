@@ -40,11 +40,11 @@ def mock_ollama_backend() -> MagicMock:
     """Provide a mock OllamaBackend for testing."""
     backend = MagicMock(spec=OllamaBackend)
     backend.host = "http://localhost:11434"
-    backend.default_model = "llama3.1:8b"
+    backend.default_model = "llama3.2:3b"
     backend.timeout = 120
     backend.is_available.return_value = True
     backend.chat.return_value = "Mock response from Ollama"
-    backend.list_models.return_value = ["llama3.1:8b", "phi4:latest"]
+    backend.list_models.return_value = ["llama3.2:3b", "phi4:latest"]
     backend.chat_stream.return_value = iter(["Mock", " response", " stream"])
     return backend
 

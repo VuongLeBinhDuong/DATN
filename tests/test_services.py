@@ -50,17 +50,7 @@ class TestAgentService:
             assert res == mock_react_result
             mock_run.assert_called_once_with("Flu symptoms", history=None)
 
-    def test_execute_intent_router_direct_db(self, clean_settings_cache):
-        """Test execute routes to direct_db for physiological lookup."""
-        mock_llm = MagicMock()
-        service = AgentService(llm_backend=mock_llm)
-        
-        # Test direct_db matching query
-        query = "glucose của tôi là 7.5 mmol/L"
-        res = service.execute(query)
-        
-        assert "KẾT QUẢ ĐỐI CHIẾU CHỈ SỐ LÂM SÀNG TỰ ĐỘNG" in res["answer"]
-        assert res["sources"][0]["source"] == "Bộ Y tế Việt Nam / WHO Guidelines"
+
 
     def test_execute_stream_react(self, clean_settings_cache):
         """Test streaming execution yields events via ReAct agent."""

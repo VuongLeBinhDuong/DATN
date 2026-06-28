@@ -44,10 +44,10 @@ docker-compose logs neo4j
 --------------------------------------------------------------------------------
 # Khởi chạy dịch vụ Ollama local trên máy tính (nếu chưa khởi động)
 # Tải và chạy mô hình Llama-3.1-8B (Mặc định được hệ thống CDSS sử dụng)
-ollama pull llama3.1:8b
+ollama pull llama3.2:3b
 
 # Chạy thử mô hình trực tiếp qua CLI để kiểm tra hoạt động
-ollama run llama3.1:8b
+ollama run llama3.2:3b
 
 --------------------------------------------------------------------------------
 4. XỬ LÝ LÀM SẠCH VÀ CHUẨN BỊ DỮ LIỆU ĐỒ THỊ (INGESTION)

@@ -155,8 +155,8 @@ def _run_custom_kg_query(question: str, neo_cfg: dict[str, Any] | None = None) -
 
 
 def run_graphrag_query_with_sources(
-    question: str, *, retrieval_query: str | None = None
-) -> tuple[str, list[dict[str, Any]]]:
+    question: str, *, retrieval_query: str | None = None, return_raw_context: bool = False
+) -> tuple[str, list[dict[str, Any]]] | tuple[str, list[dict[str, Any]], str]:
     """Route query exclusively to Custom KG, bypassing Microsoft GraphRAG entirely."""
     configure_package_terminal_logging()
     q = (question or "").strip()
@@ -176,17 +176,29 @@ def run_graphrag_query_with_sources(
         if ctx.strip():
             if neo_cfg and neo_cfg.get("synthesize_with_ollama", True):
                 try:
-                    return synthesize_graph_answer(q, ctx, neo_cfg), hits
+                    ans = synthesize_graph_answer(q, ctx, neo_cfg)
+                    if return_raw_context:
+                        return ans, hits, ctx
+                    return ans, hits
                 except Exception as exc:
-                    return f"Custom KG (không gọi được LLM: {exc}):\n\n{ctx}", hits
+                    ans = f"Custom KG (không gọi được LLM: {exc}):\n\n{ctx}"
+                    if return_raw_context:
+                        return ans, hits, ctx
+                    return ans, hits
+            if return_raw_context:
+                return ctx, hits, ctx
             return ctx, hits
+        if return_raw_context:
+            return "Custom KG không tìm thấy ngữ cảnh phù hợp cho câu hỏi này.", [], ""
         return "Custom KG không tìm thấy ngữ cảnh phù hợp cho câu hỏi này.", []
     
-    return (
+    msg = (
         "Custom KG (Cơ sở dữ liệu đồ thị tùy chỉnh) hiện tại không khả dụng hoặc chưa được cấu hình. "
-        "Vui lòng kiểm tra kết nối Neo4j trong cấu hình hệ thống.",
-        []
+        "Vui lòng kiểm tra kết nối Neo4j trong cấu hình hệ thống."
     )
+    if return_raw_context:
+        return msg, [], ""
+    return msg, []
 
 
 

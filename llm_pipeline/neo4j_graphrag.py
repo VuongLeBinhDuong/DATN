@@ -183,7 +183,7 @@ def synthesize_graph_answer(
             return f"Neo4j synthesis: {exc}"
 
     host = (os.getenv("OLLAMA_HOST") or cfg.get("ollama_host") or "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL") or cfg.get("ollama_model") or "llama3.1:8b"
+    model = os.getenv("OLLAMA_MODEL") or cfg.get("ollama_model") or "llama3.2:3b"
     _to = os.getenv("OLLAMA_TIMEOUT")
     try:
         timeout = int(_to) if _to not in (None, "") else int(cfg.get("ollama_timeout") or 120)

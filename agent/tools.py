@@ -29,7 +29,7 @@ def expand_query_with_llm(question: str, num_variations: int = 3) -> list[str]:
         return [question]
     
     host = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     
     prompt = f"""Bạn là trợ lý y khoa. Từ câu hỏi ngắn sau, hãy tạo {num_variations} biến thể mở rộng để tìm kiếm thông tin đầy đủ hơn.
 

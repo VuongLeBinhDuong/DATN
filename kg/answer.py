@@ -40,7 +40,7 @@ def synthesize_answer_with_citations(question: str, evidence_chunks: list[dict[s
     prompt = ANSWER_PROMPT_TEMPLATE.format(question=question, evidence=_format_evidence(evidence_chunks))
 
     host = (os.getenv("OLLAMA_HOST") or "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL") or "llama3.1:8b"
+    model = os.getenv("OLLAMA_MODEL") or "llama3.2:3b"
     timeout = int(os.getenv("OLLAMA_TIMEOUT") or "120")
     temperature = float(os.getenv("KG_ANSWER_TEMPERATURE") or "0.2")
     num_predict = int(os.getenv("KG_ANSWER_NUM_PREDICT") or "2048")

@@ -35,6 +35,8 @@
 \usepackage{float}
 \usepackage{subcaption}
 \usepackage{xurl}
+\usepackage[htt]{hyphenat}
+\usepackage{microtype}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta, positioning, calc, fit, backgrounds, shapes.geometric}
 
@@ -144,7 +146,21 @@
 \usepackage{hyperref}
 \hypersetup{pdfborder = {0 0 0}} %
 \hypersetup{pdftitle={\TITLE},
-	pdfauthor={\AUTHOR}}
+	pdfauthor={\AUTHOR},
+    breaklinks=true}
+
+% Improve justified text and safe line breaks for long identifiers, code, and links.
+\microtypesetup{protrusion=true,expansion=true}
+\setlength{\emergencystretch}{3em}
+\Urlmuskip=0mu plus 1mu\relax
+\def\UrlBreaks{\do\/\do-\do_\do.\do:\do?\do&\do=\do\#\do\%}
+\lstset{
+    breaklines=true,
+    breakatwhitespace=false,
+    columns=fullflexible,
+    keepspaces=true,
+    basicstyle=\ttfamily\small
+}
 	
 \usepackage[all]{hypcap} % Cho phép tham chiếu chính xác đến hình ảnh và bảng biểu
 
@@ -271,10 +287,10 @@ API & Application Programming Interface \\
 % \phantomsection\addcontentsline{toc}{section}{\numberline {} DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}
 
 % \newpage
-% \subfile{chapters/0_5_Danh_muc_viet_tat.tex}
+% \subfile{Chapter/0_5_Danh_muc_viet_tat.tex}
 
 % \newpage
-% \subfile{chapters/0_6_Thuat_ngu.tex}
+% \subfile{Chapter/0_6_Thuat_ngu.tex}
 % ===================================================
 
 
@@ -331,6 +347,7 @@ API & Application Programming Interface \\
 % ===================================================
 \newpage
 \renewcommand\bibname{REFERENCE}
+\nocite{*}
 \printbibliography
 \phantomsection\addcontentsline{toc}{chapter}{REFERENCE}
 
@@ -355,4 +372,16 @@ API & Application Programming Interface \\
     {\titlerule*[0.3pc]{.}\contentspage}         % filler-page-format, e.g dots
 \chapter{USE CASE DESCRIPTIONS}
 \subfile{Chapter/Appendix_B}
+
+\chapter{CORE SYSTEM PROMPTS}
+\subfile{Chapter/Appendix_C}
+
+\chapter{DEPLOYMENT GUIDE}
+\subfile{Chapter/Appendix_D}
+
+\chapter{DATABASE DICTIONARY}
+\subfile{Chapter/Appendix_E}
+
+\chapter{CORE CODE SNIPPETS}
+\subfile{Chapter/Appendix_F}
 \end{document}

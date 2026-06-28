@@ -11,3 +11,8 @@ Avoid stating a definitive personal diagnosis when the case is unclear; prefer d
 
 Question:
 {question}
+
+---
+Hãy trả lời câu hỏi trực tiếp bằng tiếng Việt:
+
+Trả lời:

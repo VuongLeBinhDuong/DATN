@@ -195,7 +195,7 @@ def _extract_entities_with_llm(question: str, cfg: dict[str, Any] | None = None)
     """
     cfg = cfg or _get_neo4j_config_from_env()
     host = cfg.get("ollama_host", "http://127.0.0.1:11434")
-    model = cfg.get("ollama_model", "llama3.1:8b")
+    model = cfg.get("ollama_model", "llama3.2:3b")
     
     prompt = f"""Từ câu hỏi y tế sau, trích xuất các entity (thực thể) y tế có trong câu hỏi và phân loại chúng.
 
@@ -324,7 +324,7 @@ def _get_neo4j_config_from_env() -> dict[str, Any]:
         "password": os.getenv("NEO4J_PASSWORD", "changeme"),
         "database": os.getenv("NEO4J_DATABASE", "neo4j"),
         "ollama_host": os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"),
-        "ollama_model": os.getenv("OLLAMA_MODEL", "llama3.1:8b"),
+        "ollama_model": os.getenv("OLLAMA_MODEL", "llama3.2:3b"),
     }
 
 
@@ -689,7 +689,7 @@ def synthesize_langchain_answer(
     cfg = cfg or _get_neo4j_config_from_env()
 
     host = cfg.get("ollama_host", "http://127.0.0.1:11434")
-    model = cfg.get("ollama_model", "llama3.1:8b")
+    model = cfg.get("ollama_model", "llama3.2:3b")
 
     prompt = f"""Bạn là trợ lý y khoa. Trả lời câu hỏi dựa trên thông tin được cung cấp.
 

@@ -12,7 +12,7 @@ from llm_pipeline.llm_chat import chat_ollama, chat_openrouter, synthesis_backen
 
 def _llm_call(prompt: str) -> str:
     host = (os.getenv("OLLAMA_HOST") or "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL") or "llama3.1:8b"
+    model = os.getenv("OLLAMA_MODEL") or "llama3.2:3b"
     timeout = int(os.getenv("OLLAMA_TIMEOUT") or "120")
     temperature = float(os.getenv("KG_REL_TEMPERATURE") or "0.1")
     num_predict = int(os.getenv("KG_REL_NUM_PREDICT") or "2048")

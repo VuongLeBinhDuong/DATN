@@ -8,78 +8,121 @@
 \contentsline {chapter}{\numberline {1}INTRODUCTION}{1}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Motivation}{1}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Objectives and Scope of the Graduation Thesis}{2}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Tentative Solution}{3}{section.1.3}%
+\contentsline {section}{\numberline {1.3}Tentative Solution}{2}{section.1.3}%
 \contentsline {section}{\numberline {1.4}Thesis Organization}{3}{section.1.4}%
-\contentsline {chapter}{\numberline {2}REQUIREMENT SURVEY AND ANALYSIS}{5}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Status survey}{5}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Functional Overview}{6}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}General use case diagram}{6}{subsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.2.2}Detailed use case diagram}{6}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Business process}{7}{subsection.2.2.3}%
-\contentsline {section}{\numberline {2.3}Functional description}{7}{section.2.3}%
-\contentsline {subsection}{\numberline {2.3.1}Description of UC-01: Consult Medical Agent}{7}{subsection.2.3.1}%
-\contentsline {subsection}{\numberline {2.3.2}Description of UC-02: Upload \& Analyze Medical Record}{8}{subsection.2.3.2}%
-\contentsline {subsection}{\numberline {2.3.3}Description of UC-03: Manage Medication Reminders}{8}{subsection.2.3.3}%
-\contentsline {subsection}{\numberline {2.3.4}Description of UC-04: Verify Pill Imagery}{8}{subsection.2.3.4}%
-\contentsline {section}{\numberline {2.4}Non-functional requirement}{9}{section.2.4}%
-\contentsline {chapter}{\numberline {3}THEORETICAL BACKGROUND AND TECHNOLOGIES}{10}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Knowledge Graphs and Labeled Property Graphs (LPG)}{10}{section.3.1}%
-\contentsline {subsection}{\numberline {3.1.1}RDF vs. Labeled Property Graph (LPG)}{10}{subsection.3.1.1}%
-\contentsline {subsection}{\numberline {3.1.2}Neo4j as the Graph Database Engine}{11}{subsection.3.1.2}%
-\contentsline {section}{\numberline {3.2}Retrieval-Augmented Generation (RAG) and GraphRAG}{13}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Classical Vector RAG}{13}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}The Cognitive Limitations of Vector RAG}{14}{subsection.3.2.2}%
-\contentsline {subsection}{\numberline {3.2.3}The Paradigm Shift to GraphRAG}{14}{subsection.3.2.3}%
-\contentsline {subsubsection}{\numberline {a}1. Local Graph-First Retrieval with Clinical NER and Cypher Path Queries}{14}{subsubsection.3.2.3.1}%
-\contentsline {paragraph}{Stage 1: Lightweight LLM-based Clinical NER Extraction}{15}{paragraph*.11}%
-\contentsline {paragraph}{Stage 2: Cypher Path Query Traversal}{15}{paragraph*.12}%
-\contentsline {paragraph}{Fallback to k-Hop Expansion}{16}{paragraph*.13}%
-\contentsline {subsubsection}{\numberline {b}2. Global GraphRAG (Microsoft GraphRAG Paradigm)}{16}{subsubsection.3.2.3.2}%
-\contentsline {section}{\numberline {3.3}Agentic AI and Dialog State Orchestration}{16}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Hybrid Intent Routing Architecture}{17}{subsection.3.3.1}%
-\contentsline {paragraph}{1. Zero-LLM Fast-Path (0ms Latency)}{17}{paragraph*.14}%
-\contentsline {paragraph}{2. Lightweight Parallel SLM Classifier}{17}{paragraph*.15}%
-\contentsline {subsection}{\numberline {3.3.2}The ReAct (Reasoning and Acting) Framework}{18}{subsection.3.3.2}%
-\contentsline {subsection}{\numberline {3.3.3}Agent Safeguards: Loop-Guards and Format Recovery}{18}{subsection.3.3.3}%
-\contentsline {subsection}{\numberline {3.3.4}Stateful Dialog Orchestration and Simplified Routing}{18}{subsection.3.3.4}%
-\contentsline {section}{\numberline {3.4}Technical Infrastructure and Development Stack Justification}{19}{section.3.4}%
-\contentsline {subsection}{\numberline {3.4.1}FastAPI Backend (Python 3.10+)}{19}{subsection.3.4.1}%
-\contentsline {subsection}{\numberline {3.4.2}Local LLM Hosting via Ollama}{19}{subsection.3.4.2}%
-\contentsline {subsection}{\numberline {3.4.3}High-Speed Unstructured Data Extractors}{19}{subsection.3.4.3}%
-\contentsline {chapter}{\numberline {4}DESIGN, IMPLEMENTATION, AND EVALUATION}{20}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Architecture design}{20}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}Software architecture selection}{20}{subsection.4.1.1}%
-\contentsline {subsection}{\numberline {4.1.2}Overall design}{20}{subsection.4.1.2}%
-\contentsline {subsection}{\numberline {4.1.3}Detailed package design}{21}{subsection.4.1.3}%
-\contentsline {section}{\numberline {4.2}Detailed design}{22}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}User interface design}{22}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}Layer design}{22}{subsection.4.2.2}%
-\contentsline {subsection}{\numberline {4.2.3}Database design}{23}{subsection.4.2.3}%
-\contentsline {section}{\numberline {4.3}Application Building}{24}{section.4.3}%
-\contentsline {subsection}{\numberline {4.3.1}Libraries and Tools}{24}{subsection.4.3.1}%
-\contentsline {subsection}{\numberline {4.3.2}Achievement}{24}{subsection.4.3.2}%
-\contentsline {subsection}{\numberline {4.3.3}Illustration of main functions}{24}{subsection.4.3.3}%
-\contentsline {subsection}{\numberline {4.3.4}Performance Latency Optimizations}{25}{subsection.4.3.4}%
-\contentsline {section}{\numberline {4.4}Testing}{25}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Deployment}{26}{section.4.5}%
-\contentsline {chapter}{\numberline {5}SOLUTION AND CONTRIBUTION}{27}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Custom Medical Knowledge Graph Construction and Graph-First Retrieval}{27}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Robust ReAct Agent Loop-Guard and Format Recovery}{29}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Multi-Format Clinical Record Parser and Automatic Lab Range Comparison}{30}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Quantitative Evaluation and Benchmarking}{31}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Triangulated Hybrid Retrieval (RRF) and Local Neural Cross-Encoder Reranking}{31}{section.5.5}%
-\contentsline {section}{\numberline {5.6}Hybrid Intent Routing with Zero-LLM Fast-Path and Lightweight LLM Classifier}{32}{section.5.6}%
-\contentsline {section}{\numberline {5.7}Chatbot Conversational Memory and CDSS PDF Report Export}{33}{section.5.7}%
-\contentsline {section}{\numberline {5.8}Clinical Graph Validation and Soft Pruning (Graph Noise Reduction)}{34}{section.5.8}%
-\contentsline {chapter}{\numberline {6}CONCLUSION AND FUTURE WORK}{36}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Conclusion}{36}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Future Work}{37}{section.6.2}%
-\contentsline {chapter}{REFERENCE}{40}{section*.30}%
-\contentsline {chapter}{APPENDIX}{42}{section*.31}%
+\contentsline {chapter}{\numberline {2}REQUIREMENT SURVEY AND ANALYSIS}{4}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Status survey}{4}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Functional Overview}{5}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Detailed use case diagram}{5}{subsection.2.2.1}%
+\contentsline {paragraph}{1. UC-01: Consult Medical Agent Detailed Use Case}{6}{paragraph*.8}%
+\contentsline {paragraph}{2. UC-02: Upload \& Analyze Medical Record Detailed Use Case}{6}{paragraph*.10}%
+\contentsline {paragraph}{3. UC-03: Manage Medication Reminders Detailed Use Case}{6}{paragraph*.12}%
+\contentsline {paragraph}{4. UC-04: Clinical Calculators and Interaction Safety Check Detailed Use Case}{7}{paragraph*.14}%
+\contentsline {paragraph}{5. UC-05: View Medical News Detailed Use Case}{7}{paragraph*.16}%
+\contentsline {paragraph}{6. UC-06: Manage Knowledge Graph Detailed Use Case}{8}{paragraph*.18}%
+\contentsline {subsection}{\numberline {2.2.2}System sequence diagrams}{8}{subsection.2.2.2}%
+\contentsline {section}{\numberline {2.3}Functional description}{11}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Description of UC-01: Consult Medical Agent}{11}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Description of UC-02: Upload \& Analyze Medical Record}{11}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Description of UC-03: Manage Medication Reminders}{12}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}Description of UC-04: Clinical Calculators and Interaction Safety Check}{12}{subsection.2.3.4}%
+\contentsline {subsection}{\numberline {2.3.5}Description of UC-05: View Medical News}{13}{subsection.2.3.5}%
+\contentsline {subsection}{\numberline {2.3.6}Description of UC-06: Manage Knowledge Graph}{13}{subsection.2.3.6}%
+\contentsline {section}{\numberline {2.4}Non-functional requirement}{13}{section.2.4}%
+\contentsline {chapter}{\numberline {3}THEORETICAL BACKGROUND AND TECHNOLOGIES}{15}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Knowledge Graphs and Labeled Property Graphs (LPG)}{15}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}RDF vs. Labeled Property Graph (LPG)}{15}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Neo4j as the Graph Database Engine}{16}{subsection.3.1.2}%
+\contentsline {section}{\numberline {3.2}Retrieval-Augmented Generation (RAG) and GraphRAG}{19}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Classical Vector RAG}{19}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}The Cognitive Limitations of Vector RAG}{20}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}The Paradigm Shift to GraphRAG}{20}{subsection.3.2.3}%
+\contentsline {subsubsection}{\numberline {a}1. Local Graph-First Retrieval with Clinical NER and Cypher Path Queries}{20}{subsubsection.3.2.3.1}%
+\contentsline {paragraph}{Stage 1: Lightweight LLM-based Clinical NER Extraction}{21}{paragraph*.29}%
+\contentsline {paragraph}{Stage 2: Cypher Path Query Traversal}{21}{paragraph*.30}%
+\contentsline {paragraph}{Fallback to k-Hop Expansion}{22}{paragraph*.31}%
+\contentsline {paragraph}{Soft Subgraph Pruning Layer}{22}{paragraph*.32}%
+\contentsline {paragraph}{Hybrid Candidate Ranking via RRF}{22}{paragraph*.33}%
+\contentsline {paragraph}{LLM-based Reranking Layer (Optional)}{23}{paragraph*.34}%
+\contentsline {subsubsection}{\numberline {b}2. Global GraphRAG (Microsoft GraphRAG Paradigm)}{24}{subsubsection.3.2.3.2}%
+\contentsline {section}{\numberline {3.3}Agentic AI and Dialog State Orchestration}{25}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Hybrid Intent Routing Architecture}{25}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}The ReAct (Reasoning and Acting) Framework}{26}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Agent Safeguards: Loop-Guards and Format Recovery}{27}{subsection.3.3.3}%
+\contentsline {subsection}{\numberline {3.3.4}Stateful Dialog Orchestration and Simplified Routing}{28}{subsection.3.3.4}%
+\contentsline {section}{\numberline {3.4}Advanced Prompt Engineering Strategies}{29}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Role-based Prompting and Persona Assignment}{29}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Negative Prompting and Constrained Generation}{29}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}Chain-of-Thought (CoT) integration via ReAct}{29}{subsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.4.4}Few-Shot Formatting and Error Steering}{29}{subsection.3.4.4}%
+\contentsline {section}{\numberline {3.5}Technical Infrastructure and Development Stack Justification}{30}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}FastAPI Backend (Python 3.10+)}{30}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}Local LLM Hosting}{30}{subsection.3.5.2}%
+\contentsline {subsection}{\numberline {3.5.3}High-Speed Unstructured Data Extractors}{30}{subsection.3.5.3}%
+\contentsline {subsection}{\numberline {3.5.4}Localized Clinical Calculators and Physiological Evaluation}{30}{subsection.3.5.4}%
+\contentsline {paragraph}{1. Body Mass Index (BMI)}{31}{paragraph*.38}%
+\contentsline {paragraph}{2. Estimated Glomerular Filtration Rate (eGFR)}{31}{paragraph*.39}%
+\contentsline {chapter}{\numberline {4}DESIGN, IMPLEMENTATION, AND EVALUATION}{32}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Architecture design}{32}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Software architecture selection}{32}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Overall design}{32}{subsection.4.1.2}%
+\contentsline {subsection}{\numberline {4.1.3}Detailed package design}{33}{subsection.4.1.3}%
+\contentsline {section}{\numberline {4.2}Detailed design}{35}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}User interface design}{35}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Layer design}{35}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}Database design}{36}{subsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.2.4}API Endpoints and JSON Contract Specifications}{36}{subsection.4.2.4}%
+\contentsline {paragraph}{1. Streamed Agent Consultation Endpoint (\texttt {POST /api/agent-query/stream})}{36}{paragraph*.46}%
+\contentsline {paragraph}{2. Medical Record Analyzer Endpoint (\texttt {POST /api/medical-record/analyze})}{37}{paragraph*.47}%
+\contentsline {paragraph}{3. Clinical Calculator Endpoint (\texttt {POST /api/medical-calculator})}{37}{paragraph*.48}%
+\contentsline {subsection}{\numberline {4.2.5}Core Procedural Algorithms}{38}{subsection.4.2.5}%
+\contentsline {section}{\numberline {4.3}Application Building}{40}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Libraries and Tools}{40}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Achievement}{41}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}Illustration of main functions}{41}{subsection.4.3.3}%
+\contentsline {paragraph}{1. Interactive Landing Page}{41}{paragraph*.50}%
+\contentsline {paragraph}{2. Agent Chat Screen}{42}{paragraph*.52}%
+\contentsline {paragraph}{3. Medical Record Upload and Tabular Benchmarking}{43}{paragraph*.54}%
+\contentsline {paragraph}{4. Medication Reminder and Schedule Grid}{43}{paragraph*.56}%
+\contentsline {paragraph}{5. Deterministic Clinical Calculators}{44}{paragraph*.58}%
+\contentsline {paragraph}{6. Medical News and Health Dashboard}{44}{paragraph*.60}%
+\contentsline {subsection}{\numberline {4.3.4}Performance Latency Optimizations}{45}{subsection.4.3.4}%
+\contentsline {section}{\numberline {4.4}Testing and Evaluation}{46}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Language Model Implementations and Backend Configurations}{46}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}Software Regression Tests}{46}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}Evaluation Datasets}{46}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}New Comparative Evaluation Method}{47}{subsection.4.4.4}%
+\contentsline {subsection}{\numberline {4.4.5}Observed Evaluation Results}{47}{subsection.4.4.5}%
+\contentsline {subsection}{\numberline {4.4.6}Quantitative System Comparison: GraphRAG vs. Direct LLM}{48}{subsection.4.4.6}%
+\contentsline {subsection}{\numberline {4.4.7}Evaluation Limitations}{48}{subsection.4.4.7}%
+\contentsline {subsection}{\numberline {4.4.8}Complementary Evaluation Scripts}{48}{subsection.4.4.8}%
+\contentsline {section}{\numberline {4.5}Deployment}{49}{section.4.5}%
+\contentsline {chapter}{\numberline {5}SOLUTION AND CONTRIBUTION}{51}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Modular Medical CDSS Architecture}{51}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Graph-Grounded Retrieval and Repository Abstraction}{51}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Robust ReAct Agent with Recovery Controls}{52}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Hybrid Intent Routing}{52}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Multi-Format Clinical Record Analysis}{52}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Medication Tools and Pill-Image Support}{53}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Browser-Based Reminder Workflow}{53}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Clinical Calculation and Drug-Drug Interaction Tools}{53}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Operational Readiness, Configuration, and Testing}{53}{section.5.9}%
+\contentsline {section}{\numberline {5.10}Comparative Evaluation Suite for GraphRAG and Direct LLM}{53}{section.5.10}%
+\contentsline {section}{\numberline {5.11}Summary of Contributions}{54}{section.5.11}%
+\contentsline {chapter}{\numberline {6}CONCLUSION AND FUTURE WORK}{55}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Conclusion}{55}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Future Work}{56}{section.6.2}%
+\contentsline {chapter}{REFERENCE}{59}{section*.70}%
+\contentsline {chapter}{APPENDIX}{61}{section*.71}%
 \ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
 \ttl@change@v {chapter}{}{}{}\relax 
-\contentsline {chapter}{\numberline {A}USE CASE DESCRIPTIONS}{42}{appendix.A}%
-\contentsline {section}{\numberline {A.1}Use Case UC-01: Consult Medical Agent}{42}{section.A.1}%
-\contentsline {section}{\numberline {A.2}Use Case UC-02: Import and Analyze Multi-format Lab Report}{43}{section.A.2}%
-\contentsline {section}{\numberline {A.3}Use Case UC-03: Manage Medication Schedule and Reminder}{43}{section.A.3}%
+\contentsline {chapter}{\numberline {A}USE CASE DESCRIPTIONS}{61}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Use Case UC-01: Consult Medical Agent}{61}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Use Case UC-02: Import and Analyze Multi-format Lab Report}{61}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Use Case UC-03: Manage Medication Schedule and Reminder}{61}{section.A.3}%
+\contentsline {section}{\numberline {A.4}Use Case UC-04: Clinical Calculators and Interaction Safety Check}{62}{section.A.4}%
+\contentsline {chapter}{\numberline {B}CORE SYSTEM PROMPTS}{63}{appendix.B}%
+\contentsline {chapter}{\numberline {C}DEPLOYMENT GUIDE}{65}{appendix.C}%
+\contentsline {chapter}{\numberline {D}DATABASE DICTIONARY}{66}{appendix.D}%
+\contentsline {chapter}{\numberline {E}CORE CODE SNIPPETS}{67}{appendix.E}%
 \contentsfinish 

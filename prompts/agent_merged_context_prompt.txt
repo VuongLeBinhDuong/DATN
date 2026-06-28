@@ -25,3 +25,8 @@ Question:
 
 Retrieved Context:
 {context_data}
+
+---
+Dựa vào Ngữ cảnh đã cung cấp ở trên, hãy trả lời Câu hỏi của người dùng bằng tiếng Việt. Không sao chép hay lặp lại định dạng "Câu Hỏi:"/"Trả lời:" của ngữ cảnh. Tập trung vào việc trả lời câu hỏi trực tiếp.
+
+Trả lời:

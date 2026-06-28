@@ -76,11 +76,17 @@ def _parse_related_edges(context: str) -> set[tuple[str, str]]:
     return edges
 
 
-def _node_recall(expected_nodes: list[str], source_titles: list[str]) -> tuple[float, list[str]]:
+def _node_recall(
+    expected_nodes: list[str],
+    source_titles: list[str],
+    context_entities: list[str] | None = None,
+) -> tuple[float, list[str]]:
     if not expected_nodes:
         return 1.0, []
+    if context_entities is None:
+        context_entities = []
     miss: list[str] = []
-    hay = [_norm(x) for x in source_titles if x]
+    hay = [_norm(x) for x in source_titles if x] + [_norm(x) for x in context_entities if x]
     hit = 0
     for en in expected_nodes:
         needle = _norm(en)
@@ -156,7 +162,15 @@ def evaluate_cases(cases: list[dict[str, Any]], *, limit: int = 0) -> list[CaseR
         found_edges = _parse_related_edges(context_text)
         source_titles = [str(h.get("title") or "") for h in hits if isinstance(h, dict)]
 
-        nr, missing_nodes = _node_recall(expected_nodes, source_titles)
+        context_entities = []
+        for line in (context_text or "").splitlines():
+            line = line.strip()
+            if line.startswith("title:"):
+                ent_name = line.split("title:", 1)[1].strip()
+                if ent_name:
+                    context_entities.append(ent_name)
+
+        nr, missing_nodes = _node_recall(expected_nodes, source_titles, context_entities)
         er, missing_edges = _edge_recall(expected_edges, found_edges)
         gp, fp, gf_notes = _grounded_checks(answer, must_include, forbidden)
 

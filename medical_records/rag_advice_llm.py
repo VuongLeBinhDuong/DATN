@@ -244,7 +244,7 @@ def llm_extract_reasoning_plus_graphrag_advice(
     trích dẫn khối GraphRAG (entity / community) khi sát chủ đề.
     """
     host = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     timeout = int(os.getenv("MEDICAL_RECORD_OLLAMA_TIMEOUT") or os.getenv("OLLAMA_TIMEOUT") or "180")
     if meta_out is not None:
         meta_out["ollama_host"] = host

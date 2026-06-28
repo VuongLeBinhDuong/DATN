@@ -105,7 +105,7 @@ def setup_evaluator_llm(evaluator_type: str) -> Any:
         
     else:  # ollama
         host = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-        model_name = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+        model_name = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
         print(f"✓ Sử dụng Ollama làm Giám khảo Ragas: Model={model_name}, Host={host}")
         
         from langchain_community.chat_models import ChatOllama

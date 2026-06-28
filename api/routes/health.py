@@ -83,7 +83,7 @@ async def health_config() -> dict:
             "configured": backend,
             "use_ollama": use_ollama,
             "ollama_host": os.getenv("OLLAMA_HOST", "http://localhost:11434") if use_ollama else None,
-            "ollama_model": os.getenv("OLLAMA_MODEL", "llama3.1:8b") if use_ollama else None,
+            "ollama_model": os.getenv("OLLAMA_MODEL", "llama3.2:3b") if use_ollama else None,
             "openrouter_model": os.getenv("OPENROUTER_MODEL") if not use_ollama else None,
         },
         "neo4j": {

@@ -22,135 +22,1037 @@ Providing reliable medical information requires a highly specialized approach to
 \label{table:retrieval_paradigms}
 \end{table}
 
-Table \ref{table:retrieval_paradigms} shows that GraphRAG is the most suitable retrieval paradigm for the thesis goal because it preserves explicit clinical relationships while supporting offline and private processing. Based on this comparative status survey, the proposed system addresses these gaps by using a \textbf{purified Custom Knowledge Graph (Neo4j)} for precise direct factual queries, orchestrated by a local \textbf{ReAct Agent} to ensure privacy, reasoning transparency, and clinical explainability, while bypassing external Microsoft GraphRAG pipelines to minimize system complexity and latency.
+Table \ref{table:retrieval_paradigms} shows that graph-oriented retrieval is the most suitable paradigm for the thesis goal because it preserves explicit clinical relationships while supporting local-first processing. Based on this comparative status survey, the proposed system addresses these gaps by using verified custom KG artifacts in Neo4j for direct factual queries, orchestrated by a local ReAct agent to improve privacy, reasoning transparency, and clinical explainability. GraphRAG helper modules are retained as retrieval adapters, but the implemented consultation flow prioritizes local repository-backed evidence.
 
 \section{Functional Overview}
 \label{section:2.2}
-The system's functional architecture is designed to accommodate two primary actors: the \textbf{User/Patient} seeking clinical consultation and the \textbf{Medical Admin/Expert} managing system resources.
+The system's functional architecture is designed to accommodate two primary actors: the User/Patient seeking clinical consultation and the Medical Admin/Expert managing system resources.
 
-\subsection{General use case diagram}
-\label{subsection:2.2.1}
-The general use case diagram structures the core capabilities of the system. The actors and their respective use cases are defined as follows:
-\begin{itemize}
-    \item \textbf{User/Patient (Actor)}: Interacts with the platform to consult the agent, upload and analyze personal health files, view drug imagery, and manage prescription calendars.
-    \item \textbf{Medical Admin/Expert (Actor)}: Oversees system operations, reviews parsed medical record histories, and manages backing database configurations.
-\end{itemize}
+The general use case diagram structures the core capabilities of the system. The two primary actors are defined as follows: the User/Patient (Actor) interacts with the platform to consult the agent, upload and analyze personal health files, view drug imagery, and manage prescription calendars; whereas the Medical Admin/Expert (Actor) oversees system operations, reviews parsed medical record histories, and manages backing database configurations.
 
 The main use cases include:
 1. \textbf{UC-01: Consult Medical Agent}: The primary interactive channel where the user sends prompts, and the ReAct Agent streams real-time reasoning thoughts, triggers GraphRAG tools, and provides final clinical citations.
 2. \textbf{UC-02: Upload \& Analyze Medical Record}: Allows users to upload clinical PDFs or Excel sheets. The system extracts raw text, executes local indicator benchmarking, and builds customized advice.
 3. \textbf{UC-03: Manage Medication Reminders}: Translates clinical suggestions into actionable intake schedules with automated browser alarms.
-4. \textbf{UC-04: Inspect Pill Imagery}: Enables users to search for specific drug terms and visualize pill physical appearances to prevent medication ingestion errors.
-5. \textbf{UC-05: Authenticate User}: Secures access through JWT token-based registration and login flows.
+4. \textbf{UC-04: Clinical Calculators and Interaction Safety Check}: Enables users to compute deterministic metrics (BMI, eGFR) and verify drug-drug interaction safety.
+5. \textbf{UC-05: View Medical News}: Allows users to read health articles and updates.
+6. \textbf{UC-06: Manage Knowledge Graph}: Allows administrative users to apply schemas and import clinical knowledge artifacts.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.82\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=0.4cm and 0.8cm,
+        usecase/.style={ellipse, draw=blue!70!black, fill=blue!5, thick, minimum width=2.7cm, minimum height=0.78cm, align=center, font=\scriptsize\sffamily, inner sep=1pt},
+        admincase/.style={ellipse, draw=teal!70!black, fill=teal!5, thick, minimum width=2.7cm, minimum height=0.78cm, align=center, font=\scriptsize\sffamily, inner sep=1pt},
+        actorline/.style={draw=gray!80!black, thick}
+    ]
+        % System Boundary
+        \draw[thick, fill=gray!2] (2.0, -4.2) rectangle (8.0, 3.8);
+        \node[anchor=north west, font=\small\sffamily\bfseries\color{blue!80!black}] at (2.1, 3.65) {Medical Consultation System};
+        
+        % Left Actor (User)
+        \draw[thick] (0, 1.8) circle (0.2); % head
+        \draw[thick] (0, 1.6) -- (0, 0.9); % torso
+        \draw[thick] (-0.4, 1.4) -- (0.4, 1.4); % arms
+        \draw[thick] (0, 0.9) -- (-0.3, 0.2); % left leg
+        \draw[thick] (0, 0.9) -- (0.3, 0.2); % right leg
+        \node[anchor=north, font=\small\sffamily\bfseries] at (0, 0) {User / Patient};
+        
+        % Right Actor (Admin)
+        \draw[thick] (10.0, 1.8) circle (0.2); % head
+        \draw[thick] (10.0, 1.6) -- (10.0, 0.9); % torso
+        \draw[thick] (9.6, 1.4) -- (10.4, 1.4); % arms
+        \draw[thick] (10.0, 0.9) -- (9.7, 0.2); % left leg
+        \draw[thick] (10.0, 0.9) -- (10.3, 0.2); % right leg
+        \node[anchor=north, font=\small\sffamily\bfseries] at (10.0, 0) {Medical Admin};
+
+        % Use Cases
+        \node[usecase] (uc1) at (5, 2.9) {UC-01: Consult\\Medical Agent};
+        \node[usecase] (uc2) at (5, 1.7) {UC-02: Upload \&\\Analyze Record};
+        \node[usecase] (uc3) at (5, 0.5) {UC-03: Manage\\Reminders};
+        \node[usecase] (uc4) at (5, -0.7) {UC-04: Clinical\\Calculators};
+        \node[usecase] (uc5) at (5, -1.9) {UC-05: View\\Medical News};
+        \node[admincase] (uc6) at (5, -3.1) {UC-06: Manage\\Knowledge Graph};
+        
+        % Associations
+        \draw[actorline] (0.4, 1.1) -- (uc1.west);
+        \draw[actorline] (0.4, 1.0) -- (uc2.west);
+        \draw[actorline] (0.4, 0.9) -- (uc3.west);
+        \draw[actorline] (0.4, 0.8) -- (uc4.west);
+        \draw[actorline] (0.4, 0.7) -- (uc5.west);
+        
+        \draw[actorline] (9.6, 0.9) -- (uc6.east);
+        
+    \end{tikzpicture}%
+    }
+    \caption{General Use Case diagram for the Smart Medical Consultation System}
+    \label{fig:general_use_case}
+\end{figure}
 
 \subsection{Detailed use case diagram}
 \label{subsection:2.2.2}
-To represent detailed relationships, the primary use cases are decomposed into specific sub-use cases:
-\begin{itemize}
-    \item \textbf{UC-01: Consult Medical Agent} is decomposed into:
-        - \textit{Retrieve Context via Cypher Path Queries} (using Direct Neo4j Custom KG matching).
-        - \textit{Retrieve Context via k-Hop Expansion} (for neighborhood entity context).
-        - \textit{Execute Tool Calling} (interactively querying pill databases or clinical records).
-        - \textit{Stream NDJSON reasoning logs} (providing transparent chain-of-thought outputs on the UI).
-    \item \textbf{UC-02: Upload \& Analyze Medical Record} is decomposed into:
-        - \textit{Extract Text via PyMuPDF/openpyxl} (parsing tabular formats).
-        - \textit{Execute Lab Indicator Benchmarking} (comparing numeric values to reference boundaries).
-        - \textit{Synthesize Clinical Advice via GraphRAG} (grounding narrative analysis).
-        - \textit{Enrich Drug Images} (automatically looking up pill images).
-\end{itemize}
+To represent the sub-systems and detailed relationships of the platform, the primary use cases are decomposed into specific sub-use cases. The following detailed Use Case diagrams illustrate these breakdowns:
 
-\subsection{Business process}
+\paragraph{1. UC-01: Consult Medical Agent Detailed Use Case}
+This use case maps the dynamic query-handling flow. As shown in Figure \ref{fig:uc01_detailed}, the patient interacts with the main chat utility, which includes Cypher path retrieval, neighborhood expansion, and tool execution.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.78\textwidth}{!}{%
+    \begin{tikzpicture}[
+        usecase/.style={ellipse, draw=blue!70!black, fill=blue!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        subcase/.style={ellipse, draw=teal!70!black, fill=teal!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        arrow/.style={-{Stealth[scale=0.9]}, dashed, thick, draw=gray!80!black},
+        actorline/.style={draw=gray!80!black, thick}
+    ]
+        % Left Actor (User)
+        \draw[thick] (0, 1.5) circle (0.2); % head
+        \draw[thick] (0, 1.3) -- (0, 0.6); % torso
+        \draw[thick] (-0.4, 1.1) -- (0.4, 1.1); % arms
+        \draw[thick] (0, 0.6) -- (-0.3, -0.1); % left leg
+        \draw[thick] (0, 0.6) -- (0.3, -0.1); % right leg
+        \node[anchor=north, font=\scriptsize\sffamily\bfseries] at (0, -0.2) {User / Patient};
+
+        % Main Use Case
+        \node[usecase] (main) at (3.5, 1.5) {UC-01: Consult\\Medical Agent};
+
+        % Sub Use Cases
+        \node[subcase] (uc1a) at (8, 2.7) {Retrieve Context\\via Cypher paths};
+        \node[subcase] (uc1b) at (8, 1.5) {Retrieve Context\\via k-Hop expansion};
+        \node[subcase] (uc1c) at (8, 0.3) {Execute Tool\\Calling};
+
+        % Associations
+        \draw[actorline] (0.4, 0.8) -- (main.west);
+
+        % Includes
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc1a);
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc1b);
+        \draw[arrow] (main) -- node[below, sloped, font=\tiny\sffamily] {<<include>>} (uc1c);
+    \end{tikzpicture}%
+    }
+    \caption{Detailed Use Case diagram for UC-01: Consult Medical Agent}
+    \label{fig:uc01_detailed}
+\end{figure}
+
+\paragraph{2. UC-02: Upload \& Analyze Medical Record Detailed Use Case}
+This use case maps the medical report analysis subsystem. As shown in Figure \ref{fig:uc02_detailed}, the patient uploads a document while the system extracts text, benchmarks numeric indicator values against stored limits, and generates RAG-grounded clinician advice. The medical admin can review these processed records.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.78\textwidth}{!}{%
+    \begin{tikzpicture}[
+        usecase/.style={ellipse, draw=blue!70!black, fill=blue!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        subcase/.style={ellipse, draw=teal!70!black, fill=teal!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        arrow/.style={-{Stealth[scale=0.9]}, dashed, thick, draw=gray!80!black},
+        actorline/.style={draw=gray!80!black, thick}
+    ]
+        % Left Actor (User)
+        \draw[thick] (0, 1.5) circle (0.2); % head
+        \draw[thick] (0, 1.3) -- (0, 0.6); % torso
+        \draw[thick] (-0.4, 1.1) -- (0.4, 1.1); % arms
+        \draw[thick] (0, 0.6) -- (-0.3, -0.1); % left leg
+        \draw[thick] (0, 0.6) -- (0.3, -0.1); % right leg
+        \node[anchor=north, font=\scriptsize\sffamily\bfseries] at (0, -0.2) {User / Patient};
+
+        % Right Actor (Admin)
+        \draw[thick] (10.0, 1.5) circle (0.2); % head
+        \draw[thick] (10.0, 1.3) -- (10.0, 0.6); % torso
+        \draw[thick] (9.6, 1.1) -- (10.4, 1.1); % arms
+        \draw[thick] (10.0, 0.6) -- (9.7, -0.1); % left leg
+        \draw[thick] (10.0, 0.6) -- (10.3, -0.1); % right leg
+        \node[anchor=north, font=\scriptsize\sffamily\bfseries] at (10.0, -0.2) {Medical Expert / Admin};
+
+        % Main Use Case
+        \node[usecase] (main) at (5, 1.5) {UC-02: Upload \&\\Analyze Record};
+
+        % Sub Use Cases
+        \node[subcase] (uc2a) at (5, 3.45) {Extract Text via\\PyMuPDF/openpyxl};
+        \node[subcase] (uc2b) at (5, -0.45) {Execute Lab\\Indicator Benchmarking};
+        \node[subcase] (uc2c) at (5, -2.35) {Synthesize Clinical\\Advice via GraphRAG};
+
+        % Associations
+        \draw[actorline] (0.4, 0.8) -- (main.west);
+        \draw[actorline] (9.6, 0.8) -- (main.east);
+
+        % Includes
+        \draw[arrow] (main) -- (uc2a);
+        \draw[arrow] (main) -- (uc2b);
+        \draw[arrow] (main) -- (uc2c);
+    \end{tikzpicture}%
+    }
+    \caption{Detailed Use Case diagram for UC-02: Upload \& Analyze Medical Record}
+    \label{fig:uc02_detailed}
+\end{figure}
+
+\paragraph{3. UC-03: Manage Medication Reminders Detailed Use Case}
+This use case maps the browser-based intake planning workflow. As shown in Figure \ref{fig:uc03_detailed}, patients translate advice cards into calendar reminder cards, schedule intake times, log daily adherence, and view their weekly intake grids.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.78\textwidth}{!}{%
+    \begin{tikzpicture}[
+        usecase/.style={ellipse, draw=blue!70!black, fill=blue!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        subcase/.style={ellipse, draw=teal!70!black, fill=teal!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        arrow/.style={-{Stealth[scale=0.9]}, dashed, thick, draw=gray!80!black},
+        actorline/.style={draw=gray!80!black, thick}
+    ]
+        % Left Actor (User)
+        \draw[thick] (0, 1.5) circle (0.2); % head
+        \draw[thick] (0, 1.3) -- (0, 0.6); % torso
+        \draw[thick] (-0.4, 1.1) -- (0.4, 1.1); % arms
+        \draw[thick] (0, 0.6) -- (-0.3, -0.1); % left leg
+        \draw[thick] (0, 0.6) -- (0.3, -0.1); % right leg
+        \node[anchor=north, font=\scriptsize\sffamily\bfseries] at (0, -0.2) {User / Patient};
+
+        % Main Use Case
+        \node[usecase] (main) at (3.5, 1.5) {UC-03: Manage\\Reminders};
+
+        % Sub Use Cases
+        \node[subcase] (uc3a) at (8, 3.3) {Add Reminder\\from Chat};
+        \node[subcase] (uc3b) at (8, 2.1) {Create Custom\\Reminder};
+        \node[subcase] (uc3c) at (8, 0.9) {View Weekly\\Schedule};
+        \node[subcase] (uc3d) at (8, -0.3) {Log Medication\\Intake Adherence};
+
+        % Associations
+        \draw[actorline] (0.4, 0.8) -- (main.west);
+
+        % Includes
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc3a);
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc3b);
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc3c);
+        \draw[arrow] (main) -- node[below, sloped, font=\tiny\sffamily] {<<include>>} (uc3d);
+    \end{tikzpicture}%
+    }
+    \caption{Detailed Use Case diagram for UC-03: Manage Medication Reminders}
+    \label{fig:uc03_detailed}
+\end{figure}
+
+\paragraph{4. UC-04: Clinical Calculators and Interaction Safety Check Detailed Use Case}
+This use case maps the deterministic clinical calculations and drug interaction check flow. As shown in Figure \ref{fig:uc04_detailed}, patients can calculate physiological metrics like BMI, estimate kidney function (eGFR), or check potential drug-to-drug interactions query-matched from the Neo4j database.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.78\textwidth}{!}{%
+    \begin{tikzpicture}[
+        usecase/.style={ellipse, draw=blue!70!black, fill=blue!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        subcase/.style={ellipse, draw=teal!70!black, fill=teal!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        arrow/.style={-{Stealth[scale=0.9]}, dashed, thick, draw=gray!80!black},
+        actorline/.style={draw=gray!80!black, thick}
+    ]
+        % Left Actor (User)
+        \draw[thick] (0, 1.5) circle (0.2); % head
+        \draw[thick] (0, 1.3) -- (0, 0.6); % torso
+        \draw[thick] (-0.4, 1.1) -- (0.4, 1.1); % arms
+        \draw[thick] (0, 0.6) -- (-0.3, -0.1); % left leg
+        \draw[thick] (0, 0.6) -- (0.3, -0.1); % right leg
+        \node[anchor=north, font=\scriptsize\sffamily\bfseries] at (0, -0.2) {User / Patient};
+
+        % Main Use Case
+        \node[usecase] (main) at (3.5, 1.5) {UC-04: Calculators\\\& Interaction Check};
+
+        % Sub Use Cases
+        \node[subcase] (uc4a) at (8, 2.7) {Calculate Body\\Mass Index (BMI)};
+        \node[subcase] (uc4b) at (8, 1.5) {Calculate eGFR\\(Cockcroft-Gault)};
+        \node[subcase] (uc4c) at (8, 0.3) {Check Drug-Drug\\Interactions (Neo4j)};
+
+        % Associations
+        \draw[actorline] (0.4, 0.8) -- (main.west);
+
+        % Includes
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc4a);
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc4b);
+        \draw[arrow] (main) -- node[below, sloped, font=\tiny\sffamily] {<<include>>} (uc4c);
+    \end{tikzpicture}%
+    }
+    \caption{Detailed Use Case diagram for UC-04: Clinical Calculators and Interaction Safety Check}
+    \label{fig:uc04_detailed}
+\end{figure}
+
+\paragraph{5. UC-05: View Medical News Detailed Use Case}
+This use case covers browsing health guidelines, reading localized health articles, and viewing medical advisories synchronized from the Knowledge Graph. As shown in Figure \ref{fig:uc05_detailed}, patients interact with the news dashboard to access these verified resources.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.78\textwidth}{!}{%
+    \begin{tikzpicture}[
+        usecase/.style={ellipse, draw=blue!70!black, fill=blue!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        subcase/.style={ellipse, draw=teal!70!black, fill=teal!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        arrow/.style={-{Stealth[scale=0.9]}, dashed, thick, draw=gray!80!black},
+        actorline/.style={draw=gray!80!black, thick}
+    ]
+        % Left Actor (User)
+        \draw[thick] (0, 1.5) circle (0.2); % head
+        \draw[thick] (0, 1.3) -- (0, 0.6); % torso
+        \draw[thick] (-0.4, 1.1) -- (0.4, 1.1); % arms
+        \draw[thick] (0, 0.6) -- (-0.3, -0.1); % left leg
+        \draw[thick] (0, 0.6) -- (0.3, -0.1); % right leg
+        \node[anchor=north, font=\scriptsize\sffamily\bfseries] at (0, -0.2) {User / Patient};
+
+        % Main Use Case
+        \node[usecase] (main) at (3.5, 1.5) {UC-05: View\\Medical News};
+
+        % Sub Use Cases
+        \node[subcase] (uc5a) at (8, 2.7) {Browse Curated\\Health Articles};
+        \node[subcase] (uc5b) at (8, 1.5) {View Guidelines\\for Chronic Diseases};
+        \node[subcase] (uc5c) at (8, 0.3) {Sync Graph-Linked\\Medical Advisories};
+
+        % Associations
+        \draw[actorline] (0.4, 0.8) -- (main.west);
+
+        % Includes
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc5a);
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc5b);
+        \draw[arrow] (main) -- node[below, sloped, font=\tiny\sffamily] {<<include>>} (uc5c);
+    \end{tikzpicture}%
+    }
+    \caption{Detailed Use Case diagram for UC-05: View Medical News}
+    \label{fig:uc05_detailed}
+\end{figure}
+
+\paragraph{6. UC-06: Manage Knowledge Graph Detailed Use Case}
+This use case governs the administrative workflows for configuring the persistent clinical database. As shown in Figure \ref{fig:uc06_detailed}, the Medical Admin utilizes administrative endpoints to ingest documents, apply ontology schemas, prune nodes and relations, and monitor the overall database ingestion status.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.78\textwidth}{!}{%
+    \begin{tikzpicture}[
+        usecase/.style={ellipse, draw=teal!70!black, fill=teal!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        subcase/.style={ellipse, draw=teal!70!black, fill=teal!5, thick, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\scriptsize\sffamily},
+        arrow/.style={-{Stealth[scale=0.9]}, dashed, thick, draw=gray!80!black},
+        actorline/.style={draw=gray!80!black, thick}
+    ]
+        % Left Actor (Admin)
+        \draw[thick] (0, 1.5) circle (0.2); % head
+        \draw[thick] (0, 1.3) -- (0, 0.6); % torso
+        \draw[thick] (-0.4, 1.1) -- (0.4, 1.1); % arms
+        \draw[thick] (0, 0.6) -- (-0.3, -0.1); % left leg
+        \draw[thick] (0, 0.6) -- (0.3, -0.1); % right leg
+        \node[anchor=north, font=\scriptsize\sffamily\bfseries] at (0, -0.2) {Medical Admin};
+
+        % Main Use Case
+        \node[usecase] (main) at (3.5, 1.5) {UC-06: Manage\\Knowledge Graph};
+
+        % Sub Use Cases
+        \node[subcase] (uc6a) at (8, 3.3) {Ingest Ontologies\\\& Documents};
+        \node[subcase] (uc6b) at (8, 2.1) {Run Schema\\Definition};
+        \node[subcase] (uc6c) at (8, 0.9) {Prune Node Aliases\\\& Relations};
+        \node[subcase] (uc6d) at (8, -0.3) {Verify Database\\Ingestion Status};
+
+        % Associations
+        \draw[actorline] (0.4, 0.8) -- (main.west);
+
+        % Includes
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc6a);
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc6b);
+        \draw[arrow] (main) -- node[above, sloped, font=\tiny\sffamily] {<<include>>} (uc6c);
+        \draw[arrow] (main) -- node[below, sloped, font=\tiny\sffamily] {<<include>>} (uc6d);
+    \end{tikzpicture}%
+    }
+    \caption{Detailed Use Case diagram for UC-06: Manage Knowledge Graph}
+    \label{fig:uc06_detailed}
+\end{figure}
+
+\subsection{System sequence diagrams}
 \label{subsection:2.2.3}
-A primary contribution of the system is the unified business workflow of processing an uploaded medical file. This sequence combines multiple modules to execute a complete diagnostic consultation:
+To detail the step-by-step transaction execution across the software modules, Figure \ref{fig:report_analysis_sequence} illustrates the interaction sequence between the user, the web-based presentation layer, the FastAPI server controllers, the medical record extraction service, the agent reasoning logic, and the Neo4j Custom KG. The system sequence diagrams model the detailed runtime message exchange and transaction flows across actors and architectural components for the core workflows.
 
-\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,columns=fixed,keepspaces=true,breaklines=false]
-+-------------+      +--------------+      +------------------+      +--------------------+
-| User Upload | ---> | Text Extract | ---> | Extract Numeric  | ---> | Benchmark Match vs |
-| PDF / Excel |      | (PyMuPDF /   |      | Lab Indicators   |      | Form Reference     |
-|             |      |  openpyxl)   |      | (lab_parse.py)   |      | (lab_compare.py)   |
-+-------------+      +--------------+      +------------------+      +--------------------+
-                                                                                |
-                                                                                v
-+-------------+      +--------------+      +------------------+      +--------------------+
-| Generate    | <--- | Fetch Pill   | <--- | Extract Suggested| <--- | Query Custom KG    |
-| Interactive |      | Images from  |      | Meds & Dosing    |      | for Abnormal Lab   |
-| Reminder    |      | Local DB     |      | (LLM synthesis)  |      | Anomalies Context  |
-+-------------+      +--------------+      +------------------+      +--------------------+
-\end{lstlisting}
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    lifeline/.style={draw=gray!80,dashed,thick},
+    actor/.style={
+        rectangle,
+        draw=blue!70!black,
+        fill=blue!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    service/.style={
+        rectangle,
+        draw=teal!70!black,
+        fill=teal!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    db/.style={
+        cylinder,
+        shape border rotate=90,
+        draw=purple!70!black,
+        fill=purple!5,
+        thick,
+        minimum width=2.2cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    arrow/.style={-{Stealth[scale=1]},thick},
+    dashedarrow/.style={-{Stealth[scale=1]},thick,dashed},
+    msg/.style={
+        font=\scriptsize\ttfamily,
+        fill=white,
+        rounded corners=2pt,
+        inner sep=2pt,
+        align=center
+    }
+]
 
-This business process operates fully offline, preventing sensitive medical logs from leaking to external cloud networks.
+%====================================================
+% Lifelines
+%====================================================
+
+\node[actor] (user) at (0,0)
+{User / Patient};
+
+\node[service] (ui) at (5,0)
+{Web UI\\(Browser)};
+
+\node[service] (api) at (10,0)
+{FastAPI Server};
+
+\node[service] (record) at (15,0)
+{RecordService};
+
+\node[service] (agent) at (20,0)
+{AgentService};
+
+\node[db] (neo4j) at (25,0)
+{Neo4j DB};
+
+\foreach \x in {user,ui,api,record,agent,neo4j}
+{
+    \draw[lifeline] (\x.south) -- ++(0,-16);
+}
+
+%====================================================
+% Upload Request
+%====================================================
+
+\draw[arrow]
+(user.south |- 0,-1.5)
+--
+node[msg,above=6pt]
+{Select and upload file}
+(ui.south |- 0,-1.5);
+
+\draw[arrow]
+(ui.south |- 0,-3.0)
+--
+node[msg,above=6pt]
+{POST /api/medical-record/analyze}
+(api.south |- 0,-3.0);
+
+\draw[arrow]
+(api.south |- 0,-4.5)
+--
+node[msg,above=6pt]
+{analyze\_medical\_file(file)}
+(record.south |- 0,-4.5);
+
+%====================================================
+% Record Processing
+%====================================================
+
+\draw[arrow]
+(record.south |- 0,-6.0)
+--
+++(1.1,-0.5)
+--
+++(-1.1,-0.5)
+node[msg,right,xshift=0.15cm]
+{Extract text and\\parse lab indicators};
+
+\draw[arrow]
+(record.south |- 0,-8.0)
+--
+node[msg,above=6pt]
+{Query indicator ranges}
+(neo4j.south |- 0,-8.0);
+
+\draw[dashedarrow]
+(neo4j.south |- 0,-9.5)
+--
+node[msg,above=6pt]
+{Reference ranges\\and clinical context}
+(record.south |- 0,-9.5);
+
+%====================================================
+% Agent Consultation
+%====================================================
+
+\draw[arrow]
+(record.south |- 0,-11.0)
+--
+node[msg,above=6pt]
+{request\_advice(indicators)}
+(agent.south |- 0,-11.0);
+
+\draw[arrow]
+(agent.south |- 0,-12.3)
+--
+++(1.1,-0.5)
+--
+++(-1.1,-0.5)
+node[msg,right,xshift=0.15cm]
+{ReAct reasoning loop\\(LLM + GraphRAG tools)};
+
+\draw[dashedarrow]
+(agent.south |- 0,-13.8)
+--
+node[msg,above=6pt]
+{Generated clinical advice}
+(record.south |- 0,-13.8);
+
+%====================================================
+% Response
+%====================================================
+
+\draw[dashedarrow]
+(record.south |- 0,-15.0)
+--
+node[msg,above=6pt]
+{Structured table + advice}
+(api.south |- 0,-15.0);
+
+\draw[dashedarrow]
+(api.south |- 0,-16.0)
+--
+node[msg,above=6pt]
+{JSON Response}
+(ui.south |- 0,-16.0);
+
+\draw[dashedarrow]
+(ui.south |- 0,-17.0)
+--
+node[msg,above=6pt]
+{Render analysis page}
+(user.south |- 0,-17.0);
+
+\end{tikzpicture}%
+}
+\caption{Sequence diagram of the complete medical record analysis and advice generation workflow}
+\label{fig:report_analysis_sequence}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    lifeline/.style={draw=gray!80,dashed,thick},
+    actor/.style={
+        rectangle,
+        draw=blue!70!black,
+        fill=blue!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    service/.style={
+        rectangle,
+        draw=teal!70!black,
+        fill=teal!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    backend/.style={
+        rectangle,
+        draw=purple!70!black,
+        fill=purple!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    arrow/.style={-{Stealth[scale=1]},thick},
+    dashedarrow/.style={-{Stealth[scale=1]},thick,dashed},
+    msg/.style={
+        font=\scriptsize\ttfamily,
+        fill=white,
+        rounded corners=2pt,
+        inner sep=2pt,
+        align=center
+    }
+]
+
+%=================================================
+% Lifelines
+%=================================================
+
+\node[actor] (ui) at (0,0)
+{Web UI};
+
+\node[service] (route) at (5,0)
+{Agent Route};
+
+\node[service] (svc) at (10,0)
+{AgentService};
+
+\node[service] (react) at (15,0)
+{ReActAgent};
+
+\node[backend] (tool) at (20,0)
+{GraphRAG Tool};
+
+\node[backend] (llm) at (25,0)
+{Ollama LLM};
+
+\foreach \x in {ui,route,svc,react,tool,llm}
+{
+    \draw[lifeline] (\x.south) -- ++(0,-16);
+}
+
+%=================================================
+% Request Phase
+%=================================================
+
+\draw[arrow]
+(ui.south |- 0,-1.5)
+--
+node[msg,above=6pt]
+{POST /api/agent-query/stream}
+(route.south |- 0,-1.5);
+
+\draw[arrow]
+(route.south |- 0,-3.0)
+--
+node[msg,above=6pt]
+{validate request}
+(svc.south |- 0,-3.0);
+
+\draw[arrow]
+(svc.south |- 0,-4.5)
+--
+node[msg,above=6pt]
+{execute\_stream()}
+(react.south |- 0,-4.5);
+
+%=================================================
+% Iteration 1
+%=================================================
+
+\draw[arrow]
+(react.south |- 0,-6.5)
+--
+node[msg,above=6pt]
+{Thought + Action}
+(llm.south |- 0,-6.5);
+
+\draw[arrow]
+(react.south |- 0,-8.0)
+--
+node[msg,above=6pt]
+{graphrag\_query()}
+(tool.south |- 0,-8.0);
+
+\draw[dashedarrow]
+(tool.south |- 0,-9.5)
+--
+node[msg,above=6pt]
+{ranked chunks + paths}
+(react.south |- 0,-9.5);
+
+%=================================================
+% Iteration 2
+%=================================================
+
+\draw[arrow]
+(react.south |- 0,-11.0)
+--
+node[msg,above=6pt]
+{context + scratchpad}
+(llm.south |- 0,-11.0);
+
+\draw[dashedarrow]
+(llm.south |- 0,-12.5)
+--
+node[msg,above=6pt]
+{token stream}
+(react.south |- 0,-12.5);
+
+%=================================================
+% Stream Response
+%=================================================
+
+\draw[dashedarrow]
+(react.south |- 0,-14.0)
+--
+node[msg,above=6pt]
+{reasoning + answer + sources}
+(svc.south |- 0,-14.0);
+
+\draw[dashedarrow]
+(svc.south |- 0,-15.2)
+--
+node[msg,above=6pt]
+{NDJSON stream}
+(ui.south |- 0,-15.2);
+
+\end{tikzpicture}%
+}
+\caption{Sequence diagram of the ReAct agent consultation and streaming workflow}
+\label{fig:agent_stream_flow}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    lifeline/.style={draw=gray!80, dashed, thick},
+    actor/.style={
+        rectangle,
+        draw=blue!70!black,
+        fill=blue!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    service/.style={
+        rectangle,
+        draw=teal!70!black,
+        fill=teal!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    arrow/.style={-{Stealth[scale=1]}, thick},
+    dashedarrow/.style={-{Stealth[scale=1]}, thick, dashed},
+    msg/.style={
+        font=\scriptsize\ttfamily,
+        fill=white,
+        rounded corners=2pt,
+        inner sep=2pt,
+        align=center
+    }
+]
+
+%====================================================
+% Lifelines
+%====================================================
+
+\node[actor]   (user)    at (0,0)  {User / Patient};
+
+\node[service] (ui)      at (5,0)
+{Web UI\\(Calendar)};
+
+\node[service] (storage) at (10,0)
+{Browser\\LocalStorage};
+
+\node[service] (worker)  at (15,0)
+{Background\\Service Worker};
+
+\node[service] (notif)   at (20,0)
+{Notification\\API};
+
+\foreach \x in {user,ui,storage,worker,notif}
+{
+    \draw[lifeline] (\x.south) -- ++(0,-13);
+}
+
+%====================================================
+% Messages
+%====================================================
+
+\draw[arrow]
+(user.south |- 0,-1.5)
+--
+node[msg,above=6pt]
+{Click "Add to Reminders"}
+(ui.south |- 0,-1.5);
+
+\draw[arrow]
+(ui.south |- 0,-3.0)
+--
+node[msg,above=6pt]
+{Save reminder JSON data}
+(storage.south |- 0,-3.0);
+
+%====================================================
+% Periodic polling
+%====================================================
+
+\draw[arrow]
+(worker.south |- 0,-5.0)
+--
+node[msg,above=6pt]
+{Query active schedules}
+(storage.south |- 0,-5.0);
+
+\draw[dashedarrow]
+(storage.south |- 0,-6.5)
+--
+node[msg,above=6pt]
+{Return reminder list}
+(worker.south |- 0,-6.5);
+
+%====================================================
+% Local validation loop
+%====================================================
+
+\draw[arrow]
+(worker.south |- 0,-8.2)
+--
+++(1.1,-0.5)
+--
+++(-1.1,-0.5)
+node[msg,right,xshift=0.15cm]
+{Check current system time\\against schedule bounds};
+
+%====================================================
+% Notification trigger
+%====================================================
+
+\draw[arrow]
+(worker.south |- 0,-10.0)
+--
+node[msg,above=6pt]
+{trigger\_notification()}
+(notif.south |- 0,-10.0);
+
+\draw[arrow]
+(notif.south |- 0,-11.2)
+--
+node[msg,above=6pt]
+{Display alarm dialog popup}
+(user.south |- 0,-11.2);
+
+\draw[arrow]
+(user.south |- 0,-12.4)
+--
+node[msg,above=6pt]
+{Confirm intake and close alarm}
+(notif.south |- 0,-12.4);
+
+\end{tikzpicture}%
+}
+\caption{Sequence diagram of the browser-based medication reminder and notification scheduling workflow}
+\label{fig:reminder_alarm_sequence}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    lifeline/.style={draw=gray!80, dashed, thick},
+    actor/.style={
+        rectangle,
+        draw=blue!70!black,
+        fill=blue!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    service/.style={
+        rectangle,
+        draw=teal!70!black,
+        fill=teal!5,
+        thick,
+        rounded corners=3pt,
+        minimum width=2.8cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    db/.style={
+        cylinder,
+        shape border rotate=90,
+        draw=purple!70!black,
+        fill=purple!5,
+        thick,
+        minimum width=2.2cm,
+        minimum height=0.9cm,
+        align=center,
+        font=\small\sffamily
+    },
+    arrow/.style={-{Stealth[scale=1]}, thick},
+    dashedarrow/.style={-{Stealth[scale=1]}, thick, dashed},
+    msg/.style={
+        font=\scriptsize\ttfamily,
+        fill=white,
+        rounded corners=2pt,
+        inner sep=2pt,
+        align=center
+    }
+]
+
+%====================================================
+% Lifelines
+%====================================================
+
+\node[actor]   (user)  at (0,0)  {User / Patient};
+\node[service] (ui)    at (5,0)  {Web UI};
+\node[service] (api)   at (10,0) {FastAPI Router};
+\node[service] (svc)   at (15,0) {MedicationService};
+\node[db]      (neo4j) at (20,0) {Neo4j DB};
+
+\foreach \x in {user,ui,api,svc,neo4j}
+{
+    \draw[lifeline] (\x.south) -- ++(0,-14);
+}
+
+%====================================================
+% Messages
+%====================================================
+
+\draw[arrow]
+(user.south |- 0,-1.5)
+--
+node[msg,above=6pt]
+{Input two drug terms}
+(ui.south |- 0,-1.5);
+
+\draw[arrow]
+(ui.south |- 0,-3.0)
+--
+node[msg,above=6pt]
+{POST /api/medication/check}
+(api.south |- 0,-3.0);
+
+\draw[arrow]
+(api.south |- 0,-5.0)
+--
+node[msg,above=6pt]
+{check\_drug\_interactions(d1,d2)}
+(svc.south |- 0,-5.0);
+
+\draw[arrow]
+(svc.south |- 0,-7.0)
+--
+node[msg,above=6pt]
+{MATCH (a:Entity)-[r:INTERACTS\_WITH]-(b:Entity)}
+(neo4j.south |- 0,-7.0);
+
+\draw[dashedarrow]
+(neo4j.south |- 0,-8.8)
+--
+node[msg,above=6pt]
+{Return interaction confidence\\and evidence}
+(svc.south |- 0,-8.8);
+
+%====================================================
+% Self Loop
+%====================================================
+
+\draw[arrow]
+(svc.south |- 0,-10.5)
+--
+++(1.1,-0.5)
+--
+++(-1.1,-0.5)
+node[msg,right,xshift=0.15cm]
+{Fetch pill images and shapes\\from local static folder};
+
+\draw[dashedarrow]
+(svc.south |- 0,-12.0)
+--
+node[msg,above=6pt]
+{Return structured interaction\\and image paths}
+(api.south |- 0,-12.0);
+
+\draw[dashedarrow]
+(api.south |- 0,-13.0)
+--
+node[msg,above=6pt]
+{JSON Response}
+(ui.south |- 0,-13.0);
+
+\draw[dashedarrow]
+(ui.south |- 0,-14.0)
+--
+node[msg,above=6pt]
+{Render pill image card\\and warning alerts}
+(user.south |- 0,-14.0);
+
+\end{tikzpicture}%
+}
+\caption{Sequence diagram of the drug-drug interaction safety check workflow}
+\label{fig:pill_interaction_sequence}
+\end{figure}
+
+
 
 \section{Functional description}
 \label{section:2.3}
-The following four core use cases represent the critical operational paths of the system and are detailed using standard software engineering specifications.
+The following six use cases represent the critical operational paths of the system and are detailed using standard software engineering specifications (their corresponding execution sequence diagrams are grouped consecutively in Section \ref{subsection:2.2.3}).
 
 \subsection{Description of UC-01: Consult Medical Agent}
-\begin{itemize}
-    \item \textbf{Actor}: User / Patient.
-    \item \textbf{Description}: The user inputs a clinical question, and the system executes a ReAct reasoning loop to search the knowledge graph and stream verified clinical answers with source citations.
-    \item \textbf{Pre-conditions}: The user has successfully logged in and the local Neo4j database is active.
-    \item \textbf{Post-conditions}: A streamed, grounded answer is rendered with proper citations, active tool indicators, and visual pill cards (if drugs are mentioned).
-    \item \textbf{Basic Flow}:
-        1. User enters a query (e.g., "Symptoms of Type 2 Diabetes").
-        2. FastAPI backend receives the request and triggers \texttt{AgentService}.
-        3. The \texttt{ReActAgent} parses the query, initiates reasoning, and outputs a \texttt{Thought}.
-        4. The agent decides to call the \texttt{graphrag\_query} tool with the entity "Type 2 Diabetes".
-        5. The tool queries Neo4j directly, finds matches, and returns text chunks as \texttt{Observation}.
-        6. The agent integrates the observation, formulates a final answer, appends source citations, and sends it to the UI.
-    \item \textbf{Alternate Flow (Format Recovery)}:
-        - If the LLM generates a malformed tool call pattern in iteration 1, \texttt{AgentService} intercepts the error, runs a fallback query matching the original question, synthesizes the results, and returns a verified fallback answer to prevent application crashes.
-\end{itemize}
+The primary actor is the User / Patient. In this use case, the user inputs a clinical question, and the system executes a ReAct reasoning loop to search the knowledge graph and stream verified clinical answers with source citations. The pre-conditions are that the local Neo4j database is active, and the post-conditions are that the user receives a detailed explanation with relevant entity connections and source citations shown on the UI.
+
+In the basic flow, the user first enters a query (e.g., "Symptoms of Type 2 Diabetes"). Second, the FastAPI backend receives the request and triggers the \texttt{AgentService}. Third, the \texttt{ReActAgent} parses the query, initiates reasoning, and outputs a \texttt{Thought}. Fourth, the agent decides to call the \texttt{graphrag\_query} tool with the entity "Type 2 Diabetes". Fifth, the tool queries Neo4j directly, finds matches, and returns text chunks as an \texttt{Observation}. Sixth, the agent integrates the observation, formulates a final answer, appends source citations, and sends it to the UI.
+
+In the alternate flow for format recovery, if the LLM generates a malformed tool call pattern in iteration 1, the \texttt{AgentService} intercepts the error, runs a fallback query matching the original question, synthesizes the results, and returns a verified fallback answer to prevent application crashes.
+
+The sequence of operations during the ReAct consultation stream is detailed in Figure \ref{fig:agent_stream_flow} (located in Section \ref{subsection:2.2.3}).
 
 \subsection{Description of UC-02: Upload \& Analyze Medical Record}
-\begin{itemize}
-    \item \textbf{Actor}: User / Patient.
-    \item \textbf{Description}: The user uploads a clinical report (PDF/XLSX), and the system automatically parses it, benchmarks lab indicators against reference bounds, and provides graph-supported advice.
-    \item \textbf{Pre-conditions}: The uploaded file format is supported (\texttt{.pdf}, \texttt{.xlsx}, \texttt{.xlsm}).
-    \item \textbf{Post-conditions}: The user receives a comprehensive benchmark table of lab anomalies (labeled as normal, below, or above reference) and a GraphRAG-supported consultation text.
-    \item \textbf{Basic Flow}:
-        1. User selects and uploads an Excel sheet containing blood test indicators.
-        2. The backend extracts cells using \texttt{openpyxl}.
-        3. The system parses numeric readings and printed reference ranges using \texttt{compare\_extracted\_report\_on\_form}.
-        4. An automated matching engine compares the patient's value to the reference bounds.
-        5. The backend triggers \texttt{rag\_advice\_llm} to fetch Neo4j context relating to any detected abnormal indicators.
-        6. The LLM synthesizes a grounded medical explanation in Vietnamese (or English) and displays it alongside the benchmark table on the dashboard.
-\end{itemize}
+The primary actor is the User / Patient. The user uploads a clinical report (PDF/XLSX), and the system automatically parses it, benchmarks lab indicators against reference bounds, and provides graph-supported advice. The pre-conditions require that the uploaded file format is supported (\texttt{.pdf}, \texttt{.xlsx}, \texttt{.xlsm}), and the post-conditions dictate that the system renders a comparative benchmark table with color-coded alerts and displays a graph-supported clinical report.
+
+In the basic flow, the user first selects and uploads an Excel sheet containing blood test indicators. Second, the backend extracts cells using \texttt{openpyxl}. Third, the system parses numeric readings and printed reference ranges using the function \nolinkurl{compare\_extracted\_report\_on\_form}. Fourth, an automated matching engine compares the patient's value to the reference bounds. Fifth, the backend triggers \texttt{rag\_advice\_llm} to fetch Neo4j context relating to any detected abnormal indicators. Sixth, the LLM synthesizes a grounded medical explanation in Vietnamese (or English) and displays it alongside the benchmark table on the dashboard.
+
+The sequence of operations during the medical record ingestion and RAG-supported advice generation is illustrated in Figure \ref{fig:report_analysis_sequence} (located in the previous section).
 
 \subsection{Description of UC-03: Manage Medication Reminders}
-\begin{itemize}
-    \item \textbf{Actor}: User / Patient.
-    \item \textbf{Description}: Users customize medication reminder schedules extracted from their clinical recommendations to trigger automatic local notification alerts.
-    \item \textbf{Pre-conditions}: The medical analysis narrative contains suggested drugs and dosing parameters.
-    \item \textbf{Post-conditions}: Reminder schedules are written to the SQLite database and automated browser alerts are active.
-    \item \textbf{Basic Flow}:
-        1. The user views the consultation results showing suggested medications (e.g., "Metformin 500mg, twice a day").
-        2. User clicks "Add to Reminders".
-        3. The system parses the drug name, dosage, and frequency, transforming them into specific calendar timestamps.
-        4. The intake calendar is saved in the local SQLite database.
-        5. The browser's active background worker schedules local visual alarms.
-\end{itemize}
+The primary actor is the User / Patient. Users customize medication reminder schedules extracted from their clinical recommendations to trigger automatic local notification alerts. The pre-conditions are that the medical analysis narrative contains suggested drugs and dosing parameters, and the post-conditions are that the reminder schedules are stored in browser local storage and rendered in the weekly schedule view.
 
-\subsection{Description of UC-04: Verify Pill Imagery}
-\begin{itemize}
-    \item \textbf{Actor}: User / Patient.
-    \item \textbf{Description}: Search for medical pill names in the database to inspect their physical characteristics (color, shape, packaging) to prevent pill ingestion errors.
-    \item \textbf{Pre-conditions}: The database contains pill images and identifiers.
-    \item \textbf{Post-conditions}: Visual pill cards with exact descriptions are rendered on the chat or dashboard screen.
-    \item \textbf{Basic Flow}:
-        1. User asks the agent about a drug or manually types the drug name in the lookup bar.
-        2. The system calls the \texttt{pill\_image\_lookup} tool.
-        3. The backend searches the local directory \texttt{web\_ui/img/} matching the canonicalized drug name.
-        4. The matching image path is returned, and a card showing the physical card (e.g., shape, color, dosage form) is rendered on the UI.
-\end{itemize}
+In the basic flow, the user first views the consultation results showing suggested medications (e.g., "Metformin 500mg, twice a day"). Second, the user clicks "Add to Reminders". Third, the system parses the drug name, dosage, and frequency, transforming them into specific calendar timestamps. Fourth, the intake calendar is saved in browser local storage. Fifth, the browser's active background worker schedules local visual alarms.
+
+The sequence of reminder scheduling and browser background alarms is detailed in Figure \ref{fig:reminder_alarm_sequence} (located in Section \ref{subsection:2.2.3}).
+
+\subsection{Description of UC-04: Clinical Calculators and Interaction Safety Check}
+The primary actor is the User / Patient. The user utilizes clinical tools to compute essential healthcare metrics (such as BMI and kidney function eGFR) or queries the database to check safety compatibility between medications. The pre-conditions require that the database connection to Neo4j is active and valid user physiological details are provided, and the post-conditions ensure that mathematically validated diagnostic categories or drug conflict details are rendered on the dashboard screen.
+
+In the basic flow, the user first navigates to the clinical tools workspace. Second, they input weight and height values to calculate BMI, or age, weight, creatinine, and gender metrics to calculate eGFR. Third, the frontend sends request parameters to the deterministic backend calculator endpoints. Fourth, the system processes formulas like CKD-EPI or Cockcroft-Gault and returns instant clinical classifications. Alternatively, the user adds drug search terms to inspect drug-drug interactions. The backend executes a direct Neo4j Cypher match to return safety compatibility and warnings.
+
+The sequence of drug-drug interaction checking and Neo4j safety querying is detailed in Figure \ref{fig:pill_interaction_sequence} (located in Section \ref{subsection:2.2.3}).
+
+\subsection{Description of UC-05: View Medical News}
+The primary actor is the User / Patient. The user browses health advisory updates, chronic disease guidelines, and localized medical advisories linked directly with clinical entities in the Knowledge Graph. The pre-conditions are that the local server is running and the database connection is active, and the post-conditions are that curated advisory articles and graph-connected recommendations are rendered on the news dashboard.
+
+In the basic flow, the user first navigates to the medical news feed. Second, the frontend sends a query to the backend guideline router. Third, the system fetches guidelines corresponding to seed chronic conditions (e.g. hypertension, diabetes). Fourth, the backend resolves graph entities to include related disease parameters and advisories. Fifth, the system returns a JSON payload containing guidelines and synced news cards. Sixth, the web UI displays interactive guidelines and localized health cards to the user.
+
+\subsection{Description of UC-06: Manage Knowledge Graph}
+The primary actor is the Medical Admin. The administrator manages system ontologies, runs graph schema definitions, imports medical documents, and verifies database ingestion statistics. The pre-conditions are that the administrator has server-level command-line access or is accessing the admin tool, and the local Neo4j instance is running, and the post-conditions dictate that the custom KG schema is updated and document nodes are correctly ingested and linked.
+
+In the basic flow, the administrator first loads the clinical document ontology files (e.g. from the \texttt{kg/kg\_artifacts} directory). Second, they execute the Neo4j schema initialization script to define fulltext indexes and unique constraint properties. Third, the admin runs the document ingestion parser to chunk, extract entities, normalize predicates, and write the triple records into the Neo4j database. Fourth, the system parses references and writes links between nodes. Fifth, the admin triggers the verification suite to check entity counts and relationship coverage. Sixth, the system returns a status report showing successful graph synchronization.
+
+
+
 
 \section{Non-functional requirement}
 \label{section:2.4}
 To guarantee system stability, local execution feasibility, and absolute privacy, the following non-functional requirements are enforced:
-\begin{itemize}
-    \item \textbf{Private, Offline Execution}: The system must run entirely on the user's local machine without sending clinical prompts to external cloud APIs, ensuring compliance with data privacy regulations.
-    \item \textbf{Response Streaming Speed}: Chat API \texttt{/api/agent-query/stream} must yield the first reasoning token within \textbf{1.5 seconds} of receiving the user query, and stream chunks continuously to avoid high perceived latency on local hardware.
-    \item \textbf{Security and Rate Limiting}: The system implements FastAPI dependency injection rate limiters (\texttt{check\_rate\_limit}) to restrict queries to \textbf{10 requests per minute} per IP, preventing denial-of-service loops on local LLM runtimes.
-    \item \textbf{Hardware Feasibility}: The local LLM engine (Ollama Llama-3.1-8B) must execute within standard consumer hardware constraints (requiring a minimum of 8GB VRAM or 16GB system RAM) with an active request timeout limit of \textbf{120 seconds}.
-\end{itemize}
+First, regarding private and offline execution, the system must run entirely on the user's local machine without sending clinical prompts to external cloud APIs, ensuring compliance with data privacy regulations. 
+
+Second, to optimize response streaming speed, the chat API \texttt{/api/agent-query/stream} must yield the first reasoning token within 1.5 seconds of receiving the user query, and stream chunks continuously to avoid high perceived latency on local hardware. 
+
+Third, for security and rate limiting, the system implements FastAPI dependency injection rate limiters (\texttt{check\_rate\_limit}) to restrict queries to 30 requests per minute per IP, preventing denial-of-service loops on local LLM runtimes. 
+
+Fourth, in terms of hardware feasibility, the local LLM engine (such as Llama-3.2-3B) must execute within standard consumer hardware constraints with an active request timeout limit of 120 seconds.
 
 \end{document}

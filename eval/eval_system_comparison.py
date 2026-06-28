@@ -120,12 +120,18 @@ def _parse_related_edges(context: str) -> set[tuple[str, str]]:
     return edges
 
 
-def _node_recall(expected_nodes: list[str], source_titles: list[str]) -> tuple[float, list[str]]:
-    """Compute fraction of expected entities found in source titles."""
+def _node_recall(
+    expected_nodes: list[str],
+    source_titles: list[str],
+    context_entities: list[str] | None = None,
+) -> tuple[float, list[str]]:
+    """Compute fraction of expected entities found in source titles and/or context entities."""
     if not expected_nodes:
         return 1.0, []
+    if context_entities is None:
+        context_entities = []
     miss: list[str] = []
-    hay = [_norm(x) for x in source_titles if x]
+    hay = [_norm(x) for x in source_titles if x] + [_norm(x) for x in context_entities if x]
     hit = 0
     for en in expected_nodes:
         needle = _norm(en)
@@ -218,7 +224,7 @@ def run_direct_llm_query(question: str, cfg: dict[str, Any]) -> str:
     from llm_pipeline.llm_chat import chat_ollama, chat_openrouter, synthesis_backend
 
     host = (os.getenv("OLLAMA_HOST") or cfg.get("ollama_host") or "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL") or cfg.get("ollama_model") or "llama3.1:8b"
+    model = os.getenv("OLLAMA_MODEL") or cfg.get("ollama_model") or "llama3.2:3b"
     
     _to = os.getenv("OLLAMA_TIMEOUT")
     try:
@@ -330,7 +336,7 @@ Không viết thêm bất kỳ văn bản nào khác ngoài JSON trên.
     from llm_pipeline.llm_chat import chat_ollama, chat_openrouter, synthesis_backend
 
     host = (os.getenv("OLLAMA_HOST") or cfg.get("ollama_host") or "http://localhost:11434").rstrip("/")
-    model = judge_model or os.getenv("OLLAMA_MODEL") or cfg.get("ollama_model") or "llama3.1:8b"
+    model = judge_model or os.getenv("OLLAMA_MODEL") or cfg.get("ollama_model") or "llama3.2:3b"
     
     _to = os.getenv("OLLAMA_TIMEOUT")
     try:
@@ -680,7 +686,15 @@ def main() -> int:
         found_edges = _parse_related_edges(context_text)
         source_titles = [str(h.get("title") or "") for h in hits if isinstance(h, dict)]
         
-        node_rec, missing_nodes = _node_recall(expected_nodes, source_titles)
+        context_entities = []
+        for line in (context_text or "").splitlines():
+            line = line.strip()
+            if line.startswith("title:"):
+                ent_name = line.split("title:", 1)[1].strip()
+                if ent_name:
+                    context_entities.append(ent_name)
+        
+        node_rec, missing_nodes = _node_recall(expected_nodes, source_titles, context_entities)
         edge_rec, missing_edges = _edge_recall(expected_edges, found_edges)
 
         # --- Calculate Deterministic Content Metrics ---

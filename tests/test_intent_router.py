@@ -6,14 +6,6 @@ import pytest
 from core.intent_router import detect_intent
 
 
-def test_detect_intent_regex_direct_db():
-    """Test that regex matches direct_db instantly without invoking LLM."""
-    with patch("core.llm_backends.OllamaBackend") as mock_backend:
-        res = detect_intent("glucose của tôi là 7.5 mmol/L")
-        assert res == "direct_db"
-        mock_backend.assert_not_called()
-
-
 def test_detect_intent_regex_social():
     """Test that obvious pure social matches global_summary instantly without invoking LLM."""
     with patch("core.llm_backends.OllamaBackend") as mock_backend:

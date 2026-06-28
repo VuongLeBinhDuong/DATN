@@ -1,13 +1,13 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 
-This chapter provides a rigorous theoretical exposition and technical justification of the methodology utilized to build the offline-first, highly reliable clinical question-answering (QA) and consultation system. Section \ref{section:3.1} details the mathematical and structural formulation of Labeled Property Graphs (LPGs) and their implementation via the Neo4j engine. Section \ref{section:3.2} evaluates standard Vector Retrieval-Augmented Generation (RAG), analyzes its fundamental cognitive limitations, and presents the paradigm shift to GraphRAG under a dual-layer retrieval architecture. Section \ref{section:3.3} establishes the framework for Agentic AI, focusing on the Reasoning and Acting (ReAct) paradigm, custom runtime safety guards, and simplified stateful dialog orchestration. Finally, Section \ref{section:3.4} offers a comprehensive technical justification of the localized development stack, emphasizing asynchronous stream processing, local LLM hosting, and privacy-preserving document digestion.
+This chapter provides a rigorous theoretical exposition and technical justification of the methodology utilized to build the offline-first, reliability-oriented clinical question-answering (QA) and consultation prototype. Section \ref{section:3.1} details the mathematical and structural formulation of Labeled Property Graphs (LPGs) and their implementation via the Neo4j engine. Section \ref{section:3.2} evaluates standard Vector Retrieval-Augmented Generation (RAG), analyzes its fundamental cognitive limitations, and presents the paradigm shift to GraphRAG under a dual-layer retrieval architecture. Section \ref{section:3.3} establishes the framework for Agentic AI, focusing on the Reasoning and Acting (ReAct) paradigm, custom runtime safety guards, and simplified stateful dialog orchestration. Section \ref{section:3.4} details the Advanced Prompt Engineering strategies employed to steer the ReAct models. Finally, Section \ref{section:3.5} offers a comprehensive technical justification of the localized development stack, emphasizing asynchronous stream processing, local LLM hosting, and privacy-preserving document digestion.
 
 \section{Knowledge Graphs and Labeled Property Graphs (LPG)}
 \label{section:3.1}
 
-A \textbf{Knowledge Graph (KG)} is a structured, semantically rich representation of real-world information, modeling domain concepts as vertices and their interactions as directed, labeled edges \cite{robinson2015graph}. Formally, a knowledge graph $G$ can be defined as:
-\begin{equation}
+A Knowledge Graph (KG) is a structured, semantically rich representation of real-world information, modeling domain concepts as vertices and their interactions as directed, labeled edges \cite{robinson2015graph}. Formally, a knowledge graph $G$ can be defined as shown in Equation \eqref{eq:kg_formulation}:
+\begin{equation}\label{eq:kg_formulation}
 G = (E, R, T)
 \end{equation}
 where $E = \{e_1, e_2, \dots, e_n\}$ is a set of unique entities, $R = \{r_1, r_2, \dots, r_m\}$ is a set of semantic relation types, and $T \subseteq E \times R \times E$ is a set of fact triples in the form of $(s, p, o)$, representing a subject entity $s$, a predicate relationship $p$, and an object entity $o$.
@@ -16,27 +16,24 @@ In the clinical domain, raw, unstructured texts often obscure critical diagnosti
 
 \subsection{RDF vs. Labeled Property Graph (LPG)}
 
-While the Semantic Web historically relied on the Resource Description Framework (RDF) where every statement is represented as a flat triple $(s, p, o)$, modern intelligent applications require high-dimensional attributes (properties) on both nodes and edges to record metadata (such as confidence levels, source file references, and clinical guidelines). This requirement is met by the \textbf{Labeled Property Graph (LPG)} model. 
+While the Semantic Web historically relied on the Resource Description Framework (RDF) where every statement is represented as a flat triple $(s, p, o)$, modern intelligent applications require high-dimensional attributes (properties) on both nodes and edges to record metadata (such as confidence levels, source file references, and clinical guidelines). This requirement is met by the Labeled Property Graph (LPG) model. 
 
-Mathematically, an LPG is defined as a 6-tuple:
-\begin{equation}
+Mathematically, an LPG is defined as a 6-tuple in Equation \eqref{eq:lpg_formulation}:
+\begin{equation}\label{eq:lpg_formulation}
 G_{LPG} = (V, E, L_V, L_E, P_V, P_E)
 \end{equation}
-where:
-\begin{itemize}
-    \item $V$ is a finite set of vertices (nodes) representing medical entities or informational chunks.
-    \item $E \subseteq V \times V$ is a set of directed edges representing clinical or structural relationships.
-    \item $L_V: V \rightarrow \mathcal{P}(\Sigma_V)$ is a node-labeling function mapping each node to a set of labels from the label alphabet $\Sigma_V$ (e.g., \texttt{Entity}, \texttt{Chunk}, \texttt{Document}).
-    \item $L_E: E \rightarrow \Sigma_E$ is an edge-labeling function mapping each relationship to a specific type from the relation alphabet $\Sigma_E$ (e.g., \texttt{TREATS}, \texttt{CAUSES}, \texttt{MENTIONS}).
-    \item $P_V: V \times K \rightarrow U$ is a node-property evaluation function mapping a node and a key $k \in K$ to a value $u \in U$ (e.g., storing \texttt{canonical\_name}, \texttt{biomedical\_type}, or \texttt{embedding\_vector}).
-    \item $P_E: E \times K \rightarrow U$ is an edge-property evaluation function mapping a relationship and a key $k$ to a value $u$ (e.g., storing \texttt{predicate}, \texttt{confidence\_score}, or \texttt{source\_document}).
-\end{itemize}
+where $V$ is a finite set of vertices (nodes) representing medical entities or informational chunks; $E \subseteq V \times V$ is a set of directed edges representing clinical or structural relationships; $L_V: V \rightarrow \mathcal{P}(\Sigma_V)$ is a node-labeling function mapping each node to a set of labels from the label alphabet $\Sigma_V$ (e.g., \texttt{Entity}, \texttt{Chunk}, \texttt{Document}); $L_E: E \rightarrow \Sigma_E$ is an edge-labeling function mapping each relationship to a specific type from the relation alphabet $\Sigma_E$ (e.g., \texttt{TREATS}, \texttt{CAUSES}, \texttt{MENTIONS}); $P_V: V \times K \rightarrow U$ is a node-property evaluation function mapping a node and a key $k \in K$ to a value $u \in U$ (e.g., storing \texttt{canonical\_name}, \texttt{type}, or \texttt{embedding\_vector}); and $P_E: E \times K \rightarrow U$ is an edge-property evaluation function mapping a relationship and a key $k$ to a value $u$ (e.g., storing \texttt{predicate}, \texttt{confidence\_score}, or \texttt{source\_document}).
+
 
 \subsection{Neo4j as the Graph Database Engine}
 
-This system implements the Labeled Property Graph model using \textbf{Neo4j}, a native graph database engine designed for high-performance traversals. Unlike relational databases (RDBMS) which require expensive index-join operations, Neo4j utilizes \textbf{index-free adjacency}. Each node maintains direct physical pointers to its adjacent relationships and neighboring nodes on the storage layer, reducing graph traversal complexity from $O(\log N)$ or $O(N \log N)$ to $O(k)$, where $k$ is the local degree of the active vertex, completely independent of the total graph size.
+This system implements the Labeled Property Graph model using Neo4j, a native graph database engine designed for high-performance traversals. Unlike relational databases (RDBMS) which require index-join operations that scale with table size ($O(\log N)$ or $O(N \log N)$), Neo4j utilizes index-free adjacency. At the storage layer, each node record holds direct physical pointers (memory addresses) to its first relationship record, and relationship records form a doubly linked list linking the source and target node records. Thus, traversing an edge consists of following a direct reference offset in memory. This reduces graph traversal complexity to Equation \eqref{eq:index_free_adjacency}:
+\begin{equation}\label{eq:index_free_adjacency}
+T_{traverse} = O(d)
+\end{equation}
+where $d$ is the local degree (number of connected edges) of the active node, completely independent of the total number of nodes $N$ in the database.
 
-To interact with this graph, the system utilizes \textbf{Cypher}, a declarative, pattern-matching query language. For clinical diagnostics, traversing relationships must be highly precise. Consider a query to find all active ingredients in medications that treat a specific symptom, while ensuring the relationship confidence exceeds a threshold of $0.80$. The pattern is matching as follows:
+To interact with this graph, the system utilizes Cypher, a declarative, pattern-matching query language. For clinical diagnostics, traversing relationships must be highly precise. Consider a query to find all active ingredients in medications that treat a specific symptom, while ensuring the relationship confidence exceeds a threshold of $0.80$. The pattern is matching as follows:
 
 \begin{lstlisting}[basicstyle=\footnotesize\ttfamily,breaklines=true,columns=fullflexible]
 MATCH (symptom:Entity {canonical_name: "Hyperglycemia"})
@@ -48,6 +45,72 @@ RETURN DISTINCT drug.canonical_name AS treatment, r.confidence AS score;
 \end{lstlisting}
 
 This direct, structural query guarantees that the retrieved clinical connections are completely verified and grounded in the database, avoiding the hallucination risks associated with standard vector searches.
+
+In this system, the clinical knowledge base is structured using a specific property graph schema in Neo4j. The nodes belong to three primary labels: \texttt{Entity} represents medical concepts such as drugs, diseases, symptoms, or tests, with attributes including \texttt{entity\_id} (a unique string identifier derived as a hash of its canonical name), \texttt{canonical\_name} (the unified clinical term in lowercase for exact matching), \texttt{type} (storing labels such as \texttt{DRUG}, \texttt{DISEASE}, \texttt{SYMPTOM}, or \texttt{TEST}), and \texttt{aliases} (a list of alternative Vietnamese/English synonym names); \texttt{Chunk} represents the raw source text block containing the concept, storing \texttt{chunk\_id} (unique identifier hash), \texttt{text} (the raw string segment), and its corresponding dense embedding vector; and \texttt{Document} represents the source medical literature or clinical guideline file, storing attributes such as \texttt{doc\_id}, \texttt{filename}, and \texttt{filepath}. The relationships link these nodes together, with the most important being the \texttt{REL} relationship connecting two \texttt{Entity} nodes (which contains specific properties such as \texttt{predicate} representing the clinical action like \texttt{TREATS}, \texttt{CAUSES}, \texttt{CONTRAINDICATED\_FOR}, \texttt{INTERACTS\_WITH}, \texttt{SIDE\_EFFECT\_OF}, or \texttt{HAS\_SYMPTOM}, a numerical \texttt{confidence} weight in the range $[0, 1]$, and an \texttt{evidence\_chunk\_id} string ID referencing the backing \texttt{Chunk} node) and the \texttt{MENTIONS} relationship connecting a \texttt{Chunk} to an \texttt{Entity} (which stores the \texttt{mention\_confidence} property reflecting mapping reliability). The graph database is enriched with the APOC library, which provides utility procedures to execute rapid fulltext index queries and multi-hop Cypher path expansions.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.9\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=2.5cm and 3.5cm,
+        docNode/.style={rectangle, draw=purple!70!black, fill=purple!10, thick, rounded corners=4pt, minimum width=3.5cm, align=left, font=\small\sffamily, inner sep=6pt},
+        chunkNode/.style={rectangle, draw=blue!70!black, fill=blue!10, thick, rounded corners=4pt, minimum width=3.5cm, align=left, font=\small\sffamily, inner sep=6pt},
+        entityNode/.style={rectangle, draw=teal!70!black, fill=teal!10, thick, rounded corners=4pt, minimum width=3.5cm, align=left, font=\small\sffamily, inner sep=6pt},
+        relArrow/.style={-{Stealth[scale=1.0]}, thick, draw=gray!80!black, font=\scriptsize\ttfamily},
+        propertyList/.style={font=\scriptsize\sffamily\itshape, text=gray!80!black}
+    ]
+        % Nodes
+        \node[docNode] (doc) {
+            \begin{tabular}{l}
+                \textbf{Document} \\
+                \hline
+                doc\_id \\
+                title \\
+                filename \\
+                filepath \\
+                source
+            \end{tabular}
+        };
+        
+        \node[chunkNode, right=of doc] (chunk) {
+            \begin{tabular}{l}
+                \textbf{Chunk} \\
+                \hline
+                chunk\_id \\
+                doc\_id \\
+                text \\
+                section\_path \\
+                embedding\_vector
+            \end{tabular}
+        };
+        
+        \node[entityNode, right=of chunk] (entity) {
+            \begin{tabular}{l}
+                \textbf{Entity} \\
+                \hline
+                entity\_id \\
+                canonical\_name \\
+                type \\
+                aliases
+            \end{tabular}
+        };
+
+        % Relationships
+        \draw[relArrow] (doc) -- node[above, align=center] {HAS\_CHUNK} (chunk);
+        \draw[relArrow] (chunk) -- node[above, align=center, font=\scriptsize\sffamily\itshape] {MENTIONS \\ \{confidence, \\ start\_char, end\_char\}} (entity);
+        
+        % Self relationship for Entity (REL)
+        \draw[relArrow] (entity) to [out=330, in=30, looseness=6] node[right, align=left, font=\scriptsize\sffamily\itshape] {
+            REL \\ 
+            \{predicate (TREATS, CAUSES, etc.), \\
+            confidence, evidence\_chunk\_id\}
+        } (entity);
+        
+    \end{tikzpicture}%
+    }
+    \caption{LPG Database Schema Meta-Graph showing Node labels, Relationship types, and property schemas}
+    \label{fig:lpg_schema_meta_graph}
+\end{figure}
 
 \begin{figure}[H]
     \centering
@@ -134,44 +197,44 @@ Figure \ref{fig:rag_graphrag_comparison_flow} summarizes the conceptual differen
 
 \subsection{Classical Vector RAG}
 
-Traditional Retrieval-Augmented Generation (RAG) processes unstructured text by dividing files into static chunks (e.g., 500-character segments with 100-character overlap), feeding them through a dense embedding model (e.g., a pre-trained transformer), and indexing the resulting vector representations in a vector database \cite{lewis2020retrieval}. Given a user query $q$, the query is embedded into the same vector space, and the system retrieves the top-$k$ nearest chunks. Mathematically, let $\vec{q} \in \mathbb{R}^D$ be the query embedding vector and $\vec{d}_i \in \mathbb{R}^D$ be the document chunk embedding vector. The similarity metric is computed using Cosine Similarity:
-\begin{equation}
+Traditional Retrieval-Augmented Generation (RAG) processes unstructured text by dividing files into static chunks (e.g., 500-character segments with 100-character overlap), feeding them through a dense embedding model (e.g., a pre-trained transformer), and indexing the resulting vector representations in a vector database \cite{lewis2020retrieval}. Given a user query $q$, the query is embedded into the same vector space, and the system retrieves the top-$k$ nearest chunks. Mathematically, let $\vec{q} \in \mathbb{R}^D$ be the query embedding vector and $\vec{d}_i \in \mathbb{R}^D$ be the document chunk embedding vector. The similarity metric is computed using Cosine Similarity as shown in Equation \eqref{eq:cosine_similarity}:
+\begin{equation}\label{eq:cosine_similarity}
 \text{Sim}(\vec{q}, \vec{d}_i) = \cos(\theta) = \frac{\vec{q} \cdot \vec{d}_i}{\|\vec{q}\|_2 \|\vec{d}_i\|_2} = \frac{\sum_{j=1}^D q_j d_{i,j}}{\sqrt{\sum_{j=1}^D q_j^2} \sqrt{\sum_{j=1}^D d_{i,j}^2}}
 \end{equation}
 
 \subsection{The Cognitive Limitations of Vector RAG}
 
 Despite its effectiveness in local search, Vector RAG suffers from severe cognitive limitations when applied to clinical reasoning:
-\begin{enumerate}
-    \item \textbf{The Multi-Hop Reasoning Failure}: Vector search is structurally limited to single-step semantic lookups. If a user asks: \textit{``Does drug A interact with the medication prescribed for patient B's primary kidney condition?''}, a standard vector database matches chunks containing \texttt{drug A} or \texttt{patient B}, but cannot construct the logical pipeline: $\text{Patient B} \rightarrow \text{Kidney Condition} \rightarrow \text{Prescribed Medication} \rightarrow \text{Interaction with Drug A}$. It lacks the relational links needed to transition across distinct nodes.
-    \item \textbf{Loss of Structural Context}: Chunking breaks the continuous semantic thread of a document. If a medical table links a specific dosage to a patient's weight class, a flat text chunker might split the row, separating the causal condition from the clinical recommendation, leading to fragmented or incorrect context.
-    \item \textbf{Lack of Global Synthesis}: When a clinician requests a global query like \textit{``What are the common side effects of all anti-hypertensive drugs documented in our medical archive?''}, standard Vector RAG fails. It can only fetch specific chunks containing \texttt{anti-hypertensive} and \texttt{side effects}, leaving the LLM to synthesize fragmented chunks while missing the broader picture.
-\end{enumerate}
+First, the multi-hop reasoning failure is a structural limitation of vector search to single-step semantic lookups. For example, if a user asks: \textit{``Does drug A interact with the medication prescribed for patient B's primary kidney condition?''}, a standard vector database matches chunks containing \texttt{drug A} or \texttt{patient B}, but cannot construct the logical pipeline: $\text{Patient B} \rightarrow \text{Kidney Condition} \rightarrow \text{Prescribed Medication} \rightarrow \text{Interaction with Drug A}$ due to the lack of relational links needed to transition across distinct nodes.
+
+Second, the loss of structural context occurs because chunking breaks the continuous semantic thread of a document. If a medical table links a specific dosage to a patient's weight class, a flat text chunker might split the row, separating the causal condition from the clinical recommendation, leading to fragmented or incorrect context.
+
+Third, the lack of global synthesis makes it difficult to address global queries. When a clinician requests a query like \textit{``What are the common side effects of all anti-hypertensive drugs documented in our medical archive?''}, standard Vector RAG fails as it can only fetch specific chunks containing \texttt{anti-hypertensive} and \texttt{side effects}, leaving the LLM to synthesize fragmented chunks while missing the broader picture.
 
 \subsection{The Paradigm Shift to GraphRAG}
 
-To address these limitations, this system implements a hybrid \textbf{GraphRAG} framework, integrating dense vector matching with structural LPG traversals \cite{edge2024from}. The architecture executes queries across two distinct pathways:
+To address these limitations, this system implements a hybrid GraphRAG framework, integrating dense vector matching with structural LPG traversals \cite{edge2024from}. The architecture executes queries across two distinct pathways:
 
 \subsubsection{1. Local Graph-First Retrieval with Clinical NER and Cypher Path Queries}
 
-To ensure precise semantic grounding and eliminate context pollution, the system employs a two-stage \textbf{Local Graph-First Retrieval} pipeline. Unlike simple keyword matching or unstructured $k$-hop expansions which retrieve distant, irrelevant nodes, this pipeline targets the specific relational pathways linking the core clinical entities mentioned in the query:
+To ensure precise semantic grounding and eliminate context pollution, the system employs a multi-stage Local Graph-First Retrieval pipeline. Unlike simple keyword matching or unstructured $k$-hop expansions which retrieve distant, irrelevant nodes, this pipeline targets the specific relational pathways linking the core clinical entities mentioned in the query:
 
 \paragraph{Stage 1: Lightweight LLM-based Clinical NER Extraction}
-When a user query $q$ is submitted, it is first analyzed by a dedicated, lightweight Named Entity Recognition (NER) extractor $f_{NER}(q)$ powered by a quantized local Small Language Model (SLM), such as \texttt{qwen2.5:1.5b-instruct}. The SLM is prompted to return a strictly structured JSON array representing the extracted clinical concepts:
-\begin{equation}
+When a user query $q$ is submitted, it is first analyzed by a dedicated, lightweight Named Entity Recognition (NER) extractor $f_{NER}(q)$ powered by a quantized local Small Language Model (SLM), such as \texttt{qwen2.5:1.5b-instruct} running at temperature $0.0$. The SLM is prompted to return a strictly structured JSON array representing the extracted clinical concepts in Equation \eqref{eq:clinical_entities}:
+\begin{equation}\label{eq:clinical_entities}
 E_{clinical} = \{ (name_k, type_k) \mid k = 1 \dots N_E \}
 \end{equation}
 where each entity name $name_k$ is categorized into one of four clinical entity types $type_k \in \{ \text{DRUG}, \text{DISEASE}, \text{SYMPTOM}, \text{TEST} \}$. Extracting clinical entities using a lightweight 1.5B model guarantees near-instant extraction latencies ($\approx 100\text{ms}$) while preventing structural schema hallucination.
 
-Each extracted entity $name_k$ is then mapped to its corresponding node ID $v_k \in V$ in the Neo4j database using a synonym-aware fulltext index search. If the candidate name matches an alias or canonical name in the graph, it resolves to a unique entity node ID:
-\begin{equation}
+Each extracted entity $name_k$ is then mapped to its corresponding node ID $v_k \in V$ in the Neo4j database using a synonym-aware fulltext index search. Neo4j's Lucene fulltext search matches $name_k$ against both the node's \texttt{canonical\_name} and its \texttt{aliases} array. If a match is found, it resolves to a unique entity node ID via Equation \eqref{eq:resolve_node}:
+\begin{equation}\label{eq:resolve_node}
 v_k = \text{ResolveNode}(name_k)
 \end{equation}
 resulting in a set of resolved seed node IDs $V_{seed} = \{ v_1, v_2, \dots, v_m \}$.
 
 \paragraph{Stage 2: Cypher Path Query Traversal}
-If the query mentions multiple clinical entities ($|V_{seed}| \ge 2$), the retrieval engine attempts to construct a highly targeted relational path linking them together. Rather than expanding the graph blindly around each node, it executes a targeted Cypher path query to find paths of length $1$ to $H$ (maximum hops) that connect any pair of distinct seed entities:
-\begin{equation}
+If the query mentions multiple clinical entities ($|V_{seed}| \ge 2$), the retrieval engine attempts to construct a highly targeted relational path linking them together. Rather than expanding the graph blindly around each node, it executes a targeted Cypher path query to find paths of length $1$ to $H$ (maximum hops) that connect any pair of distinct seed entities as defined in Equation \eqref{eq:cypher_paths}:
+\begin{equation}\label{eq:cypher_paths}
 P_{paths} = \{ p \mid p = (u_0 \xrightarrow{r_1} u_1 \xrightarrow{r_2} \dots \xrightarrow{r_h} u_h), \, u_0, u_h \in V_{seed}, \, u_0 \neq u_h, \, h \le H \}
 \end{equation}
 The Cypher query syntax utilized for this path discovery is formulated as:
@@ -189,100 +252,418 @@ This operation returns a dense, highly relevant subgraph containing the precise 
 If the path query returns a non-empty set of edges, the system extracts the associated text paragraphs via their stored \texttt{evidence\_chunk\_id} properties on the matched edges. These paragraphs represent the exact medical literature proving the connection.
 
 \paragraph{Fallback to k-Hop Expansion}
-If the seed list contains only a single resolved entity ($|V_{seed}| < 2$) or if the Cypher path query returns zero connecting paths due to graph sparsity, the engine dynamically falls back to standard fulltext-seeded $k$-hop subgraph expansion:
-\begin{equation}
+If the seed list contains only a single resolved entity ($|V_{seed}| < 2$) or if the Cypher path query returns zero connecting paths due to graph sparsity, the engine dynamically falls back to standard fulltext-seeded $k$-hop subgraph expansion formulated in Equation \eqref{eq:khop_expansion}:
+\begin{equation}\label{eq:khop_expansion}
 G_{sub} = \text{ExpandSubgraph}(V_{seed}, H)
 \end{equation}
 This dual-stage retrieval mechanism ensures that when the patient asks about drug interactions or symptoms of a specific condition, the system injects only the direct, verified medical evidence into the prompt context, avoiding prompt bloat and reducing hallucination.
 
+\paragraph{Soft Subgraph Pruning Layer}
+To eliminate indexing noise, the retrieved raw subgraph undergoes a clinical pruning process:
+\begin{equation}\label{eq:prune_subgraph}
+G'_{sub} = \text{PruneSubgraph}(G_{sub}, V_{seed})
+\end{equation}
+This operation implements three main rules: first, under regex noise filtering, any entity whose canonical name matches the regular expression \texttt{r"\textasciicircum{}[0-9\textbackslash W\_]+\$"} (representing standalone numbers, symbols, or punctuation) is discarded; second, under type and quality filtering, generic concepts with type tags belonging to the set $\{\text{other}, \text{generic}, \text{noise}, \text{document}, \text{chunk}\}$ are filtered out; and third, under degree-0 isolated node pruning, any node with zero relationships is removed, unless it is a primary seed node in $V_{seed}$ to prevent isolated, non-relational entities from cluttering the context.
+
+
+\paragraph{Hybrid Candidate Ranking via RRF}
+Once candidate text chunks are fetched (from paths and direct seed entity mentions), they are ranked across two separate retrieval branches. The first branch is the graph-based rank branch, where chunks are sorted in descending order of their \texttt{mention\_confidence} property, reflecting structural KG extraction quality. The second branch is the lexical-based rank branch, where chunks are sorted based on character-token overlap. The similarity score is calculated using the overlap coefficient:
+\begin{equation}\label{eq:overlap_similarity}
+\text{Overlap}(Q, C) = \frac{|T(Q) \cap T(C)|}{\max(1.0, |T(Q)|^{0.5})}
+\end{equation}
+where $T(X)$ is the set of unique lowercased alphanumeric tokens of length $2 \le \text{len} \le 40$ in string $X$.
+The two ranked lists are then fused into a single sorted list using Reciprocal Rank Fusion (RRF) defined in Equation \eqref{eq:rrf_fusion}:
+\begin{equation}\label{eq:rrf_fusion}
+RRF(d) = \sum_{m \in \{graph, lexical\}} \frac{1}{60 + r_m(d)}
+\end{equation}
+where $r_m(d)$ represents the 1-indexed rank of chunk $d$ in retrieval branch $m$.
+
+\paragraph{LLM-based Reranking Layer (Optional)}
+To optimize candidate density further, the system can enable an optional neural reranking layer. It sends the top-$20$ fused chunks alongside the user query to the local LLM with a highly constrained prompt. The LLM is forced to evaluate the chunks and return a JSON array containing only the indices of the most relevant chunks. The final top-$k$ elements are then sliced for prompt injection.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.95\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=0.6cm and 0.8cm,
+        startNode/.style={draw=red!70!black, fill=red!5, thick, rounded corners=3pt, minimum width=2.5cm, minimum height=0.7cm, align=center, font=\small\sffamily},
+        stepNode/.style={draw=blue!70!black, fill=blue!5, thick, rounded corners=3pt, minimum width=2.8cm, minimum height=0.8cm, align=center, font=\small\sffamily},
+        decNode/.style={diamond, draw=orange!80!black, fill=orange!8, thick, aspect=1.8, align=center, font=\small\sffamily, inner sep=2pt},
+        endNode/.style={draw=teal!70!black, fill=teal!5, thick, rounded corners=3pt, minimum width=2.5cm, minimum height=0.7cm, align=center, font=\small\sffamily},
+        arrow/.style={-{Stealth[scale=1.0]}, thick, draw=gray!80!black}
+    ]
+        % Flow Nodes
+        \node[startNode] (start) {User Query $q$};
+        
+        \node[stepNode, below=of start] (ner) {Lightweight NER\\(1.5B Local LLM)};
+        
+        \node[stepNode, below=of ner] (fulltext) {Full-text Index Search\\(Resolve to $V_{seed}$)};
+        
+        \node[decNode, below=of fulltext] (check) {Multiple Seed\\Nodes ($|V_{seed}| \ge 2$)?};
+        
+        \node[stepNode, below left=0.8cm and 0.3cm of check] (path) {Cypher Path Query\\(Find paths $\le H$ hops)};
+        
+        \node[stepNode, below right=0.8cm and 0.3cm of check] (khop) {$k$-Hop Neighborhood\\Expansion};
+        
+        \node[decNode, below=0.8cm of path] (checkpath) {Paths\\Found?};
+        
+        \node[stepNode, below=3.2cm of check] (prune) {Soft Subgraph Pruning\\(Noise \& Degree-0 filtering)};
+        
+        \node[stepNode, below=of prune] (rrf) {Hybrid Ranking Rank Fusion\\(Graph + Lexical via RRF)};
+        
+        \node[endNode, below=of rrf] (synthesis) {LLM Answer\\Synthesis};
+
+        % Connections
+        \draw[arrow] (start) -- (ner);
+        \draw[arrow] (ner) -- (fulltext);
+        \draw[arrow] (fulltext) -- (check);
+        
+        \draw[arrow] (check.west) -| node[above, near start, font=\scriptsize] {Yes} (path.north);
+        \draw[arrow] (check.east) -| node[above, near start, font=\scriptsize] {No} (khop.north);
+        
+        \draw[arrow] (path) -- (checkpath);
+        
+        \draw[arrow] (checkpath.east) -- node[above, font=\scriptsize] {No (Fallback)} (khop.west);
+        
+        \draw[arrow] (checkpath.south) |- (prune.west);
+        
+        \draw[arrow] (khop.south) |- (prune.east);
+        \draw[arrow] (prune) -- (rrf);
+        \draw[arrow] (rrf) -- (synthesis);
+        
+    \end{tikzpicture}%
+    }
+    \caption{Detailed Flowchart of the Local Graph-First Retrieval Pipeline}
+    \label{fig:graphrag_retrieval_flowchart}
+\end{figure}
+
 \subsubsection{2. Global GraphRAG (Microsoft GraphRAG Paradigm)}
-For global, high-level clinical queries, hierarchical community clustering algorithms (such as the Microsoft GraphRAG paradigm) were evaluated. During the offline indexing phase:
-\begin{enumerate}
-    \item The entire clinical graph is partitioned into hierarchical communities using the \textbf{Leiden Algorithm} \cite{traag2019from}, which optimizes modularity:
-    \begin{equation}
-    Q_{Leiden} = \frac{1}{2m} \sum_{i,j} \left( A_{ij} - \gamma \frac{k_i k_j}{2m} \right) \delta(\sigma_i, \sigma_j)
-    \end{equation}
-    where $A_{ij}$ is the adjacency matrix weight, $k_i$ and $k_j$ are the degrees of nodes $i$ and $j$, $m$ is the total edge weight, $\gamma$ is the resolution parameter, and $\delta(\sigma_i, \sigma_j)$ is the Kronecker delta representing community assignment.
-    \item For each discovered community, a local LLM writes a comprehensive narrative summary detailing the entities, relationships, and key findings within that cluster.
-    \item When a global query is executed, the engine runs a MapReduce-style retrieval. It identifies the relevant community summaries (Map phase), generates partial answers, and aggregates them into a final clinical synthesis (Reduce phase).
-\end{enumerate}
+For global, high-level clinical queries, hierarchical community clustering algorithms (such as the Microsoft GraphRAG paradigm) were evaluated. During the offline indexing phase, the entire clinical graph is partitioned into hierarchical communities using the Leiden Algorithm \cite{traag2019from}, which optimizes modularity as shown in Equation \eqref{eq:leiden_modularity}:
+\begin{equation}\label{eq:leiden_modularity}
+Q_{Leiden} = \frac{1}{2m} \sum_{i,j} \left( A_{ij} - \gamma \frac{k_i k_j}{2m} \right) \delta(\sigma_i, \sigma_j)
+\end{equation}
+where $A_{ij}$ is the adjacency matrix weight, $k_i$ and $k_j$ are the degrees of nodes $i$ and $j$, $m$ is the total edge weight, $\gamma$ is the resolution parameter, and $\delta(\sigma_i, \sigma_j)$ is the Kronecker delta representing community assignment. Next, for each discovered community, a local LLM writes a comprehensive narrative summary detailing the entities, relationships, and key findings within that cluster. Finally, when a global query is executed, the engine runs a MapReduce-style retrieval, identifying the relevant community summaries (Map phase), generating partial answers, and aggregating them into a final clinical synthesis (Reduce phase).
 While this global community summarization provides high-level synthesis, executing MapReduce queries against local LLMs incurs extreme latencies (often exceeding 30 seconds per request) and requires massive VRAM resources. Consequently, the active query engine bypasses the Microsoft GraphRAG CLI pipeline, routing queries exclusively to the Custom KG to guarantee real-time, low-latency performance under 1.5 seconds.
 
 \section{Agentic AI and Dialog State Orchestration}
 \label{section:3.3}
 
-Static QA pipelines process inputs in a rigid, linear sequence. However, medical consultations are highly dynamic, requiring agents to ask clarifying questions, correct formatting errors, or dynamically call tools to verify facts. The system uses \textbf{Agentic AI} to manage these multi-turn diagnostic reasoning loops.
+Static QA pipelines process inputs in a rigid, linear sequence. However, medical consultations are highly dynamic, requiring agents to ask clarifying questions, correct formatting errors, or dynamically call tools to verify facts. The system uses Agentic AI to manage these multi-turn diagnostic reasoning loops.
 
 \subsection{Hybrid Intent Routing Architecture}
 
-To minimize response latency and avoid invoking heavy language models for simple queries, the system deploys a high-efficiency, layered \textbf{Hybrid Intent Router} as the gateway of the conversation. Given a user query $q$, the routing gateway $R(q)$ directs the query along three possible execution pipelines based on a hybrid classification mechanism:
+To minimize response latency and avoid invoking heavy language models for simple queries, the system deploys a high-efficiency, layered Hybrid Intent Router as the gateway of the conversation. Given a user query $q$, the routing gateway $R(q)$ directs the query along two possible execution pipelines based on a hybrid classification mechanism:
 
-\paragraph{1. Zero-LLM Fast-Path (0ms Latency)}
-First, the engine evaluates the query against a compiled set of regular expressions and rule matches. If the query mentions any standard laboratory indicator (e.g., \texttt{glucose}, \texttt{acid uric}, \texttt{AST}, \texttt{ALT}) along with a quantitative numerical value (e.g., $7.5$), it bypasses LLM inference entirely. The query is routed to the deterministic physiological validator:
-\begin{equation}
-R(q) = \text{direct\_db}
+If the query does not match obvious social/greetings checks, the system invokes a parallel, specialized Small Language Model (SLM) classification step. The system instantiates a dedicated instance of a 1.5B parameter model (specifically \texttt{qwen2.5:1.5b-instruct}) running in parallel on the local server. The SLM is prompted to classify the query's intent into one of two routing tokens as formulated in Equation \eqref{eq:routing_slm}:
+\begin{equation}\label{eq:routing_slm}
+R(q) \in \{ \text{graph\_first}, \, \text{global\_summary} \}
 \end{equation}
-which parses the boundaries and compares them mathematically against clinical reference ranges in $0\text{ms}$.
+where \texttt{graph\_first} represents specific multi-hop relationship queries (such as drug interactions, symptom-cause links, or side-effects), and \texttt{global\_summary} represents conversational greetings, social inquiries, or global RAG summaries.
+Running a parallel 1.5B classifier model drastically reduces latency. The inference time of the 1.5B model is under $1.1\text{s}$ (compared to $\approx 2.4\text{s}$ for a unified 3B model call), achieving a $54\%$ speedup. This hybrid model partitioning preserves the main, computationally expensive reasoning agent exclusively for the ReAct reasoning loops.
 
-\paragraph{2. Lightweight Parallel SLM Classifier}
-If the query does not match the rules for direct physiological check but contains complex sentence structures, the system invokes a parallel, specialized Small Language Model (SLM) classification step. The system instantiates a dedicated instance of a 1.5B parameter model (such as \texttt{qwen2.5:1.5b-instruct}) running in parallel on the local server. The SLM is prompted to classify the query's intent into one of three routing tokens:
-\begin{equation}
-R(q) \in \{ \text{direct\_db}, \, \text{graph\_first}, \, \text{global\_summary} \}
-\end{equation}
-where:
-\begin{itemize}
-    \item \texttt{direct\_db} represents quantitative clinical indicator check requests.
-    \item \texttt{graph\_first} represents specific multi-hop relationship queries (e.g., drug interactions, symptom-cause links, side-effects).
-    \item \texttt{global\_summary} represents conversational greetings, social inquiries, or global RAG summaries.
-\end{itemize}
-Running a parallel 1.5B classifier model drastically reduces latency. The inference time of the 1.5B model is under $1.1\text{s}$ (compared to $\approx 2.4\text{s}$ for a unified 8B model call), achieving a $54\%$ speedup. This hybrid model partitioning preserves the main, computationally expensive 8B reasoning agent exclusively for the ReAct reasoning loops.
+Figure \ref{fig:hybrid_intent_router} outlines the decision flow inside the Hybrid Intent Routing gateway when a patient prompt is received.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.65\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=0.8cm and 1.2cm,
+        startstop/.style={rectangle, draw=red!70!black, fill=red!5, thick, rounded corners=3pt, minimum width=2.5cm, minimum height=0.8cm, align=center, font=\small\sffamily},
+        process/.style={rectangle, draw=blue!70!black, fill=blue!5, thick, rounded corners=3pt, minimum width=3.2cm, minimum height=0.85cm, align=center, font=\small\sffamily},
+        decision/.style={diamond, draw=orange!80!black, fill=orange!8, thick, aspect=1.8, align=center, font=\small\sffamily},
+        output/.style={rectangle, draw=teal!70!black, fill=teal!5, thick, rounded corners=3pt, minimum width=2.8cm, minimum height=0.8cm, align=center, font=\small\sffamily},
+        arrow/.style={-{Stealth[scale=1.0]}, thick, draw=gray!80!black}
+    ]
+
+        % Nodes
+        \node[startstop] (input) {User Query $q$};
+        \node[process, below=of input] (classifier) {Parallel 1.5B SLM\\Intent Classifier};
+        \node[decision, below=1.0cm of classifier] (route) {Classified\\Intent?};
+        
+        \node[process, left=1.2cm of route] (social) {Social Shortcut\\(Direct response)};
+        \node[process, below=1.0cm of route] (agent) {Llama-3.2-3B ReAct\\Reasoning Agent Loop};
+        
+        \node[output, below=1.2cm of agent] (outputNode) {Streamed Response\\with Citations};
+
+        % Arrows
+        \draw[arrow] (input) -- (classifier);
+        \draw[arrow] (classifier) -- (route);
+        
+        \draw[arrow] (route) -- node[above, font=\scriptsize]{social} (social);
+        \draw[arrow] (route) -- node[left, font=\scriptsize]{graph\_first} (agent);
+        
+        \draw[arrow] (social.south) |- ++(0,-1.0) -| (outputNode.west);
+        \draw[arrow] (agent) -- (outputNode);
+
+    \end{tikzpicture}%
+    }
+    \caption{Layered architecture of the Hybrid Intent Routing gateway}
+    \label{fig:hybrid_intent_router}
+\end{figure}
+
 
 \subsection{The ReAct (Reasoning and Acting) Framework}
 
-The system utilizes the \textbf{ReAct} paradigm to simulate logical clinical reasoning \cite{yao2022react}. ReAct guides the LLM to alternate between generating cognitive thoughts (reasoning) and executing specific diagnostic functions (acting). Formally, let $x$ be the user query, and $c_i = (t_i, a_i, o_i)$ be the agent's context at step $i$, consisting of a thought $t_i$, an action $a_i$, and an observation $o_i$. The agentic execution loop is defined as:
+The system utilizes the ReAct paradigm to simulate logical clinical reasoning \cite{yao2022react}. ReAct guides the LLM to alternate between generating cognitive thoughts (reasoning) and executing specific diagnostic functions (acting). Formally, let $x$ be the user query, and $c_i = (t_i, a_i, o_i)$ be the agent's context at step $i$, consisting of a thought $t_i$, an action $a_i$, and an observation $o_i$. The agentic execution loop is defined in Equations \eqref{eq:react_thought} to \eqref{eq:react_observation}:
 \begin{align}
-t_i &\sim P_{LLM}(t \mid x, c_1, c_2, \dots, c_{i-1}) \\
-a_i &\sim P_{LLM}(a \mid x, c_1, c_2, \dots, c_{i-1}, t_i) \\
-o_i &= \text{ExecuteAction}(a_i)
+t_i &\sim P_{LLM}(t \mid x, c_1, c_2, \dots, c_{i-1}) \label{eq:react_thought} \\
+a_i &\sim P_{LLM}(a \mid x, c_1, c_2, \dots, c_{i-1}, t_i) \label{eq:react_action} \\
+o_i &= \text{ExecuteAction}(a_i) \label{eq:react_observation}
 \end{align}
-This loop continues until the LLM outputs a final answer action. In our system, the LLM has access to specialized tools, including \texttt{graphrag\_query}, \texttt{pill\_image\_lookup}, and \texttt{medical\_report\_analyzer}.
+This loop continues until the LLM outputs a final answer action. In our system, the LLM has access to specialized tools, including \texttt{graphrag\_query}, \texttt{pill\_image\_lookup}, and \texttt{medical\_calculator}.
 
 \subsection{Agent Safeguards: Loop-Guards and Format Recovery}
 
 Deploying raw LLMs in autonomous agent loops introduces engineering risks, such as infinite tool invocation loops or syntax failures in structured responses. To address these issues, the system introduces two custom safeguarding layers:
-\begin{enumerate}
-    \item \textbf{Deterministic Loop-Guard}: Tracks active tool invocations. If the agent repeats the same tool call with identical parameters more than three times, or if the total execution steps exceed a safety limit $S_{max} = 5$, the loop-guard intercepts execution, terminates the loop, and triggers a fallback node to synthesize a structured answer using the current context.
-    \item \textbf{Format-Recovery Parser}: The LLM is instructed to output its thoughts and actions in a strict JSON schema. If the LLM generates slightly malformed JSON, a regex-based parser attempts to clean and rebuild the JSON structure. If parsing still fails, the error message is fed back into the LLM as a system observation, allowing the agent to self-correct.
-\end{enumerate}
+The first layer is the deterministic loop-guard, which keeps a memory of tool signatures. At each step, the loop-guard records a 2-tuple representing the action:
+\begin{equation}\label{eq:tool_signature}
+\text{Sig}_i = (a_i, \text{normalize}(input_i))
+\end{equation}
+If the agent generates an action signature identical to the preceding step ($\text{Sig}_i == \text{Sig}_{i-1}$), indicating a redundant or repeating query loop, or if the total iterations exceed the safety threshold $S_{max} = 3$, the loop-guard intercepts control, immediately halting the cycle and executing the fallback synthesis routine $\text{FinalizeAnswer}(q, G_{context})$, which compiles all accumulated retrieval context into a final structured answer. The second layer is the format-recovery parser. The local LLM is instructed to output its reasoning using the standard ReAct format containing labels: \texttt{Thought:}, \texttt{Action:}, \texttt{Action Input:}, and \texttt{Final Answer:}. However, local LLMs frequently generate malformed labels. The parser corrects these errors through a multi-step normalization stage. First, markdown bold normalization uses regex to replace markdown-bold wrapped headers (e.g. \texttt{**Action:**} or \texttt{**Final Answer:**}) into standardized raw headers. Second, regex-based block extraction parses actions and inputs using the multiline regex:
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,breaklines=true,columns=fullflexible]
+Action\s*:\s*(.+?)\s*Action\s*Input\s*:\s*(.+?)(?=\s*(?:Observation\s*:|$))
+\end{lstlisting}
+Third, tool alias normalization translates varying generated names (e.g. \texttt{graph\_rag}, \texttt{pill\_lookup}) into valid identifiers (\texttt{graphrag\_query}, \texttt{pill\_image\_lookup}). If parsing still fails, the system executes a self-correction feedback loop, appending the exact parsing error trace as a system message in the model conversation history and requesting a regeneration. If the error persists after $2$ retries, the parser extracts a loose fallback answer from the text to ensure the session does not crash.
+
+Figure \ref{fig:react_safeguards_flow} illustrates the operational flow of the ReAct reasoning loop when executing tools, showing how malformed structures are healed and how infinite loops are avoided.
+
+\begin{figure}[H]
+\centering
+
+\begin{tikzpicture}[
+startstop/.style={
+rectangle,
+draw=red!70!black,
+fill=red!5,
+thick,
+rounded corners=3pt,
+minimum width=3.5cm,
+minimum height=0.9cm,
+align=center
+},
+process/.style={
+rectangle,
+draw=blue!70!black,
+fill=blue!5,
+thick,
+rounded corners=3pt,
+minimum width=4cm,
+minimum height=1cm,
+align=center
+},
+decision/.style={
+diamond,
+draw=orange!80!black,
+fill=orange!8,
+thick,
+aspect=2.3,
+text width=3.2cm,
+align=center
+},
+output/.style={
+rectangle,
+draw=teal!70!black,
+fill=teal!5,
+thick,
+rounded corners=3pt,
+minimum width=3.8cm,
+minimum height=0.9cm,
+align=center
+},
+arrow/.style={
+-{Stealth},
+thick
+}
+]
+
+%==================================================
+% Main column
+%==================================================
+
+\node[startstop] (start) at (0,0)
+{Start ReAct Loop};
+
+\node[process] (llm) at (0,-2)
+{LLM Generates\\Thought + Action};
+
+\node[decision] (parse) at (0,-5)
+{Valid JSON\\Schema?};
+
+\node[decision] (guard) at (0,-9)
+{Repeated Tool\\or Iteration $>3$?};
+
+\node[process] (tool) at (0,-13)
+{Execute Tool\\and Get Observation};
+
+\node[output] (answer) at (0,-17)
+{Stream Final Answer};
+
+%==================================================
+% Recovery branch
+%==================================================
+
+\node[process] (healer) at (8,-5)
+{Regex Format\\Healer};
+
+\node[decision] (healok) at (8,-9)
+{Heal\\Successful?};
+
+%==================================================
+% Termination branch
+%==================================================
+
+\node[process] (terminate) at (8,-13)
+{Loop Guard Trigger\\Force Final Synthesis};
+
+%==================================================
+% Main flow
+%==================================================
+
+\draw[arrow] (start) -- (llm);
+\draw[arrow] (llm) -- (parse);
+
+\draw[arrow]
+(parse)
+--
+node[left]{Yes}
+(guard);
+
+\draw[arrow]
+(guard)
+--
+node[left]{No}
+(tool);
+
+\draw[arrow]
+(tool.west)
+--
+++(-2,0)
+|-
+node[pos=0.3,left]
+{\scriptsize Update Context}
+(llm.west);
+
+%==================================================
+% Parse recovery
+%==================================================
+
+\draw[arrow]
+(parse.east)
+--
+node[above]{No}
+(healer.west);
+
+\draw[arrow]
+(healer)
+--
+(healok);
+
+\draw[arrow]
+(healok.west)
+-| 
+node[pos=0.25,above]
+{\scriptsize Yes}
+(guard.east);
+
+\draw[arrow]
+(healok.north)
+--
+++(0,1.2)
+-| 
+node[pos=0.25,right]
+{\scriptsize No}
+(llm.east);
+
+%==================================================
+% Loop guard
+%==================================================
+
+\draw[arrow]
+(guard.east)
+--
+node[above]
+{\scriptsize Yes}
+(terminate.west);
+
+\draw[arrow]
+(terminate.west)
+|- 
+(answer.east);
+
+\draw[arrow]
+(tool)
+--
+(answer);
+
+\end{tikzpicture}%
+}
+
+\caption{ReAct reasoning loop workflow with parser healing and loop-guard safeguards}
+\label{fig:react_safeguards_flow}
+
+\end{figure}
 
 \subsection{Stateful Dialog Orchestration and Simplified Routing}
 
-While the ReAct loop manages step-by-step tool use, coordinating the overall conversation can be modeled as a state machine. In the design phase, stateful orchestration using \textbf{LangGraph} was evaluated, representing the application as a stateful, cyclic directed graph $G_{State} = (N, E, S)$ where $N$ is a set of processing nodes, $E$ is a set of state transition edges, and $S$ is a shared state vector.
+While the ReAct loop manages step-by-step tool use, coordinating the overall conversation can be modeled as a state machine. In the design phase, stateful orchestration using LangGraph was evaluated, representing the application as a stateful, cyclic directed graph $G_{State} = (N, E, S)$ where $N$ is a set of processing nodes, $E$ is a set of state transition edges, and $S$ is a shared state vector.
 
 However, to optimize the local execution environment and eliminate the computational overhead of state transitions on consumer-grade hardware, the active implementation replaces the LangGraph state machine with a direct, unified FastAPI execution layer and a single-stage ReAct loop. This simplification halves the routing latency while keeping conversational history fully managed in a localized memory array.
 
 
-\section{Technical Infrastructure and Development Stack Justification}
+\section{Advanced Prompt Engineering Strategies}
 \label{section:3.4}
+
+To ensure the ReAct reasoning loop operates safely and accurately within the clinical domain, the system employs advanced Prompt Engineering techniques to steer the Large Language Model. The local $3$-billion parameter model (Llama-3.2-3B) requires strict conversational constraints to avoid diagnostic hallucination and formatting failures. The following techniques are integrated directly into the system's core prompts.
+
+\subsection{Role-based Prompting and Persona Assignment}
+Rather than executing free-form generation, the model is bound to a strict persona through the system prompt: \textit{``Bạn là trợ lý thông tin y tế (tiếng Việt)''} (You are a medical information assistant). Role-based prompting activates specific latent weight subspaces within the LLM that correspond to clinical terminology and professional discourse \cite{reynolds2021prompt}. By adopting this persona, the agent intrinsically adopts a cautious, analytical tone suitable for patient interaction.
+
+\subsection{Negative Prompting and Constrained Generation}
+In medical AI, generating inaccurate treatment plans can lead to severe consequences. To counteract LLM hallucination, the prompt includes explicit negative constraints (Guardrails): \textit{``Tránh chẩn đoán dứt khoát khi thiếu căn cứ''} (Avoid definitive diagnosis without evidence). This instruction forces the model to heavily rely on the extracted GraphRAG context rather than its internal parametric memory, enforcing evidence-based synthesis.
+
+\subsection{Chain-of-Thought (CoT) integration via ReAct}
+The ReAct framework fundamentally enforces Chain-of-Thought (CoT) reasoning \cite{wei2022chain}. The system prompt requires the model to generate a \texttt{Thought:} field before any \texttt{Action:} or \texttt{Final Answer:}. By forcing the model to explicitly vocalize its sub-steps (e.g., first analyzing the symptoms, then deciding to query the drug interaction tool), the system allows the $3$B SLM to achieve reasoning capabilities comparable to much larger closed-source models. The CoT step serves as an intermediate scratchpad that stabilizes the model's trajectory before tool execution.
+
+\subsection{Few-Shot Formatting and Error Steering}
+When the LLM outputs malformed ReAct tags (e.g., omitting the \texttt{Observation} line or wrapping tags in markdown), the Regex Healer intercepts the response and issues a Retry Prompt. This prompt utilizes Few-Shot Formatting by providing a strict template: \textit{``Hãy trả lời lại một trong hai: (1) Action: ... + Action Input: ... hoặc (2) Final Answer: ...''}. This explicit structural steering corrects the LLM dynamically without requiring fine-tuning, dramatically increasing the robustness of the autonomous loop.
+
+\section{Technical Infrastructure and Development Stack Justification}
+\label{section:3.5}
 
 To run the system fully offline on consumer-grade hardware while keeping latency low and data secure, the backing technologies were selected based on the following:
 
 \subsection{FastAPI Backend (Python 3.10+)}
-\begin{itemize}
-    \item \textbf{Asynchronous Concurrency}: FastAPI utilizes Python's \texttt{asyncio} and the ASGI standard, allowing it to manage thousands of concurrent, non-blocking connections, crucial for streaming NDJSON tokens from local language models.
-    \item \textbf{Automated Data Validation}: Built on Pydantic, FastAPI automatically validates incoming requests, preventing common injection attacks and ensuring type safety.
-\end{itemize}
+FastAPI was selected for the system's backend because it utilizes Python's \texttt{asyncio} and the ASGI standard, allowing it to manage thousands of concurrent, non-blocking connections, which is crucial for streaming NDJSON tokens from local language models. Additionally, being built on Pydantic, FastAPI automatically validates incoming requests, preventing common injection attacks and ensuring system-wide type safety.
 
-\subsection{Local LLM Hosting via Ollama}
-\begin{itemize}
-    \item \textbf{HIPAA and Data Privacy Compliance}: By using \textbf{Ollama} to host open-source models (such as \texttt{Llama-3.1-8B}) locally on the host's GPU/CPU, patient data never leaves the local machine. This guarantees complete privacy and eliminates external network costs or API rate limits.
-    \item \textbf{Low Latency}: Running models locally on consumer GPUs utilizing quantization (4-bit or 8-bit) provides fast inference, allowing real-time token streaming.
-\end{itemize}
+\subsection{Local LLM Hosting}
+By hosting open-source models (such as \texttt{Llama-3.2-3B}) locally on the host's GPU or CPU, patient data never leaves the local machine, guaranteeing complete privacy under HIPAA compliance guidelines and eliminating external API rate limits or network costs. Running models locally on consumer GPUs utilizing quantization (4-bit or 8-bit) provides fast inference, allowing real-time token streaming.
 
 \subsection{High-Speed Unstructured Data Extractors}
-\begin{itemize}
-    \item \textbf{PyMuPDF}: Selected for PDF parsing due to its speed and low memory footprint, parsing large medical reports significantly faster than traditional tools.
-    \item \textbf{Openpyxl}: Provides direct access to cell grids, formulas, and formatting in spreadsheets, allowing the system to extract tabular data (such as lab results) effectively.
-\end{itemize}
+To extract clinical guidelines and patient laboratory worksheets fully offline, the system integrates localized document parsing modules. The PyMuPDF library is employed for high-speed parsing of PDF files (medical guidelines, lab report scans), scanning document streams asynchronously, extracting plain text blocks, and segmenting layout sections. This approach is orders of magnitude faster and consumes less VRAM than OCR or vision-based PDF extractors. The Openpyxl library is utilized for processing Excel worksheets, directly accessing cell grids, formulas, and numeric formatting, which allows the record parsing engine to extract structured tabular laboratory data (such as panels of AST, ALT, Glucose, Creatinine) by matching column headers.
+
+\subsection{Localized Clinical Calculators and Physiological Evaluation}
+
+To guarantee absolute mathematical accuracy for routine patient diagnostic evaluations, the system decouples clinical calculations from generative language models. The system exposes deterministic, rule-based calculator endpoints for two primary clinical metrics:
+
+\paragraph{1. Body Mass Index (BMI)}
+The BMI calculator computes the patient's body mass index using the metric formulation in Equation \eqref{eq:bmi_equation}:
+\begin{equation}\label{eq:bmi_equation}
+BMI = \frac{W}{\left(\frac{H}{100}\right)^2}
+\end{equation}
+where $W$ is the patient's weight in kilograms and $H$ is the height in centimeters. The computed index is categorized into risk groups based on the World Health Organization (WHO) clinical classification: underweight ($BMI < 18.5\,\text{kg/m}^2$), normal weight ($18.5 \le BMI < 25.0\,\text{kg/m}^2$), overweight or pre-obese ($25.0 \le BMI < 30.0\,\text{kg/m}^2$), and obese ($BMI \ge 30.0\,\text{kg/m}^2$).
+
+\paragraph{2. Estimated Glomerular Filtration Rate (eGFR)}
+The kidney filtration performance is evaluated using the Cockcroft-Gault formula, which estimates creatinine clearance as a proxy for eGFR. The mathematical formulation is defined in Equation \eqref{eq:egfr_equation}:
+\begin{equation}\label{eq:egfr_equation}
+eGFR_{CG} = \frac{(140 - A) \times W}{72 \times Cr} \times \alpha
+\end{equation}
+where $A$ is the patient's age in years, $W$ is the body weight in kilograms, $Cr$ is the serum creatinine concentration in mg/dL, and $\alpha$ is a gender scaling factor:
+\begin{equation}\label{eq:egfr_gender_factor}
+\alpha = \begin{cases}
+1.0 & \text{if male} \\
+0.85 & \text{if female}
+\end{cases}
+\end{equation}
+The estimated clearance rate (mL/min) is then mapped to Chronic Kidney Disease (CKD) stages to guide medication dosage warnings: Stage 1 (G1) represents normal or high kidney function ($eGFR \ge 90\,\text{mL/min}$); Stage 2 (G2) represents mildly decreased function ($60 \le eGFR < 90\,\text{mL/min}$); Stage 3 (G3) represents moderately decreased function ($30 \le eGFR < 60\,\text{mL/min}$); Stage 4 (G4) represents severely decreased function with high risk of drug accumulation ($15 \le eGFR < 30\,\text{mL/min}$); and Stage 5 (G5) represents kidney failure or end-stage renal disease ($eGFR < 15\,\text{mL/min}$).
 
 \end{document}

@@ -144,7 +144,7 @@ def build_synthesize_node():
             synth_basename: str | None = DEFAULT_AGENT_MERGED_PROMPT
         else:
             synth_basename = SOCIAL_TURN_PROMPT if route == "social" else None
-        ollama_model = state.get("ollama_model") or "llama3.1:8b"
+        ollama_model = state.get("ollama_model") or "llama3.2:3b"
         ollama_host = state.get("ollama_host") or "http://localhost:11434"
         timeout = int(state.get("ollama_timeout") or 120)
         try:

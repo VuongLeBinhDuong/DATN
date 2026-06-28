@@ -58,14 +58,14 @@ class TestOllamaEndpoints:
         """Test /api/ollama/health when Ollama is available."""
         mock_backend = MagicMock()
         mock_backend.is_available.return_value = True
-        mock_backend.list_models.return_value = ["llama3.1:8b", "phi4:latest"]
+        mock_backend.list_models.return_value = ["llama3.2:3b", "phi4:latest"]
         
         with patch("api.routes.ollama.OllamaBackend", return_value=mock_backend):
             response = client.get("/api/ollama/health")
             assert response.status_code == 200
             data = response.json()
             assert data["model_available"] is True
-            assert "llama3.1:8b" in data["models"]
+            assert "llama3.2:3b" in data["models"]
 
     def test_ollama_health_unavailable(self, client):
         """Test /api/ollama/health when Ollama is down."""
@@ -84,12 +84,12 @@ class TestOllamaEndpoints:
         with patch("api.routes.ollama.OllamaBackend", return_value=mock_backend):
             response = client.post(
                 "/api/ollama/chat",
-                json={"message": "Hello", "model": "llama3.1:8b", "temperature": 0.7}
+                json={"message": "Hello", "model": "llama3.2:3b", "temperature": 0.7}
             )
             assert response.status_code == 200
             data = response.json()
             assert data["message"] == "Response from Ollama"
-            assert data["model"] == "llama3.1:8b"
+            assert data["model"] == "llama3.2:3b"
 
 
 class TestGraphRAGEndpoints:
@@ -204,6 +204,54 @@ class TestAgentEndpoints:
                 data = response.json()
                 assert data["answer"] == "Direct Answer"
                 assert data["sources"] == [{"title": "Source 1", "link": None, "source": None, "score": 0.9}]
+
+    def test_api_medical_calculator_bmi(self, client):
+        """Test POST /api/tools/medical-calculator for BMI."""
+        with patch("agent.react.tools.run_medical_calculator_tool") as mock_calc:
+            mock_calc.return_value = "BMI calculation result"
+            
+            response = client.post(
+                "/api/tools/medical-calculator",
+                json={
+                    "type": "bmi",
+                    "weight": 70,
+                    "height": 175
+                }
+            )
+            assert response.status_code == 200
+            assert response.json()["result"] == "BMI calculation result"
+
+    def test_api_medical_calculator_egfr(self, client):
+        """Test POST /api/tools/medical-calculator for eGFR."""
+        with patch("agent.react.tools.run_medical_calculator_tool") as mock_calc:
+            mock_calc.return_value = "eGFR calculation result"
+            
+            response = client.post(
+                "/api/tools/medical-calculator",
+                json={
+                    "type": "egfr",
+                    "age": 60,
+                    "weight": 70,
+                    "creatinine": 1.2,
+                    "gender": "male"
+                }
+            )
+            assert response.status_code == 200
+            assert response.json()["result"] == "eGFR calculation result"
+
+    def test_api_drug_interaction(self, client):
+        """Test POST /api/tools/drug-interaction."""
+        with patch("agent.react.tools.run_drug_interaction_checker_tool") as mock_checker:
+            mock_checker.return_value = "Drug interaction check result"
+            
+            response = client.post(
+                "/api/tools/drug-interaction",
+                json={
+                    "drugs": ["metformin", "aspirin"]
+                }
+            )
+            assert response.status_code == 200
+            assert response.json()["result"] == "Drug interaction check result"
 
 
 class TestRateLimiting:

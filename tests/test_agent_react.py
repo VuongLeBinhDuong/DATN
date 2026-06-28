@@ -97,9 +97,11 @@ class TestReActAgent:
 
     def test_init_default_values(self):
         """Test initialization with default settings."""
+        from core.settings import get_settings
+        settings = get_settings()
         agent = ReActAgent()
-        assert agent.max_iterations == 3
-        assert agent.parse_retries == 2
+        assert agent.max_iterations == settings.agent.react_max_iter
+        assert agent.parse_retries == settings.agent.react_parse_retries
         assert agent.parser is not None
 
     def test_init_custom_values(self):
@@ -247,3 +249,73 @@ class TestReActTools:
         res_female = run_medical_calculator_tool(input_data_female)
         assert "eGFR (Cockcroft-Gault): 51.6" in res_female
         assert "Giai đoạn 3" in res_female
+
+    def test_drug_interaction_checker_tool(self):
+        """Test drug_interaction_checker tool."""
+        from agent.react.tools import run_drug_interaction_checker_tool
+        
+        mock_client_inst = MagicMock()
+        mock_client_inst.search_entities_fulltext.side_effect = [
+            [{"entity_id": "metformin", "canonical_name": "Metformin", "type": "DRUG"}],
+            [{"entity_id": "aspirin", "canonical_name": "Aspirin", "type": "DRUG"}]
+        ]
+        mock_client_inst.find_paths_between_entities.return_value = {
+            "entities": [
+                {"entity_id": "metformin", "canonical_name": "Metformin", "type": "DRUG"},
+                {"entity_id": "aspirin", "canonical_name": "Aspirin", "type": "DRUG"}
+            ],
+            "edges": [
+                {
+                    "subject_entity_id": "metformin",
+                    "object_entity_id": "aspirin",
+                    "predicate": "INTERACTS_WITH",
+                    "confidence": 0.85,
+                    "evidence_chunk_id": "chunk_123"
+                }
+            ]
+        }
+        mock_client_inst.fetch_chunks_by_ids.return_value = [
+            {"chunk_id": "chunk_123", "text": "Metformin should be used with caution when taken with aspirin."}
+        ]
+        
+        with patch("kg.neo4j_client.Neo4jKGClient", return_value=mock_client_inst):
+            input_data = '{"drugs": ["metformin", "aspirin"]}'
+            res = run_drug_interaction_checker_tool(input_data)
+            assert "KẾT QUẢ TRA CỨU TƯƠNG TÁC THUỐC" in res
+            assert "Metformin" in res
+            assert "Aspirin" in res
+            assert "Tương tác với" in res
+            assert "Metformin should be used with caution" in res
+
+
+class TestReActStreamBuffer:
+    """Test cases for ReActStreamBuffer stream filtering."""
+
+    def test_buffer_no_final_answer(self):
+        from agent.react.stream_buffer import ReActStreamBuffer
+        buf = ReActStreamBuffer()
+        
+        events = buf.feed("Thought: I need to check the patient. ")
+        assert all(e["event"] == "reasoning_delta" for e in events)
+        
+        events_end = buf.finalize()
+        assert len(events_end) == 1
+        assert events_end[0]["event"] == "reasoning_delta"
+        assert "check the patient." in events_end[0]["text"]
+
+    def test_buffer_with_final_answer(self):
+        from agent.react.stream_buffer import ReActStreamBuffer
+        buf = ReActStreamBuffer()
+        
+        events1 = buf.feed("Thought: I know the answer now. Final Answer: ")
+        event_types = [e["event"] for e in events1]
+        assert "reasoning_end" in event_types
+        assert "answer_start" in event_types
+        assert buf.has_final_answer is True
+        
+        events2 = buf.feed("The capital of France is Paris.")
+        assert len(events2) == 0
+        
+        events3 = buf.finalize()
+        assert len(events3) == 0
+

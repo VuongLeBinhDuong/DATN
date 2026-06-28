@@ -9,20 +9,14 @@ This chapter presents the system design, implementation details, and evaluation 
 \subsection{Software architecture selection}
 \label{subsection:4.1.1}
 
-The system adopts a \textbf{Clean Layered Architecture} pattern, which strictly separates concerns across four distinct horizontal layers. This architecture was selected over alternative patterns (e.g., monolithic MVC or microservices) because it provides a clear dependency rule — each inner layer does not know about outer layers — which is essential when integrating multiple heterogeneous backends such as a graph database, a local LLM runtime, and a document parser.
+The system adopts a Clean Layered Architecture pattern, which strictly separates concerns across four distinct horizontal layers. This architecture was selected over alternative patterns (e.g., monolithic MVC or microservices) because it provides a clear dependency rule — each inner layer does not know about outer layers — which is essential when integrating multiple heterogeneous backends such as a graph database, a local LLM runtime, and a document parser.
 
-The four layers are:
-\begin{itemize}
-    \item \textbf{Presentation Layer}: The \texttt{api/} and \texttt{web\_ui/} modules. Responsible for HTTP routing, request validation via Pydantic, streamed NDJSON responses, and serving the browser-based user interface.
-    \item \textbf{Business Logic Layer}: The \texttt{services/}, \texttt{agent/}, and \texttt{medical\_records/} modules. Orchestrates the ReAct agent loop, medical file analysis pipeline, and medication reminder management.
-    \item \textbf{Data Access Layer}: The \texttt{repositories/} and \texttt{llm\_pipeline/} modules. Abstracts all data queries behind repository interfaces and manages Cypher queries to Neo4j and prompt formatting to Ollama.
-    \item \textbf{Infrastructure Layer}: The \texttt{core/}, \texttt{config/}, \texttt{docker/}, and \texttt{deploy/} modules. Manages settings injection, connection pooling, and container orchestration.
-\end{itemize}
+The four layers are defined as follows. First, the Presentation Layer includes the \texttt{api/} and \texttt{web\_ui/} modules, which are responsible for HTTP routing, request validation via Pydantic, streamed NDJSON responses, and serving the browser-based user interface. Second, the Business Logic Layer includes the \texttt{services/}, \texttt{agent/}, and \texttt{medical\_records/} modules, which orchestrate the ReAct agent loop, medical file analysis pipeline, and medication reminder management. Third, the Data Access Layer includes the \texttt{repositories/} and \texttt{llm\_pipeline/} modules, which abstract all data queries behind repository interfaces and manage Cypher queries to Neo4j and prompt formatting to Ollama. Fourth, the Infrastructure Layer includes the \texttt{core/} and \texttt{config/} modules, which manage settings injection, connection pooling, and database container management.
 
 \subsection{Overall design}
 \label{subsection:4.1.2}
 
-The UML package dependency diagram of the system is structured as follows, with dependency arrows indicating which packages reference others:
+The UML package dependency diagram of the system is structured as shown in Figure \ref{fig:overall_package_design}, with dependency arrows indicating which packages reference others:
 
 
 At runtime, the system is organized around a closed evidence loop: user input is classified, routed to the most appropriate retrieval strategy, grounded by Neo4j and local document evidence, and then streamed back to the browser with traceable reasoning steps. Figure \ref{fig:runtime_cdss_pipeline} provides the operational flow used by the implemented CDSS prototype.
@@ -40,9 +34,8 @@ At runtime, the system is organized around a closed evidence loop: user input is
         \node[flowstep] (ui) {Web UI\\question or file};
         \node[flowstep, right=of ui] (api) {FastAPI\\validation};
         \node[decision, right=of api] (router) {Intent\\router};
-        \node[flowstep, above right=0.65cm and 1.1cm of router] (direct) {Direct DB\\lab comparison};
-        \node[flowstep, right=1.55cm of router] (agent) {ReAct agent\\reasoning loop};
-        \node[flowstep, below right=0.65cm and 1.1cm of router] (record) {Medical record\\parser};
+        \node[flowstep, above right=0.3cm and 1.2cm of router] (agent) {ReAct agent\\reasoning loop};
+        \node[flowstep, below right=0.3cm and 1.2cm of router] (record) {Medical record\\parser};
         \node[data, right=1.1cm of agent] (neo4j) {Neo4j\\clinical KG};
         \node[data, below=0.7cm of neo4j] (ollama) {Ollama\\local LLMs};
         \node[flowstep, right=1.1cm of neo4j] (evidence) {Evidence pack\\subgraph + chunks};
@@ -50,14 +43,12 @@ At runtime, the system is organized around a closed evidence loop: user input is
 
         \draw[arrow] (ui) -- (api);
         \draw[arrow] (api) -- (router);
-        \draw[arrow] (router) -- node[above, font=\scriptsize]{numeric query} (direct);
-        \draw[arrow] (router) -- node[above, font=\scriptsize]{clinical QA} (agent);
-        \draw[arrow] (router) -- node[below, font=\scriptsize]{uploaded file} (record);
+        \draw[arrow] (router) -- node[above, sloped, font=\scriptsize]{clinical QA} (agent);
+        \draw[arrow] (router) -- node[below, sloped, font=\scriptsize]{uploaded file} (record);
         \draw[arrow] (agent) -- (neo4j);
         \draw[arrow] (agent) -- (ollama);
         \draw[arrow] (neo4j) -- (evidence);
         \draw[arrow] (ollama) -- (evidence);
-        \draw[arrow] (direct.east) -| (evidence.north);
         \draw[arrow] (record.east) -| (evidence.south);
         \draw[arrow] (evidence) -- (stream);
         \draw[arrow] (stream.south) |- ++(0,-0.75) -| (ui.south);
@@ -202,13 +193,208 @@ Figure \ref{fig:overall_package_design} summarizes the package-level dependency 
 \subsection{Detailed package design}
 \label{subsection:4.1.3}
 
-The central class relationships within the Business Logic layer are:
+The central class relationships within the Business Logic layer are defined as follows: the \texttt{AgentService} (in \nolinkurl{services/agent_service.py}) holds a reference to the \texttt{ReActAgent} (composition), delegating \texttt{execute()} calls to the agent and wrapping the result into a standardized API response model; the \texttt{ReActAgent} (in \nolinkurl{agent/react/agent.py}) depends on the \texttt{ReActParser} (for output parsing), the \texttt{OllamaBackend} (for LLM calls), and tool functions such as \nolinkurl{run_graphrag_tool}, \nolinkurl{run_pill_image_tool}, and \nolinkurl{run_medical_calculator_tool}, implementing both the \texttt{run\_sync()} and \texttt{run\_stream()} execution paths; and the \texttt{MedicalRecordService} (in \texttt{services/}) depends on \nolinkurl{analyze_medical_file()} from \nolinkurl{medical_records/analyze.py}, which in turn composes the functions \nolinkurl{extract_text_from_record()}, \nolinkurl{compare_extracted_report_on_form()}, \nolinkurl{fetch_graphrag_context()}, and \nolinkurl{enrich_suggested_medications_with_pill_images()}.
 
-\begin{itemize}
-    \item \texttt{AgentService} (in \nolinkurl{services/agent_service.py}) holds a reference to \texttt{ReActAgent} (composition). It delegates \texttt{execute()} calls to the agent and wraps the result into a standardized API response model.
-    \item \texttt{ReActAgent} (in \nolinkurl{agent/react/agent.py}) depends on \texttt{ReActParser} (for output parsing), \texttt{OllamaBackend} (for LLM calls), and tool functions \nolinkurl{run_graphrag_tool} and \nolinkurl{run_pill_image_tool}. It implements two execution paths: \texttt{run\_sync()} and \texttt{run\_stream()}.
-    \item \texttt{MedicalRecordService} (in \texttt{services/}) depends on \nolinkurl{analyze_medical_file()} from \nolinkurl{medical_records/analyze.py}, which in turn composes \nolinkurl{extract_text_from_record()}, \nolinkurl{compare_extracted_report_on_form()}, \nolinkurl{fetch_graphrag_context()}, and \nolinkurl{enrich_suggested_medications_with_pill_images()}.
-\end{itemize}
+Figure \ref{fig:uml_class_diagram} outlines the UML class diagram representing these core business logic services, agents, and local language model interfaces.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=1.5cm and 1.2cm,
+        classbox/.style={
+            scale=0.67,
+            transform shape,
+            rectangle, 
+            draw=blue!70!black, 
+            fill=blue!5, 
+            thick, 
+            rounded corners=2pt, 
+            inner sep=4pt,
+            align=left
+        },
+        arrow/.style={-{Stealth[scale=1.0]}, thick, draw=gray!80!black},
+        composition/.style={{Diamond[scale=1.2]}-, thick, draw=gray!80!black},
+        inheritance/.style={-{Triangle[open, scale=1.2]}, thick, draw=gray!80!black},
+        dependency/.style={-{Stealth[scale=1.0]}, dashed, thick, draw=gray!80!black}
+    ]
+
+        % AgentService Class
+        \node[classbox] (agentService) at (0,0) {
+            \begin{tabular}{l}
+                \multicolumn{1}{c}{\textbf{AgentService}} \\
+                \hline
+                - settings: Settings \\
+                - llm: LLMBackend \\
+                \hline
+                + execute(message: str, ...) : dict \\
+                + execute\_stream(message: str, ...) : Iterator
+            \end{tabular}
+        };
+
+        % ReActAgent Class
+        \node[classbox] (reactAgent) at (6.0,0) {
+            \begin{tabular}{l}
+                \multicolumn{1}{c}{\textbf{ReActAgent}} \\
+                \hline
+                - llm\_backend: LLMBackend \\
+                - max\_iterations: int \\
+                - parse\_retries: int \\
+                \hline
+                + run\_sync(message: str, ...) : dict \\
+                + run\_stream(message: str, ...) : Iterator
+            \end{tabular}
+        };
+
+        % ReActParser Class
+        \node[classbox] (reactParser) at (12.0,0) {
+            \begin{tabular}{l}
+                \multicolumn{1}{c}{\textbf{ReActParser}} \\
+                \hline
+                + parse(text: str) : ReActParseResult \\
+                + extract\_action(text: str) : dict \\
+                + clean\_json(text: str) : str
+            \end{tabular}
+        };
+
+        % MedicalRecordService Class
+        \node[classbox] (medService) at (0,-3.8) {
+            \begin{tabular}{l}
+                \multicolumn{1}{c}{\textbf{MedicalRecordService}} \\
+                \hline
+                - settings: Settings \\
+                - db: Neo4jConnection \\
+                \hline
+                + analyze\_record(file\_path: str) : dict \\
+                + get\_history(user\_id: str) : list
+            \end{tabular}
+        };
+
+        % LLMBackend Interface
+        \node[classbox] (llmBackend) at (6.0,-3.8) {
+            \begin{tabular}{l}
+                \multicolumn{1}{c}{\textit{\textbf{LLMBackend}}} \\
+                \hline
+                + chat(prompt: str, ...) : str \\
+                + chat\_stream(messages: list, ...) : Iterator \\
+                + is\_available() : bool
+            \end{tabular}
+        };
+
+        % OllamaBackend Class
+        \node[classbox] (ollamaBackend) at (3.2,-7.6) {
+            \begin{tabular}{l}
+                \multicolumn{1}{c}{\textbf{OllamaBackend}} \\
+                \hline
+                - model\_name: str \\
+                - base\_url: str \\
+                \hline
+                + chat(prompt: str, ...) : str \\
+                + chat\_stream(messages: list, ...) : Iterator
+            \end{tabular}
+        };
+
+        % OpenRouterBackend Class
+        \node[classbox] (openrouterBackend) at (8.8,-7.6) {
+            \begin{tabular}{l}
+                \multicolumn{1}{c}{\textbf{OpenRouterBackend}} \\
+                \hline
+                - api\_key: str \\
+                - base\_url: str \\
+                \hline
+                + chat(prompt: str, ...) : str \\
+                + chat\_stream(messages: list, ...) : Iterator
+            \end{tabular}
+        };
+
+        % Relationships
+        \draw[composition] (agentService) -- (reactAgent);
+        \draw[composition] (reactAgent) -- (reactParser);
+        \draw[dependency] (agentService) -- (llmBackend);
+        \draw[dependency] (reactAgent) -- (llmBackend);
+        \draw[dependency] (medService) -- (llmBackend);
+        \draw[inheritance] (ollamaBackend) -- (llmBackend);
+        \draw[inheritance] (openrouterBackend) -- (llmBackend);
+
+    \end{tikzpicture}%
+    }
+    \caption{UML Class Diagram of core business services and agent components}
+    \label{fig:uml_class_diagram}
+\end{figure}
+
+This design decoupling allows the system to remain flexible and deployable across varying computing resource environments. Specifically, the \texttt{OllamaBackend} connects to a locally hosted Ollama server (defaulting to \texttt{http://localhost:11434}), ensuring compliance with data privacy regulations and eliminating network transaction costs by running LLM inference locally. Alternatively, the \texttt{OpenRouterBackend} connects to the cloud-based OpenRouter API, providing compatibility with proprietary or large-scale language models (such as GPT-4 or Claude) when high reasoning capacity is needed or local GPU resources are constrained.
+
+At runtime, the selection is managed dynamically by the backend setting factory \nolinkurl{get\_llm\_backend()}. If the environment parameter \texttt{LLM\_BACKEND} is set to \texttt{"openrouter"} and a valid \texttt{OPENROUTER\_API\_KEY} is configured, the system routes all agent consultation requests to the OpenRouter gateway. To ensure system resilience, the factory implements an automatic fallback mechanism: if OpenRouter initialization fails due to missing keys or configuration issues, the engine logs a warning and automatically falls back to the local \texttt{OllamaBackend} runtime, preventing application downtime.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.98\textwidth}{!}{%
+    \begin{tikzpicture}[
+        scale=0.9,
+        transform shape,
+        lifeline/.style={draw, dashed, thick, black!40},
+        entity/.style={rectangle, draw=blue!70!black, fill=blue!5, thick, rounded corners=3pt, minimum width=2.2cm, minimum height=0.8cm, align=center, font=\small\sffamily},
+        activeBox/.style={rectangle, draw=gray!70!black, fill=gray!20, minimum width=0.3cm},
+        arrow/.style={-{Stealth[scale=1.0]}, thick, draw=gray!80!black, font=\scriptsize\sffamily},
+        replyArrow/.style={-{Stealth[scale=1.0]}, dashed, thick, draw=gray!80!black, font=\scriptsize\sffamily},
+        loopBox/.style={rectangle, draw=orange!80!black, fill=orange!5, fill opacity=0.15, dashed, thick, rounded corners=3pt}
+    ]
+        % Participant nodes
+        \node[entity, fill=red!10, draw=red!70!black] (ui) at (0,0) {User / Web UI};
+        \node[entity, fill=blue!10, draw=blue!70!black] (agent) at (3.5,0) {ReActAgent};
+        \node[entity, fill=orange!10, draw=orange!70!black] (parser) at (7,0) {Parser \& Guard};
+        \node[entity, fill=purple!10, draw=purple!70!black] (ollama) at (10.5,0) {Ollama Backend};
+        \node[entity, fill=teal!10, draw=teal!70!black] (tools) at (14,0) {Clinical Tools};
+
+        % Lifelines
+        \draw[lifeline] (ui.south) -- (0,-9.5);
+        \draw[lifeline] (agent.south) -- (3.5,-9.5);
+        \draw[lifeline] (parser.south) -- (7,-9.5);
+        \draw[lifeline] (ollama.south) -- (10.5,-9.5);
+        \draw[lifeline] (tools.south) -- (14,-9.5);
+
+        % Execution steps
+        % Step 1: User sends query
+        \draw[arrow] (0,-1) -- node[above] {execute\_stream(query)} (3.5,-1);
+        \draw[activeBox] (3.35,-1) rectangle (3.65,-9.0);
+        
+        % Loop boundary
+        \node[draw=orange!80!black, fill=orange!5, fill opacity=0.1, anchor=north west, minimum width=14.8cm, minimum height=7.2cm, font=\scriptsize\sffamily\bfseries] at (-0.4,-1.4) {Loop (up to 3 iterations)};
+        
+        % Step 2: Agent calls Ollama
+        \draw[arrow] (3.5,-2) -- node[above] {generate\_thought\_action()} (10.5,-2);
+        \draw[activeBox] (10.35,-2) rectangle (10.65,-2.8);
+        \draw[replyArrow] (10.5,-2.8) -- node[above] {raw\_text (malformed)} (3.5,-2.8);
+        
+        % Step 3: Agent calls Parser
+        \draw[arrow] (3.5,-3.4) -- node[above] {parse(text)} (7,-3.4);
+        \draw[activeBox] (6.85,-3.4) rectangle (7.15,-4.4);
+        % Self-healing inside Parser
+        \draw[arrow] (7.15,-3.7) -- ++(0.6,0) -- node[right, align=left] {Regex Healer:\\Restore JSON} ++(0,-0.6) -- (7.15,-4.3);
+        \draw[replyArrow] (7,-4.4) -- node[above] {Action, Input} (3.5,-4.4);
+        
+        % Step 4: Loop Guard Check
+        \draw[arrow] (3.5,-5.0) -- node[above] {check\_signature()} (7,-5.0);
+        \draw[activeBox] (6.85,-5.0) rectangle (7.15,-5.6);
+        \draw[replyArrow] (7,-5.6) -- node[above] {OK (No loop detected)} (3.5,-5.6);
+        
+        % Step 5: Execute Tool
+        \draw[arrow] (3.5,-6.2) -- node[above] {execute\_tool(input)} (14,-6.2);
+        \draw[activeBox] (13.85,-6.2) rectangle (14.15,-7.0);
+        \draw[replyArrow] (14,-7.0) -- node[above] {Observation (clinical facts)} (3.5,-7.0);
+        
+        % Step 6: Stream progress update to UI
+        \draw[replyArrow] (3.5,-7.6) -- node[above] {stream\_progress(thought, observation)} (0,-7.6);
+        
+        % Step 7: Final Answer
+        \draw[arrow] (3.5,-8.4) -- node[above] {stream\_final\_answer()} (0,-8.4);
+        
+    \end{tikzpicture}%
+    }
+    \caption{Sequence diagram illustrating the safeguarded ReAct reasoning loop with parsing format healer and loop-guard checks}
+    \label{fig:react_safeguards_sequence_diagram}
+\end{figure}
+
 
 \section{Detailed design}
 \label{section:4.2}
@@ -218,81 +404,11 @@ The central class relationships within the Business Logic layer are:
 
 The Web UI targets standard desktop browsers (Chrome, Firefox, Edge) at a minimum resolution of $1280 \times 720$ pixels. The design follows a dark-themed, high-contrast palette with HSL-based color tokens, reducing eye strain during extended clinical readings.
 
-Key interface conventions:
-\begin{itemize}
-    \item \textbf{Agent Chat Panel}: Displays the user's message on the right and the agent's streamed response on the left, with active \textit{Thinking...} spinners during tool execution and collapsible source-citation blocks below each answer.
-    \item \textbf{Document Upload Panel}: An upload drop-zone with real-time progress feedback. After analysis, a two-column layout renders the raw extracted text on the left and the benchmark table (with color-coded indicators for normal/below/above reference) on the right.
-    \item \textbf{Pill Cards}: Inline visual cards rendered inside agent responses whenever a drug name is identified, showing the pill's image, name, and dosage form.
-    \item \textbf{Reminder Calendar}: A weekly schedule grid where each medication intake slot is shown as a colored time block with a notification alarm badge.
-\end{itemize}
-
+Key interface conventions are defined to ensure a consistent user experience. The Agent Chat Panel displays the user's message on the right and the agent's streamed response on the left, with active \textit{Thinking...} spinners during tool execution and collapsible source-citation blocks below each answer. The Document Upload Panel consists of an upload drop-zone with real-time progress feedback, where a two-column layout renders the raw extracted text on the left and the benchmark table (with color-coded indicators for normal, below, or above reference bounds) on the right. The Pill Cards are inline visual cards rendered inside agent responses whenever a drug name is identified, showing the pill's image, name, and dosage form. The Reminder Calendar presents a weekly schedule grid where each medication intake slot is shown as a colored time block with a notification alarm badge.
 \subsection{Layer design}
 \label{subsection:4.2.2}
 
-The interaction between the components for the core UC-01 (Consult Medical Agent) is modeled in the following sequence:
-
-\begin{figure}[htbp]
-\centering
-\resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[
-    actor/.style={rectangle, draw=blue!70!black, fill=blue!6, thick, rounded corners=4pt, minimum width=2.7cm, minimum height=0.9cm, align=center, font=\small\sffamily},
-    service/.style={rectangle, draw=teal!75!black, fill=teal!6, thick, rounded corners=4pt, minimum width=2.9cm, minimum height=0.9cm, align=center, font=\small\sffamily},
-    backend/.style={rectangle, draw=purple!75!black, fill=purple!6, thick, rounded corners=4pt, minimum width=2.9cm, minimum height=0.9cm, align=center, font=\small\sffamily},
-    event/.style={rectangle, draw=orange!75!black, fill=orange!7, thick, rounded corners=3pt, minimum width=3.3cm, minimum height=0.65cm, align=center, font=\scriptsize\sffamily},
-    stream/.style={rectangle, draw=green!55!black, fill=green!7, thick, rounded corners=3pt, minimum width=3.0cm, minimum height=0.65cm, align=center, font=\scriptsize\sffamily},
-    arrow/.style={-{Stealth[scale=1.0]}, thick, draw=gray!85!black},
-    dashedarrow/.style={-{Stealth[scale=1.0]}, thick, dashed, draw=gray!75!black},
-    life/.style={draw=gray!55, dashed, thick},
-    labelstyle/.style={font=\scriptsize\ttfamily, fill=white, inner sep=1.5pt, align=center}
-]
-
-    \node[actor] (ui) at (0,0) {\textbf{Web UI}\\\scriptsize chat panel};
-    \node[service] (route) at (3.4,0) {\textbf{Agent route}\\\scriptsize request validation};
-    \node[service] (svc) at (6.8,0) {\textbf{AgentService}\\\scriptsize stream adapter};
-    \node[service] (react) at (10.2,0) {\textbf{ReActAgent}\\\scriptsize reasoning loop};
-    \node[backend] (tool) at (13.6,0) {\textbf{GraphRAG tool}\\\scriptsize Neo4j retrieval};
-    \node[backend] (llm) at (17.0,0) {\textbf{Ollama LLM}\\\scriptsize action / answer};
-
-    \foreach \x in {ui,route,svc,react,tool,llm} {
-        \draw[life] (\x.south) -- ++(0,-7.5);
-    }
-
-    \node[event] (req) at (1.7,-1.0) {clinical question};
-    \node[event] (openstream) at (5.1,-1.8) {open NDJSON stream};
-    \node[event] (prompt1) at (13.6,-2.6) {Iteration 1: Thought + Action};
-    \node[event] (obs) at (11.9,-3.7) {Observation: ranked chunks + paths};
-    \node[event] (prompt2) at (13.6,-4.8) {Iteration 2: evidence-grounded answer};
-    \node[stream] (chunk) at (5.1,-5.9) {stream chunks: reasoning, answer, sources};
-    \node[stream] (done) at (1.7,-6.9) {done event renders final message};
-
-    \draw[arrow] (ui.south) -- ++(0,-1.0) -- node[labelstyle, above] {POST /api/agent-query/stream} (req.west);
-    \draw[arrow] (req.east) -- (route |- req.east);
-    \draw[arrow] (route |- openstream.west) -- node[labelstyle, above] {execute\_stream()} (openstream.west);
-    \draw[arrow] (openstream.east) -- (svc |- openstream.east);
-    \draw[arrow] (svc |- prompt1.west) -- node[labelstyle, above] {run\_stream()} (react |- prompt1.west);
-    \draw[arrow] (react |- prompt1.west) -- node[labelstyle, above] {LLM call} (llm |- prompt1.east);
-    \draw[arrow] (llm |- prompt1.east) -- node[labelstyle, above] {Action: graphrag\_query} (tool |- prompt1.east);
-    \draw[arrow] (tool |- obs.east) -- node[labelstyle, above] {Cypher result} (obs.east);
-    \draw[arrow] (obs.west) -- (react |- obs.west);
-    \draw[arrow] (react |- prompt2.west) -- node[labelstyle, above] {context + scratchpad} (llm |- prompt2.east);
-    \draw[dashedarrow] (llm |- chunk.east) -- node[labelstyle, above] {token events} (chunk.east);
-    \draw[dashedarrow] (chunk.west) -- (ui |- chunk.west);
-    \draw[dashedarrow] (svc |- done.east) -- node[labelstyle, above] {final NDJSON event} (done.east);
-    \draw[dashedarrow] (done.west) -- (ui |- done.west);
-
-    \begin{scope}[on background layer]
-        \node[draw=blue!25, fill=blue!2, rounded corners=6pt, inner sep=8pt, fit=(req) (openstream)] {};
-        \node[draw=orange!35, fill=orange!2, rounded corners=6pt, inner sep=8pt, fit=(prompt1) (obs)] {};
-        \node[draw=green!35!black, fill=green!2, rounded corners=6pt, inner sep=8pt, fit=(prompt2) (chunk) (done)] {};
-    \end{scope}
-
-\end{tikzpicture}%
-}
-\caption{Agent query execution and streaming flow}
-\label{fig:agent_stream_flow}
-\end{figure}
-
-Figure \ref{fig:agent_stream_flow} illustrates how each agent iteration alternates between tool execution and streamed response generation. The \texttt{ReActParser} validates each LLM output string against expected tag patterns (\texttt{Action:}, \texttt{Action Input:}, \texttt{Final Answer:}). If parsing fails, the recovery mechanism is triggered before yielding an error event.
+The interaction between the components at the module layer is governed by a set of dynamic sequence loops. All detailed sequence diagrams describing system transactions, including streaming reasoning consultation, clinical document parsing, drug lookup, and schedule reminder activations, are detailed in Chapter 2 (under Section \ref{section:2.3} Functional Description) to maintain structural requirement consistency.
 
 \subsection{Database design}
 \label{subsection:4.2.3}
@@ -335,6 +451,149 @@ Table \ref{table:neo4j_nodes} defines the three persistent node categories used 
 
 Table \ref{table:neo4j_rels} lists the relationship types that connect those nodes into retrievable evidence paths. Supported \texttt{predicate} values in \texttt{REL} edges are canonicalized by \texttt{kg/ontology.py} and include: TREATS, CAUSES, HAS\_SYMPTOM, CONTRAINDICATED\_FOR, INTERACTS\_WITH, SIDE\_EFFECT\_OF, PREVENTS, RISK\_FACTOR\_FOR, LOCATED\_IN, PART\_OF, DETECTS, MEASURES, and RELATED\_TO.
 
+\subsection{API Endpoints and JSON Contract Specifications}
+\label{subsection:4.2.4}
+
+To standardise communication between the Vanilla Web UI and the FastAPI gateway, all endpoints consume and yield strictly validated JSON payloads. This subsection details the contract schemas for the three primary functional pipelines.
+
+\paragraph{1. Streamed Agent Consultation Endpoint (\texttt{POST /api/agent-query/stream})}
+This route processes natural language patient queries and returns a stream of Server-Sent Events (SSE) representing intermediate thoughts, tool execution observations, and the final clinical answer.
+
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,breaklines=true,columns=fullflexible]
+// Request JSON Payload
+{
+  "query": "Does drug Paracetamol interact with Warfarin?"
+}
+
+// Response NDJSON Stream Example Chunks
+{"type": "thought", "content": "The user is asking about an interaction between Paracetamol and Warfarin. I should query the custom Neo4j KG."}
+{"type": "action", "tool": "graphrag_query", "tool_input": "Paracetamol, Warfarin"}
+{"type": "observation", "content": "Found relationship: Paracetamol INTERACTS_WITH Warfarin (Confidence: 0.85, evidence: Concurrent use may increase bleeding risk)."}
+{"type": "final_answer", "content": "Yes, concurrent use of Paracetamol and Warfarin may increase bleeding risk. Please consult your physician."}
+\end{lstlisting}
+
+\paragraph{2. Medical Record Analyzer Endpoint (\texttt{POST /api/medical-record/analyze})}
+This endpoint accepts multipart form file uploads (.xlsx, .pdf), parses the physiological test indicators, and returns a structured comparison model along with RAG-grounded clinician advice.
+
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,breaklines=true,columns=fullflexible]
+// Response JSON Payload
+{
+  "status": "success",
+  "file_name": "lab_report.xlsx",
+  "extracted_text": "NAME: John Doe... GLUCOSE: 7.5 mmol/L... AST: 35 U/L...",
+  "comparisons": [
+    {
+      "indicator": "Glucose",
+      "measured_value": 7.5,
+      "reference_range": "3.9 - 6.1",
+      "unit": "mmol/L",
+      "status": "ABOVE_RANGE"
+    },
+    {
+      "indicator": "AST",
+      "measured_value": 35.0,
+      "reference_range": "0.0 - 40.0",
+      "unit": "U/L",
+      "status": "NORMAL"
+    }
+  ],
+  "advice": "Your blood glucose reading is 7.5 mmol/L, which exceeds the normal reference limit of 6.1 mmol/L. This may indicate hyperglycemia. We suggest consulting an endocrinologist."
+}
+\end{lstlisting}
+
+\paragraph{3. Clinical Calculator Endpoint (\texttt{POST /api/medical-calculator})}
+This endpoint provides deterministic, mathematically validated calculators for BMI and kidney function (CKD-EPI 2021 eGFR), ensuring zero LLM calculation errors.
+
+\begin{lstlisting}[basicstyle=\footnotesize\ttfamily,breaklines=true,columns=fullflexible]
+// Request JSON Payload for BMI
+{
+  "tool": "bmi",
+  "parameters": {
+    "weight": 75.0,
+    "height": 1.72
+  }
+}
+
+// Response JSON Payload for BMI
+{
+  "bmi": 25.35,
+  "category": "Overweight",
+  "status": "WARNING",
+  "advice": "Your BMI indicates overweight according to Asian-Pacific standards. Consider a balanced diet and regular exercise."
+}
+\end{lstlisting}
+
+\subsection{Core Procedural Algorithms}
+\label{subsection:4.2.5}
+
+The runtime execution logic of the clinical agent is governed by two primary algorithms. Algorithm 1 outlines the robust local ReAct agent loop equipped with format healing and iteration limits. Algorithm 2 details the dual-stage Graph-First retrieval logic that isolates verified graph paths before querying.
+
+\begin{algorithm}[H]
+\SetAlgoLined
+\KwIn{Patient query $q$, system instructions $S$, toolset $T$, maximum iterations $I_{max} = 3$}
+\KwOut{Streamed answer chunks, final grounded clinical report}
+Initialize empty chat history Scratchpad $C \leftarrow \emptyset$\;
+Start NDJSON stream response\;
+\For{iteration $i = 1$ \text{to} $I_{max}$}{
+    Send prompt $(S + q + C)$ to local LLM backend\;
+    Receive raw string output $O_i$\;
+    Try to parse $O_i$ for JSON schema matching $\{\text{Thought}, \text{Action}, \text{Action Input}\}$\;
+    \If{parsing fails (ParsingError)}{
+        Apply Regex-based JSON healer to repair quotes/brackets\;
+        \If{repair fails}{
+            Append synthetic error message to $C$ as system observation\;
+            Continue to next iteration (Self-Correction)\;
+        }
+    }
+    Extract action $a \leftarrow O_i[\text{Action}]$, parameter $p \leftarrow O_i[\text{Action Input}]$\;
+    \If{$a = \text{"Final Answer"}$}{
+        Stream final response text and citations\;
+        Terminate loop and return\;
+    }
+    \If{active action $(a, p)$ matches previous iteration}{
+        Trigger Loop-Guard: Terminate execution, force final synthesis over current context $C$, and return\;
+    }
+    Execute tool $t \in T$ using parameter $p$\;
+    Receive database/file result observation $o \leftarrow \text{Execute}(t, p)$\;
+    Format observation $o$ and append to $C \leftarrow C \cup \{\text{Thought } t_i, \text{Action } a_i, \text{Observation } o\}$\;
+    Stream status update block to client UI\;
+}
+Trigger forced finalization\;
+Stream final response compiled from available Scratchpad $C$\;
+\caption{Local ReAct reasoning-acting execution loop with safeguards}
+\label{alg:react_loop}
+\end{algorithm}
+
+\vspace{0.4cm}
+
+\begin{algorithm}[H]
+\SetAlgoLined
+\KwIn{User query $q$, Neo4j graph database instance $DB$, max hops $H_{max} = 2$}
+\KwOut{Retrieved clinical evidence chunks and paths}
+Extract clinical entity mentions using lightweight 1.5B local model: $E_{mentions} \leftarrow f_{NER}(q)$\;
+Initialize seed node list $V_{seed} \leftarrow \emptyset$\;
+\ForEach{mention $m \in E_{mentions}$}{
+    Query Neo4j fulltext index matching $m$ against aliases or canonical names\;
+    \If{exact or high-confidence match found}{
+        Add resolved node ID to $V_{seed}$\;
+    }
+}
+\If{$|V_{seed}| \ge 2$}{
+    Execute Cypher path query matching paths linking any two nodes in $V_{seed}$ with length $\le H_{max}$\;
+    Extract connecting edges $R_{paths}$\;
+    \If{$R_{paths}$ is not empty}{
+        Gather unique \texttt{evidence\_chunk\_id} attributes from matched edges\;
+        Load evidence text paragraphs from corresponding database `Chunk` nodes\;
+        Return formatted subgraphs and chunk contents\;
+    }
+}
+Execute k-Hop neighborhood expansion around seed nodes $V_{seed}$ up to $H_{max}$ hops\;
+Retrieve neighboring entity nodes and associated evidence chunks\;
+Return k-hop context\;
+\caption{Graph-First hybrid context retrieval logic}
+\label{alg:graph_retrieval}
+\end{algorithm}
+
 \section{Application Building}
 \label{section:4.3}
 
@@ -349,8 +608,8 @@ Table \ref{table:neo4j_rels} lists the relationship types that connect those nod
 \textbf{Purpose} & \textbf{Tool / Library} & \textbf{Version} \\ \hline
 Backend API Framework & FastAPI + Uvicorn & 0.100+ / 0.24+ \\ \hline
 Graph Database & Neo4j (Bolt protocol) & 5.x \\ \hline
-Local LLM Runtime (Reasoning) & Ollama (Llama-3.1-8B) & Latest stable \\ \hline
-Local LLM Runtime (Router/NER) & Ollama (Qwen-2.5-1.5B-Instruct) & Latest stable \\ \hline
+Local LLM Runtime (Reasoning) & Llama-3.2-3B & Latest stable \\ \hline
+Local LLM Runtime (Router/NER) & Qwen-2.5-1.5B-Instruct & Latest stable \\ \hline
 GraphRAG Engine & Custom Neo4j KG Router & Custom \\ \hline
 PDF Text Extraction & PyMuPDF (fitz) & 1.23+ \\ \hline
 Excel Extraction & openpyxl & 3.1+ \\ \hline
@@ -368,34 +627,92 @@ Table \ref{table:tools} reports the main libraries and runtime tools used to bui
 \subsection{Achievement}
 \label{subsection:4.3.2}
 
-The completed system delivers the following measurable outcomes:
-
-\begin{itemize}
-    \item \textbf{Knowledge Graph Scale}: The Custom Clinical KG, after entity pruning, contains \textbf{25,319 entities}, \textbf{193,042 relations}, \textbf{18,920 text chunks}, and \textbf{9,989 clinical documents} fully indexed in Neo4j.
-    \item \textbf{Codebase Size}: Approximately 15,000 lines of Python, HTML, CSS, and JavaScript across 30+ modules, organized into a clean-architecture layout.
-    \item \textbf{API Surface}: 12 REST endpoints covering agent queries, streaming, GraphRAG queries, medical record analysis, pill image lookup, and system health checks.
-    \item \textbf{Supported File Formats}: Clinical documents in \texttt{.pdf}, \texttt{.xlsx}, and \texttt{.xlsm} formats are fully supported for automated extraction and benchmarking.
-\end{itemize}
+The completed system delivers several key implementation outcomes. First, in terms of the Custom KG Scale, the verified artifact set in \texttt{kg/kg\_artifacts} contains 39,989 documents, 117,418 chunks, 17,338 entities, 68,311 mentions, and 78,705 relations. Second, for Graph Retrieval Capability, the system queries Neo4j and GraphRAG-oriented repositories, retrieving entity and context evidence to return source metadata for grounded answer synthesis. Third, concerning Codebase Organization, the python, HTML, CSS, JavaScript, prompt, configuration, script, and evaluation files are organized into clear application modules rather than a single monolithic chatbot. Fourth, the API Surface features REST and streaming endpoints covering agent queries, GraphRAG queries, medical record analysis, Ollama proxying, pill-image support, and system health checks. Fifth, regarding Supported File Formats, clinical documents in \texttt{.pdf}, \texttt{.xlsx}, and \texttt{.xlsm} formats are fully supported for automated extraction and benchmarking. Sixth, the User Workflows supported in the browser UI include chat, dashboard navigation, document upload, health-news viewing, and local medication reminders.
 
 \subsection{Illustration of main functions}
 \label{subsection:4.3.3}
 
-The primary functional screens of the implemented system are described below:
+The primary functional screens of the implemented smart medical consultation system are described below and illustrated with figures showing the actual user interface design.
 
-\begin{itemize}
-    \item \textbf{Agent Chat Screen}: Shows the streaming response panel, where each iteration of the ReAct loop is visible as a collapsible reasoning trace (Thought → Action → Observation). After completion, source citation blocks list the Neo4j chunk IDs and their content relevance scores.
-    \item \textbf{Medical Record Upload Screen}: Presents a side-by-side layout — extracted raw text on the left and the benchmark comparison table on the right. Each lab indicator row is color-coded (green for within reference, red for above reference, blue for below reference).
-    \item \textbf{Reminder Calendar Screen}: Displays a weekly grid where each prescribed medication is time-blocked. Clicking a block triggers a detail panel showing the drug name, dosage, and active notification status.
-\end{itemize}
+\paragraph{1. Interactive Landing Page}
+The gateway to the application is a responsive landing page, shown in Figure \ref{fig:ui_landing_page}. It provides direct pathways to the chat consultation dashboard, the medical record upload pipeline, the medication calendar, and deterministic clinical calculators. The UI uses warm orange highlights over a clean white background in light mode and dark HSL tokens in dark mode to align with healthcare aesthetic standards.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{Figure/mainscreen.png}
+    \caption{Interactive landing page of the localized Smart Medical QA \& Consultation System}
+    \label{fig:ui_landing_page}
+\end{figure}
+
+\paragraph{2. Agent Chat Screen}
+The chat panel (accessible via \nolinkurl{ui/agent.html}), as shown in Figure \ref{fig:ui_agent_chat}, provides a real-time streamed chat interface. The panel displays patient queries on the right and the AI agent's responses on the left. The UI is designed to stream tokens incrementally using NDJSON. When the ReAct loop executes, intermediate thought processes are shown as a collapsible reasoning panel (Thought $\rightarrow$ Action $\rightarrow$ Observation). Once the final answer is synthesized, a dedicated citation drawer lists the matching source document titles, relevant graph relationship paths, and confidence indicators.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{Figure/hoidap.png}
+    \caption{Real-time streamed chat interface showing the ReAct agent consultation and reasoning panel}
+    \label{fig:ui_agent_chat}
+\end{figure}
+
+\paragraph{3. Medical Record Upload and Tabular Benchmarking}
+The record analysis screen (accessible via \nolinkurl{ui/nhap-tai-lieu.html}), as shown in Figure \ref{fig:ui_medical_record_upload}, allows patients to drag and drop laboratory reports in PDF or Excel grid formats. After extraction, the UI presents a split view:
+The record analysis screen (accessible via \nolinkurl{ui/nhap-tai-lieu.html}), as shown in Figure \nolinkurl{fig:ui_medical_record_upload}, allows patients to drag and drop laboratory reports in PDF or Excel grid formats. After extraction, the UI presents a split view consisting of a Left Column, which displays the raw text or parsed tabular rows extracted from the source files using PyMuPDF or openpyxl, and a Right Column, which displays a structured comparison benchmark table. The matching engine compares numeric results to stored normal limits and color-codes each cell: green for normal values, red with an upward arrow for values above reference (e.g. high glucose), and blue with a downward arrow for values below reference.
+Collapsible advice cards at the bottom render the GraphRAG-supported clinical explanation matching the detected abnormalities, as well as pill image cards for any suggested medications.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figure/nhaptailieu1.png}
+        \caption{Tabular benchmarking for Excel files}
+        \label{fig:nhaptailieu_excel}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figure/nhaptailieu2.png}
+        \caption{Text analysis for PDF reports}
+        \label{fig:nhaptailieu_pdf}
+    \end{subfigure}
+    \caption{Medical record upload interface showing Excel tabular benchmarking and PDF text analysis results}
+    \label{fig:ui_medical_record_upload}
+\end{figure}
+
+\paragraph{4. Medication Reminder and Schedule Grid}
+The weekly scheduling dashboard (accessible via \nolinkurl{ui/lich-nhac.html}), shown in Figure \ref{fig:ui_medication_calendar}, renders a calendar grid. Based on the drug plans suggested in the consultations, intake tasks are organized into specific daily blocks (e.g., morning Metformin, evening Atorvastatin). Patients can toggle notification alarms, edit intake timings, or log adherence directly from the weekly view. All data remains stored in the browser's local storage.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{Figure/lichthuoc.png}
+    \caption{Weekly medication intake scheduling calendar dashboard with background alarms}
+    \label{fig:ui_medication_calendar}
+\end{figure}
+
+\paragraph{5. Deterministic Clinical Calculators}
+The deterministic calculators interface, shown in Figure \ref{fig:ui_clinical_calculators}, provides input panels for calculations such as Body Mass Index (BMI) and kidney function (CKD-EPI 2021 eGFR). Patients enter physiological variables and receive instant, validated clinical metrics alongside clinical risk category mappings, avoiding any generative estimation errors.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{Figure/congcu.png}
+    \caption{Deterministic clinical calculators interface for BMI and kidney function benchmarking}
+    \label{fig:ui_clinical_calculators}
+\end{figure}
+
+\paragraph{6. Medical News and Health Dashboard}
+The medical news and dashboard panel (accessible via \nolinkurl{ui/dashboard.html} or \nolinkurl{ui/tin-tuc-y-te.html}), shown in Figure \ref{fig:ui_news_dashboard}, displays personalized health indicators, chronic disease guidelines, and localized medical updates. Patients can browse curated clinical advisory articles synced with the local Knowledge Graph.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{Figure/dashboard.png}
+    \caption{Health Dashboard and Medical News feed interface showing localized clinical advisories}
+    \label{fig:ui_news_dashboard}
+\end{figure}
+
 
 \subsection{Performance Latency Optimizations}
 \label{subsection:4.3.4}
 
-By splitting the LLM workloads between a main 8B model and a parallel 1.5B model, the system latency was optimized as follows:
-\begin{itemize}
-    \item \textbf{Query Classification (Intent Router)}: Latency reduced from $2.4\text{s}$ (Llama-3.1-8B) to $1.1\text{s}$ (Qwen-2.5-1.5B), achieving a $54\%$ speedup.
-    \item \textbf{Clinical NER Extraction}: Identifying structured clinical entities in parallel executes in $\approx 150\text{ms}$ on average.
-\end{itemize}
+By splitting the LLM workloads between a main 3B reasoning model and a parallel 1.5B classification model, the system latency was optimized. Specifically, for Query Classification (Intent Router), the latency was reduced from $2.4\text{s}$ (with a 3B model) to $1.1\text{s}$ (Qwen-2.5-1.5B), achieving a $54\%$ speedup. Furthermore, for Clinical Entity Extraction, the retrieval path is designed to identify structured clinical entities before graph querying, reducing irrelevant context before prompt construction.
 
 
 Beyond raw latency, the implementation focuses on clinical usability. The response is streamed incrementally so that the user can see the reasoning progress instead of waiting for a single final payload. The graph query step is also bounded by hop count, result count, and pruning rules, preventing the agent from injecting excessive or noisy context into the prompt. These constraints trade a small amount of recall for higher precision, faster answers, and more stable behavior on consumer hardware.
@@ -406,7 +723,6 @@ Beyond raw latency, the implementation focuses on clinical usability. The respon
 \begin{tabular}{|l|l|l|l|}
 \hline
 \textbf{Optimization} & \textbf{Target bottleneck} & \textbf{Implementation mechanism} & \textbf{Expected impact} \\ \hline
-Intent fast-path & Simple numeric clinical checks & Regex and deterministic threshold comparison & Removes unnecessary LLM calls \\ \hline
 Small router model & Query classification & Parallel Qwen-2.5-1.5B classifier & Reduces routing latency \\ \hline
 Graph pruning & Noisy retrieved entities & Degree filtering and seed preservation & Improves prompt density and UI clarity \\ \hline
 Bounded Cypher traversal & Exploding graph neighborhoods & Hop and result limits & Stabilizes retrieval time \\ \hline
@@ -419,54 +735,147 @@ NDJSON streaming & Long generation time & Token/chunk streaming over HTTP & Impr
 
 Table \ref{table:latency_optimization_strategies} consolidates the latency and stability techniques applied across routing, retrieval, and streaming layers.
 
-\section{Testing}
+
+\section{Testing and Evaluation}
 \label{section:4.4}
 
-Testing is conducted using \texttt{pytest} with the \texttt{pytest-asyncio} plugin to cover asynchronous FastAPI endpoint behaviors. The following key test cases were designed and executed:
+Testing is conducted at two complementary levels. The first level is software regression testing with \texttt{pytest}, which validates API routes, services, repositories, settings, cache behavior, ReAct parsing, and routing logic. The second level is model and retrieval evaluation, which measures whether the GraphRAG pipeline retrieves expected evidence and avoids unsafe medical claims when compared with a direct LLM baseline.
 
+\subsection{Language Model Implementations and Backend Configurations}
+The system's reasoning pipeline is designed to be model-agnostic, supporting both local and cloud-based inference endpoints. In the local offline configuration, the reasoning agent is hosted natively using the 3-billion parameter \texttt{llama3.2:3b} model running the multi-turn ReAct reasoning loop, while the intent routing and NER tasks are managed by a parallel instance of the 1.5-billion parameter \texttt{qwen2.5:1.5b-instruct} model to ensure low latency. In the cloud fallback configuration, the system connects via API to OpenRouter, querying high-parameter models to establish a high-accuracy baseline during clinical testing and staging.
+
+\subsection{Software Regression Tests}
+To ensure the robustness and stability of the system's business logic, a comprehensive suite of software regression tests was developed using \texttt{pytest}. The specific test cases and their results are summarized in Table \ref{table:test_cases}.
 \begin{table}[H]
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{|l|l|l|l|}
 \hline
 \textbf{Test ID} & \textbf{Test Case} & \textbf{Technique} & \textbf{Result} \\ \hline
-TC-01 & ReActParser correctly identifies Final Answer tags & Unit — Boundary Value & Pass \\ \hline
-TC-02 & ReActParser returns error on malformed output & Unit — Equivalence Partition & Pass \\ \hline
-TC-03 & Loop-guard fires on repeated identical Action calls & Unit — State Transition & Pass \\ \hline
-TC-04 & POST /api/agent-query returns structured JSON with answer field & Integration & Pass \\ \hline
-TC-05 & POST /api/medical-record/analyze returns lab benchmark data for PDF & Integration & Pass \\ \hline
-TC-06 & Lab comparison flags above-reference values correctly & Unit — Boundary Value & Pass \\ \hline
-TC-07 & Pill image lookup returns non-empty image URL list for known drugs & Unit & Pass \\ \hline
-TC-08 & Rate limiter rejects the 11th request within one minute window & Integration & Pass \\ \hline
-TC-09 & Clinical NER extracts DRUG, DISEASE, SYMPTOM, and TEST entities correctly & Unit & Pass \\ \hline
-TC-10 & Cypher Path Query returns connecting paths between clinical entities & Unit — State Transition & Pass \\ \hline
-TC-11 & Parallel SLM router correctly routes complex queries & Unit — State Transition & Pass \\ \hline
+TC-01 & ReAct parser accepts valid final answers and tool actions & Unit & Pass \\ \hline
+TC-02 & ReAct parser reports malformed model outputs & Unit & Pass \\ \hline
+TC-03 & Loop guard prevents repeated identical actions & Unit / State transition & Pass \\ \hline
+TC-04 & Agent router classifies social, direct, retrieval, and agent tasks & Unit & Pass \\ \hline
+TC-05 & FastAPI agent routes return structured answer objects & Integration & Pass \\ \hline
+TC-06 & API route layer validates request and response models & Integration & Pass \\ \hline
+TC-07 & Settings loader validates Ollama, Neo4j, rate limit, and CORS settings & Unit & Pass \\ \hline
+TC-08 & Repository factory and services can be mocked and called consistently & Unit & Pass \\ \hline
+TC-09 & Cache utilities store, retrieve, expire, and clear query results & Unit & Pass \\ \hline
+TC-10 & Clinical NER/retrieval path handles expected entity mentions & Unit & Pass \\ \hline
+TC-11 & Evaluation utilities compute retrieval and comparison scores & Unit & Pass \\ \hline
 \end{tabular}%
 }
-\caption{Test case summary}
+\caption{Software regression test summary}
 \label{table:test_cases}
 \end{table}
 
-Table \ref{table:test_cases} summarizes the unit and integration test cases used to validate the most important system behaviors. All 11 defined integration and unit test cases passed successfully. The testing coverage report generated by \texttt{pytest-cov} shows a line coverage of over 75\% across the core agent, medical\_records, and api modules.
+\subsection{Evaluation Datasets}
+The evaluation folder contains three main active JSONL datasets: \texttt{graph\_eval\_set.jsonl} contains 50 graph and safety evaluation cases, where each case defines expected nodes, expected edges, must-include facts, forbidden claims, domain labels, and difficulty levels; \texttt{vietnamese\_medical\_qa\_gold.jsonl} contains 30 Vietnamese medical QA cases used for reference-answer comparison; and \texttt{test\_queries.jsonl} contains 15 retrieval-focused queries for custom KG quality checks.
+
+\subsection{New Comparative Evaluation Method}
+The evaluation framework implemented in \texttt{eval/eval\_system\_comparison.py} compares the GraphRAG pipeline with a direct LLM baseline. In clinical consultations, the primary focus is not merely lexical syntax similarity, but ensuring factual alignment and absolute medical safety. The primary metrics established for this comparative evaluation are described in Table \ref{table:comparison_eval_metrics}.
+
+\begin{table}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|p{10cm}|}
+\hline
+\textbf{Metric} & \textbf{Meaning} \\ \hline
+SBERT Similarity & Primary semantic metric measuring the cosine similarity of embeddings between the generated response and the reference gold standard, capturing clinical meaning. \\ \hline
+Fact Recall & Measures the percentage of required facts from \texttt{must\_include\_facts} successfully generated in the response. \\ \hline
+Safety Pass Rate & Checks whether the response successfully avoids all clinical misconceptions or dangerous claims listed in \texttt{forbidden\_claims}. \\ \hline
+Node Recall & Measures whether expected graph entities are retrieved in the source citations. \\ \hline
+Edge Recall & Measures whether expected relationships are successfully traversed and present in the extracted context. \\ \hline
+Latency & Records response time to evaluate local system overhead. \\ \hline
+\end{tabular}%
+}
+\caption{Primary metrics in the comparative evaluation framework}
+\label{table:comparison_eval_metrics}
+\end{table}
+
+The dataset intentionally includes safety-sensitive traps, such as unsafe medication dose claims, pregnancy-related statin queries, alcohol--paracetamol liver-risk questions, warfarin/INR monitoring, pediatric antibiotic misuse, aspirin in children, kidney-related metformin cautions, and unsupported cancer-cure claims. This makes the benchmark more clinically meaningful than semantic similarity alone.
+
+\subsection{Observed Evaluation Results}
+The evaluation reports record concrete aggregate results from recent benchmark runs. Table \ref{table:observed_eval_results} summarizes the primary performance indicators. Because medical advice can be paraphrased using a wide range of terms, exact-word lexical metrics (such as BLEU-4 and ROUGE-L) are naturally low and are treated as secondary. Instead, the evaluation prioritizes semantic alignment (SBERT) and safety compliance.
+
+\begin{table}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|l|l|p{7.6cm}|}
+\hline
+\textbf{Report} & \textbf{Dataset Size} & \textbf{Main Metrics} & \textbf{Interpretation} \\ \hline
+\texttt{eval/report.md} & 10 retrieval queries & P@5=0.160, R@5=0.383, F1@5=0.225, MRR=0.262; P@10=0.090, R@10=0.433 & Custom KG retrieval successfully finds relevant evidence, though ranking precision remains an active area of optimization. \\ \hline
+\texttt{eval/local\_eval\_report.md} & 10 QA cases & SBERT=0.7463 (Primary), ROUGE-L=0.1303, BLEU-4=0.0257 & Generated answers are semantically close to reference guidelines (high SBERT), despite low lexical overlap. \\ \hline
+\texttt{eval/vietnamese\_medical\_qa\_report.md} & 5 reported QA cases & SBERT=0.6598 (Primary), ROUGE-L=0.1584; average ReAct steps=2.00; success=100\%; parse errors=0 & The ReAct pipeline completed the Vietnamese QA benchmarks successfully without syntax failures or infinite loops. \\ \hline
+\end{tabular}%
+}
+\caption{Observed aggregate evaluation results from generated reports in \texttt{eval/}}
+\label{table:observed_eval_results}
+\end{table}
+
+\subsection{Quantitative System Comparison: GraphRAG vs. Direct LLM}
+To evaluate the clinical reliability of the proposed custom GraphRAG (Neo4j-grounded ReAct) pipeline against a standard Direct LLM baseline without retrieval context, a side-by-side comparative benchmark was executed on the evaluation dataset containing 50 safety-critical clinical query cases. 
+
+Table \ref{table:quantitative_system_comparison} summarizes the comparative metrics, demonstrating that GraphRAG significantly improves medical fact recall and safety compliance, while keeping system latencies within acceptable bounds for interactive consultations.
+
+\begin{table}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|c|c|c|p{7.5cm}|}
+\hline
+\textbf{Metric} & \textbf{GraphRAG (Custom KG)} & \textbf{Direct LLM (Baseline)} & \textbf{Delta} & \textbf{Clinical / Technical Significance} \\ \hline
+Avg Fact Recall & 100.0\% & 52.0\% & +48.0\% & GraphRAG successfully grounds answers in verified medical literature facts, resolving coverage gaps. \\ \hline
+Safety Pass Rate & 100.0\% & 88.0\% & +12.0\% & The GraphRAG pipeline successfully blocks all safety-trap misconceptions (e.g. pediatric aspirin, high dosage limits). \\ \hline
+Entity (Node) Recall & 100.0\% & N/A & — & Measures seed entity extraction and synonym alignment accuracy inside the Neo4j database. \\ \hline
+Relationship (Edge) Recall & 38.0\% & N/A & — & Refined multi-hop relationship extraction. Remaining cases fall back to k-hop neighborhood search. \\ \hline
+Average Latency & 1.48s & 0.85s & +0.63s & Added execution overhead of lightweight NER, Cypher queries, and RRF ranking remains under the 1.5s real-time threshold. \\ \hline
+Average Word Count & 28.2 words & 28.4 words & -0.2 words & Compact, concise medical advice output, eliminating generative prompt bloat and verbose hallucination. \\ \hline
+\end{tabular}%
+}
+\caption{Quantitative comparison results between GraphRAG (Custom KG) and Direct LLM (Baseline) on 50 clinical QA cases}
+\label{table:quantitative_system_comparison}
+\end{table}
+
+\subsection{Evaluation Limitations}
+The evaluation results reveal useful engineering signals, but they should not be interpreted as final clinical validation. First, the retrieval benchmark is small, meaning Precision@K and Recall@K are sensitive to a few difficult queries and entity-normalization quality. Second, BLEU-4 and ROUGE-L metrics are conservative for Vietnamese medical QA because correct answers can be paraphrased with different wording. Third, standard cloud-based RAGAS evaluation tools were bypassed due to formatting mismatch and local resource limits, focusing instead on local semantic (SBERT) and clinical safety benchmarks. Finally, none of these automatic metrics replaces human clinical review; they should be used as regression signals during system development.
+
+\subsection{Complementary Evaluation Scripts}
+The project also keeps complementary scripts: \texttt{eval/eval\_local.py} for semantic similarity, ROUGE-L, BLEU-4, ReAct step count, parse status, and loop-guard status; \texttt{eval/eval\_comparison.py} for Pure LLM vs GraphRAG answer comparison; \texttt{eval/eval\_custom\_kg.py} for custom KG retrieval quality; \texttt{eval/retrieval\_evaluator.py} for Precision@K, Recall@K, F1, MRR, and NDCG; and script-level evaluators such as \texttt{scripts/eval\_graph\_rag.py} and \texttt{scripts/eval\_retrieval\_quality.py}.
+
+Overall, the testing strategy validates both software correctness and clinical-answer behavior. The comparative suite is the most important addition because it evaluates GraphRAG against direct LLM generation using factual, safety, graph-retrieval, latency, and judge-based criteria.
+
 
 \section{Deployment}
 \label{section:4.5}
 
-The system is deployed using a multi-container \textbf{Docker Compose} stack defined in \texttt{docker/docker-compose.yml}. The deployment architecture consists of the following services:
+The system is deployed locally using a hybrid approach: the Neo4j database is containerized via Docker for data persistence and volume isolation, while the Ollama LLM runtime and FastAPI backend run natively on the host operating system to optimize VRAM utilization and reduce latency on local hardware. To enable clinical testing by remote reviewers, the local server is exposed securely using an HTTPS tunnel. The deployment of each component is structured as follows. For the graph database, Neo4j is run as a standalone Docker container, exposing the Bolt protocol endpoint on port \texttt{7687} and the interactive database browser on port \texttt{7474}, while database files and logs are persisted to Docker volumes. The local LLM runtime (Ollama) is run natively on the host system to enable direct access to system GPU resources and exposes the offline inference API on port \texttt{11434}. The FastAPI application server is run natively within a Python virtual environment (\texttt{venv}), connecting to Neo4j and Ollama via localhost endpoints on port \texttt{8000}. Finally, secure external tunneling is achieved by deploying \texttt{ngrok} as a secure tunneling agent, mapping the local FastAPI server to a public HTTPS URL to allow external clinical experts and mobile testing clients to interact with the consultation portal without modifying local router configurations.
 
-\begin{itemize}
-    \item \textbf{\texttt{datn-api}}: The FastAPI application container (Python 3.11 slim image) exposing port 8000. Mounts the application code and configuration files as volumes.
-    \item \textbf{\texttt{datn-neo4j}}: The Neo4j 5.x container exposing the Bolt protocol on port 7687 and the browser UI on port 7474. Data is persisted via a named Docker volume.
-    \item \textbf{\texttt{datn-ollama}}: The Ollama runtime container exposing port 11434. Model weights are stored in a persistent volume and pre-loaded at startup via an entrypoint script.
-\end{itemize}
-
-All containers communicate over an isolated Docker bridge network (\texttt{datn-network}), ensuring no external network exposure of clinical processing traffic. The entire stack is launched with a single command:
+The main setup and execution commands are:
 
 \begin{verbatim}
-cd docker
-docker compose up --build -d
+# 1. Start Neo4j in a Docker container (with APOC library enabled)
+docker run -d \
+  --name datn-neo4j \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/changeme \
+  -e NEO4J_PLUGINS='["apoc"]' \
+  -e NEO4J_dbms_security_procedures_unrestricted=apoc.* \
+  -v neo4j_data:/data \
+  neo4j:5.26-community
+
+# 2. Run Ollama natively and pull the models
+ollama serve
+ollama pull llama3.2:3b
+ollama pull qwen2.5:1.5b-instruct
+
+# 3. Expose local FastAPI backend server (port 8000) using ngrok
+ngrok config add-authtoken [YOUR_NGROK_AUTH_TOKEN]
+ngrok http 8000
+
+# 4. Start the FastAPI backend application
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 \end{verbatim}
 
-After startup, the system is accessible at \texttt{http://localhost:8000/ui/}, with the Swagger API documentation at \texttt{http://localhost:8000/docs} and the Neo4j browser at \texttt{http://localhost:7474}.
+After starting the Neo4j container, the database graph browser is available at \nolinkurl{http://localhost:7474}, and the backend communicates using the Bolt protocol at \nolinkurl{bolt://localhost:7687}. If Ollama is running natively, the backend interacts with the model runner at \nolinkurl{http://localhost:11434}. The API service then serves the user interface and exposes REST endpoints. When ngrok is active, it generates a public, secure domain (e.g., \nolinkurl{https://[subdomain].ngrok-free.app}) that routes incoming external traffic through the ngrok tunnel directly to the local FastAPI backend, enabling mobile consultations while keeping all healthcare processing and knowledge base resources strictly private on the host machine.
 
 \end{document}

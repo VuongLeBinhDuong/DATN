@@ -160,7 +160,7 @@ def build_llm_summary(
 ) -> str | None:
     """Call Ollama chat directly (summary over extract + comparison table)."""
     host = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     timeout = int(os.getenv("OLLAMA_TIMEOUT", "120"))
     lines = []
     for r in comparisons:

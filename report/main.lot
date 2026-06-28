@@ -1,17 +1,25 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {2.1}{\ignorespaces Comparative analysis of medical retrieval paradigms}}{5}{table.caption.6}%
+\contentsline {table}{\numberline {2.1}{\ignorespaces Comparative analysis of medical retrieval paradigms}}{4}{table.caption.6}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Neo4j Node Labels and Properties}}{23}{table.caption.19}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces Neo4j Relationship Types}}{23}{table.caption.20}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces Libraries and tools used in the system}}{24}{table.caption.21}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces Latency and stability optimization strategies used in the implemented system}}{25}{table.caption.22}%
-\contentsline {table}{\numberline {4.5}{\ignorespaces Test case summary}}{25}{table.caption.23}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Neo4j Node Labels and Properties}}{36}{table.caption.44}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Neo4j Relationship Types}}{36}{table.caption.45}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Libraries and tools used in the system}}{40}{table.caption.49}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Latency and stability optimization strategies used in the implemented system}}{45}{table.caption.62}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Software regression test summary}}{46}{table.caption.63}%
+\contentsline {table}{\numberline {4.6}{\ignorespaces Primary metrics in the comparative evaluation framework}}{47}{table.caption.64}%
+\contentsline {table}{\numberline {4.7}{\ignorespaces Observed aggregate evaluation results from generated reports in \texttt {eval/}}}{47}{table.caption.65}%
+\contentsline {table}{\numberline {4.8}{\ignorespaces Quantitative comparison results between GraphRAG (Custom KG) and Direct LLM (Baseline) on 50 clinical QA cases}}{48}{table.caption.66}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {5.1}{\ignorespaces Knowledge Graph statistics before and after entity pruning}}{28}{table.caption.25}%
-\contentsline {table}{\numberline {5.2}{\ignorespaces Custom KG Retrieval Evaluation on 10 clinical queries}}{31}{table.caption.26}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces Summary of system contributions, gaps addressed, and future directions}}{54}{table.caption.67}%
 \addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {D.1}{\ignorespaces Node schema in Neo4j Knowledge Graph}}{66}{table.caption.72}%
+\contentsline {table}{\numberline {D.2}{\ignorespaces Relationship schema in Neo4j Knowledge Graph}}{66}{table.caption.73}%
 \addvspace {10\p@ }
 \contentsfinish 
 \contentsfinish 

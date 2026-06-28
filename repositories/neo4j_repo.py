@@ -182,7 +182,12 @@ class Neo4jRepository(KnowledgeRepository):
                 return QueryResult(
                     text=cached["context"],
                     sources=cached["hits"],
-                    metadata={"backend": "neo4j", "query": rq_text, "cached": True},
+                    metadata={
+                        "backend": "neo4j",
+                        "query": rq_text,
+                        "cached": True,
+                        "raw_context": cached.get("raw_context", cached["context"]),
+                    },
                 )
 
         # Execute query
@@ -192,7 +197,12 @@ class Neo4jRepository(KnowledgeRepository):
             t0 = time.time()
 
         from llm_pipeline.graphrag_query import run_graphrag_query_with_sources
-        context, hits = run_graphrag_query_with_sources(rq_text, retrieval_query=rq_text)
+        res = run_graphrag_query_with_sources(rq_text, retrieval_query=rq_text, return_raw_context=True)
+        if isinstance(res, tuple) and len(res) == 3:
+            context, hits, raw_context = res
+        else:
+            context, hits = res
+            raw_context = context
 
         if start_time:
             elapsed = time.time() - t0
@@ -200,12 +210,21 @@ class Neo4jRepository(KnowledgeRepository):
 
         # Cache the result
         if use_cache:
-            cache.set(cache_key, {"context": context, "hits": hits}, ttl_sec=180)
+            cache.set(
+                cache_key,
+                {"context": context, "hits": hits, "raw_context": raw_context},
+                ttl_sec=180,
+            )
 
         return QueryResult(
             text=context,
             sources=hits,
-            metadata={"backend": "neo4j", "query": rq_text, "cached": False},
+            metadata={
+                "backend": "neo4j",
+                "query": rq_text,
+                "cached": False,
+                "raw_context": raw_context,
+            },
         )
 
     def close(self) -> None:

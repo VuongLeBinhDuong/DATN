@@ -1,0 +1,39 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+This appendix provides the Data Dictionary for the Neo4j Knowledge Graph schema.
+
+\section*{Nodes}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|p{8cm}|}
+\hline
+\textbf{Label} & \textbf{Property} & \textbf{Description} \\ \hline
+\multirow{4}{*}{\textbf{Entity}} & entity\_id & Unique string identifier (e.g., 'DISEASE\_DIABETES') \\ \cline{2-3} 
+ & canonical\_name & Standardized medical name (e.g., 'Diabetes Mellitus') \\ \cline{2-3} 
+ & type & Biomedical type (e.g., Disease, Drug, Symptom) \\ \cline{2-3} 
+ & aliases & Array of string synonyms \\ \hline
+\multirow{3}{*}{\textbf{Chunk}} & chunk\_id & Unique hash identifier for the text chunk \\ \cline{2-3} 
+ & text & The raw clinical text \\ \cline{2-3} 
+ & document\_id & Foreign key to the parent Document \\ \hline
+\multirow{3}{*}{\textbf{Document}} & doc\_id & Unique identifier for the source document \\ \cline{2-3} 
+ & title & Document title or URL \\ \cline{2-3} 
+ & metadata & JSON string of additional attributes \\ \hline
+\end{tabular}
+\caption{Node schema in Neo4j Knowledge Graph}
+\end{table}
+
+\section*{Relationships}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{4cm}|p{7cm}|}
+\hline
+\textbf{Type} & \textbf{Nodes} & \textbf{Description} \\ \hline
+\textbf{REL} & (Entity) $\rightarrow$ (Entity) & Logical biomedical relationship (e.g., treats, causes). Contains property `predicate` and `confidence`. \\ \hline
+\textbf{MENTIONS} & (Chunk) $\rightarrow$ (Entity) & Links a text chunk to an extracted medical entity. \\ \hline
+\textbf{HAS\_CHUNK} & (Document) $\rightarrow$ (Chunk) & Links a document to its constituent chunks. \\ \hline
+\end{tabular}
+\caption{Relationship schema in Neo4j Knowledge Graph}
+\end{table}
+
+\end{document}

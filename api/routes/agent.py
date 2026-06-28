@@ -196,3 +196,52 @@ async def api_langchain_graph_query_direct(
         sources=[SourceOut(**s) for s in sources],
         context_preview=raw_context[:200] + "..." if len(raw_context) > 200 else raw_context,
     )
+
+
+class MedicalCalculatorIn(BaseModel):
+    """Input parameters for medical calculator tool."""
+    type: str = Field(..., pattern="^(bmi|egfr)$", description="Type of calculator: 'bmi' or 'egfr'")
+    weight: float | None = Field(default=None, description="Weight in kg")
+    height: float | None = Field(default=None, description="Height in cm")
+    age: float | None = Field(default=None, description="Age in years")
+    creatinine: float | None = Field(default=None, description="Creatinine level in mg/dL")
+    gender: str | None = Field(default=None, description="Gender: 'male' or 'female'")
+
+
+class DrugInteractionIn(BaseModel):
+    """Input list of drugs for interaction checking."""
+    drugs: list[str] = Field(..., description="List of drug names (minimum 2)")
+
+
+@router.post("/tools/medical-calculator")
+async def api_medical_calculator(
+    body: MedicalCalculatorIn,
+    settings: SettingsDep,
+    request: Request = None,
+) -> dict[str, Any]:
+    """Execute medical calculator tool directly."""
+    check_rate_limit(request, settings)
+    from agent.react.tools import run_medical_calculator_tool
+    import json
+    
+    # Dump inputs into JSON format expected by the tool
+    tool_input = json.dumps(body.model_dump(exclude_none=True))
+    result = run_medical_calculator_tool(tool_input)
+    return {"result": result}
+
+
+@router.post("/tools/drug-interaction")
+async def api_drug_interaction(
+    body: DrugInteractionIn,
+    settings: SettingsDep,
+    request: Request = None,
+) -> dict[str, Any]:
+    """Execute drug interaction checker tool directly."""
+    check_rate_limit(request, settings)
+    from agent.react.tools import run_drug_interaction_checker_tool
+    import json
+    
+    # Dump inputs into JSON format expected by the tool
+    tool_input = json.dumps(body.model_dump())
+    result = run_drug_interaction_checker_tool(tool_input)
+    return {"result": result}

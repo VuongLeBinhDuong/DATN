@@ -15,7 +15,7 @@
   "community_fulltext_boost": true,
   "synthesize_with_ollama": true,
   "synthesis_prompt_basename": "agent_merged_context_prompt.txt",
-  "ollama_model": "llama3.1:8b",
+  "ollama_model": "llama3.2:3b",
   "ollama_host": "http://127.0.0.1:11434",
   "ollama_timeout": 120
 }

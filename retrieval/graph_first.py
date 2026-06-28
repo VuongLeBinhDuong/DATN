@@ -51,7 +51,7 @@ def _llm_rerank(question: str, chunks: list[dict[str, Any]], top_k: int) -> list
     )
 
     host = (os.getenv("OLLAMA_HOST") or "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL") or "llama3.1:8b"
+    model = os.getenv("OLLAMA_MODEL") or "llama3.2:3b"
     timeout = int(os.getenv("OLLAMA_TIMEOUT") or "120")
     temperature = float(os.getenv("KG_RERANK_TEMPERATURE") or "0.0")
     num_predict = int(os.getenv("KG_RERANK_NUM_PREDICT") or "512")

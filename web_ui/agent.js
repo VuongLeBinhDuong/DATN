@@ -363,7 +363,7 @@ function appendChatBubble(role, html, options = {}) {
   if (persist) {
     const t = getActiveThread();
     if (t) {
-      t.messages.push({ role, html });
+      t.messages.push({ role, html, text: options.text || html });
       if (t.messages.length > MAX_CHAT_ENTRIES) {
         t.messages = t.messages.slice(-MAX_CHAT_ENTRIES);
       }
@@ -556,20 +556,47 @@ function parseSubgraphFromContext(text) {
     }
   }
   
-  for (const e of edges) {
-    const fromLower = e.from.toLowerCase();
-    const toLower = e.to.toLowerCase();
-    
-    if (!uniqueNodes.some(n => n.id.toLowerCase() === fromLower)) {
-      uniqueNodes.push({ id: e.from, label: e.from, type: "Unknown" });
-    }
-    if (!uniqueNodes.some(n => n.id.toLowerCase() === toLower)) {
-      uniqueNodes.push({ id: e.to, label: e.to, type: "Unknown" });
-    }
+  // Lọc cạnh để chỉ giữ các cạnh có cả hai đầu mút nằm trong uniqueNodes
+  const nodeIds = new Set(uniqueNodes.map(n => n.id.toLowerCase()));
+  let filteredEdges = edges.filter(e => nodeIds.has(e.from.toLowerCase()) && nodeIds.has(e.to.toLowerCase()));
+  
+  // Giới hạn số lượng thực thể tối đa từ 10 - 15 (chọn 15) để sơ đồ gọn gàng
+  const MAX_ENTITIES = 15;
+  let prunedNodes = uniqueNodes;
+  let prunedEdges = filteredEdges;
+  
+  if (uniqueNodes.length > MAX_ENTITIES) {
+    prunedNodes = uniqueNodes.slice(0, MAX_ENTITIES);
+    const prunedNodeIds = new Set(prunedNodes.map(n => n.id.toLowerCase()));
+    prunedEdges = filteredEdges.filter(e => prunedNodeIds.has(e.from.toLowerCase()) && prunedNodeIds.has(e.to.toLowerCase()));
   }
   
-  return uniqueNodes.length > 0 ? { nodes: uniqueNodes, edges } : null;
+  return prunedNodes.length > 0 ? { nodes: prunedNodes, edges: prunedEdges } : null;
 }
+
+window.toggleSubgraph = function(btn) {
+  const wrapper = btn.closest(".chat-subgraph-wrapper");
+  if (!wrapper) return;
+  const body = wrapper.querySelector(".chat-subgraph-body");
+  if (!body) return;
+  
+  if (body.style.display === "none") {
+    body.style.display = "block";
+    btn.textContent = "Ẩn sơ đồ";
+    
+    const canvas = body.querySelector(".chat-subgraph-canvas");
+    if (canvas && canvas.children.length === 0) {
+      const contextText = wrapper.getAttribute("data-context");
+      const subgraph = parseSubgraphFromContext(contextText);
+      if (subgraph) {
+        renderGraphInContainer(canvas.id, subgraph);
+      }
+    }
+  } else {
+    body.style.display = "none";
+    btn.textContent = "Hiện sơ đồ";
+  }
+};
 
 function buildSubgraphHtml(contextText) {
   if (!contextText || !contextText.trim()) return "";
@@ -578,9 +605,14 @@ function buildSubgraphHtml(contextText) {
   
   const containerId = `subgraph_${newId("g")}`;
   return `<div class="chat-subgraph-wrapper" data-context="${escapeAttr(contextText)}">
-    <div class="chat-subgraph-title">Sơ đồ mạng lưới thực thể y khoa</div>
-    <div id="${containerId}" class="chat-subgraph-canvas" style="height: 320px; width: 100%; border-radius: 8px; background: var(--bg-elevated, #fff); margin-top: 10px; border: 1px solid var(--line, rgba(128,128,128,0.15));"></div>
-    <div class="chat-subgraph-hint">* Kéo các thực thể để sắp xếp, click để xem mô tả chi tiết</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <div class="chat-subgraph-title" style="margin: 0;">Sơ đồ mạng lưới thực thể y khoa</div>
+      <button type="button" onclick="toggleSubgraph(this)" style="background: transparent; border: 1px solid var(--line, rgba(128,128,128,0.25)); border-radius: 4px; padding: 2px 8px; font-size: 11px; color: var(--text-muted, #777); cursor: pointer; transition: all 0.2s; font-family: inherit;">Ẩn sơ đồ</button>
+    </div>
+    <div class="chat-subgraph-body">
+      <div id="${containerId}" class="chat-subgraph-canvas" style="height: 320px; width: 100%; border-radius: 8px; background: var(--bg-elevated, #fff); margin-top: 10px; border: 1px solid var(--line, rgba(128,128,128,0.15));"></div>
+      <div class="chat-subgraph-hint" style="margin-top: 4px;">* Kéo các thực thể để sắp xếp, click để xem mô tả chi tiết</div>
+    </div>
   </div>`;
 }
 
@@ -684,6 +716,9 @@ function renderGraphInContainer(containerId, subgraph) {
 function renderAllGraphs() {
   if (!window.vis) return;
   document.querySelectorAll(".chat-subgraph-wrapper").forEach(wrapper => {
+    const body = wrapper.querySelector(".chat-subgraph-body");
+    if (body && body.style.display === "none") return;
+    
     const canvas = wrapper.querySelector(".chat-subgraph-canvas");
     if (!canvas || canvas.children.length > 0) return;
     
@@ -697,10 +732,10 @@ function renderAllGraphs() {
   });
 }
 
-function persistAssistantBubbleHtml(innerHtml) {
+function persistAssistantBubbleHtml(innerHtml, cleanText) {
   const t = getActiveThread();
   if (!t) return;
-  t.messages.push({ role: "assistant", html: innerHtml });
+  t.messages.push({ role: "assistant", html: innerHtml, text: cleanText });
   if (t.messages.length > MAX_CHAT_ENTRIES) {
     t.messages = t.messages.slice(-MAX_CHAT_ENTRIES);
   }
@@ -732,6 +767,7 @@ async function sendAgentQuery() {
 
   appendChatBubble("user", `<div class="chat-bubble-inner">${escapeHtml(message).replace(/\n/g, "<br>")}</div>`, {
     persist: true,
+    text: message,
   });
   updateThreadHeader();
 
@@ -807,7 +843,7 @@ async function sendAgentQuery() {
       html += buildPdfExportButtonHtml();
       html += `</div>`;
       
-      appendChatBubble("assistant", html, { persist: true });
+      appendChatBubble("assistant", html, { persist: true, text: data.answer });
       renderThreadList();
       renderAllGraphs();
       btn.disabled = false;
@@ -819,7 +855,7 @@ async function sendAgentQuery() {
       .slice(0, -1)
       .map(msg => ({
         role: msg.role === "assistant" ? "assistant" : "user",
-        content: msg.html || ""
+        content: msg.text || msg.html || ""
       }));
 
     // Default: Agent mode with streaming
@@ -923,7 +959,16 @@ async function sendAgentQuery() {
           }
         } else if (ev === "tool") {
           const inp = escapeHtml((evt.input || "").slice(0, CONFIG.MAX_PREVIEW_CHARS));
-          const toolName = evt.name === "graphrag_query" ? "Truy vấn Đồ thị tri thức (GraphRAG)" : evt.name === "pill_image_lookup" ? "Tìm kiếm ảnh thuốc" : evt.name;
+          let toolName = evt.name;
+          if (evt.name === "graphrag_query") {
+            toolName = "Truy vấn Đồ thị tri thức (GraphRAG)";
+          } else if (evt.name === "pill_image_lookup") {
+            toolName = "Tìm kiếm ảnh thuốc";
+          } else if (evt.name === "medical_calculator") {
+            toolName = "Công cụ tính chỉ số sinh học (BMI, eGFR)";
+          } else if (evt.name === "drug_interaction_checker") {
+            toolName = "Kiểm tra tương tác thuốc (Neo4j)";
+          }
           if (toolsEl) {
             toolsEl.insertAdjacentHTML(
               "beforeend",
@@ -955,6 +1000,21 @@ async function sendAgentQuery() {
           if (thinkingIndicator) {
             thinkingIndicator.className = "chat-thinking-indicator chat-thinking-indicator--done";
           }
+          
+          // Dọn dẹp nội dung Thought để tránh hiển thị trùng lặp câu trả lời
+          if (pre) {
+            let rawText = pre.textContent;
+            const markerIndex = rawText.search(/Final\s+Answer\s*:/i);
+            if (markerIndex !== -1) {
+              pre.textContent = rawText.substring(0, markerIndex).trim();
+            } else {
+              const cleanText = rawText.trim();
+              if (cleanText.startsWith("-") || cleanText.startsWith("*") || (!cleanText.includes("Thought:") && !cleanText.includes("Action:"))) {
+                pre.textContent = "Thought: Đang tổng hợp câu trả lời dựa trên thông tin y khoa đã tra cứu.";
+              }
+            }
+          }
+          
           plainAnswer = "";
         } else if (ev === "answer_delta") {
           plainAnswer += evt.text ?? "";
@@ -987,7 +1047,7 @@ async function sendAgentQuery() {
           if (answerRow) {
             const bubble = answerRow.querySelector(".chat-bubble--assistant");
             if (bubble) bubble.innerHTML = innerHtml;
-            persistAssistantBubbleHtml(innerHtml);
+            persistAssistantBubbleHtml(innerHtml, ans);
           }
           renderThreadList();
           renderAllGraphs();

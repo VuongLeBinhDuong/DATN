@@ -1,201 +1,206 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#d97736" />
-    <title>DATN — Nhân viên y tế</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css?v=warm1" />
-    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  </head>
-  <body class="chat-page" data-protected="true">
-    <div class="mesh" aria-hidden="true"></div>
 
-    <header class="topbar">
-      <div class="topbar-inner">
-        <a class="brand" href="/ui/" aria-label="Trang chủ">
-          <span class="brand-mark" aria-hidden="true"></span>
-          <span class="brand-text">
-            <span class="brand-name">DATN</span>
-            <span class="brand-tag">Nhân viên y tế · trò chuyện &amp; công cụ</span>
-          </span>
-        </a>
-        <nav class="tabs" role="navigation" aria-label="Điều hướng">
-          <a class="tab" href="/ui/">Trang chủ</a>
-          <a class="tab" href="/ui/dashboard.html">Dashboard</a>
-          <span class="tab is-active" aria-current="page">Nhân viên y tế</span>
-          <a class="tab" href="/ui/lich-nhac.html">Lịch thuốc</a>
-          <a class="tab" href="/ui/nhap-tai-lieu.html">Nhập tài liệu</a>
-          <a class="tab" href="/ui/tin-tuc-y-te.html">Tin tức y tế</a>
-        </nav>
-        <span class="auth-user" id="authUserLabel"></span>
-        <a class="btn ghost btn-auth" id="loginLink" href="/ui/login.html">Đăng nhập</a>
-        <button type="button" class="btn secondary btn-auth hidden" id="logoutBtn">Đăng xuất</button>
-        <button type="button" class="theme-btn" id="themeToggle" aria-label="Đổi giao diện sáng/tối">
-          <span class="icon-moon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
-          </span>
-          <span class="icon-sun hidden" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-            </svg>
-          </span>
-        </button>
-      </div>
-    </header>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#d97736" />
+  <title>Nhân viên y tế</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap&subset=latin,latin-ext,vietnamese"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=responsive_v4" />
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
 
-    <div class="chat-page-layout">
-      <aside class="chat-sidebar" id="chatSidebar" aria-label="Cuộc trò chuyện và công cụ">
-        <div class="chat-sidebar-scroll" id="sidebarScroll">
-          <button type="button" class="chat-new-thread-btn" id="newThreadBtn">
-            <span aria-hidden="true">+</span> Cuộc trò chuyện mới
-          </button>
-          <div class="chat-sidebar-section">
-            <h2 class="chat-sidebar-heading">Cuộc trò chuyện</h2>
-            <ul class="chat-thread-list" id="threadList" role="listbox" aria-label="Danh sách cuộc trò chuyện"></ul>
-          </div>
-          <div class="chat-sidebar-section chat-tools-block">
-            <h2 class="chat-sidebar-heading">Công cụ (nhân viên hỗ trợ)</h2>
-            <p class="chat-tools-intro">
-              Nhân viên y tế trả lời dựa trên tri thức y khoa từ hệ thống; các công cụ bên dưới giúp bạn ghi nhớ và nhắc việc ngay trên trình duyệt.
-            </p>
-            <div class="chat-tools-actions">
-              <button type="button" class="chat-tool-btn" id="openReminderDialogBtn">Đặt lịch nhắc</button>
-              <button type="button" class="chat-tool-btn chat-tool-btn--secondary" id="toggleRemindersPanelBtn">Lịch đã lưu</button>
-              <a class="chat-tool-btn chat-tool-btn--secondary" href="/ui/lich-nhac.html">Xem trang lịch thuốc</a>
-            </div>
-            <div class="chat-reminders-panel hidden" id="remindersPanel" aria-live="polite"></div>
-          </div>
-        </div>
-      </aside>
+<body class="chat-page" data-protected="true">
+  <div class="mesh" aria-hidden="true"></div>
 
-      <main class="main chat-main chat-main--with-sidebar">
-        <section class="card chat-shell" aria-label="Đoạn chat">
-          <header class="chat-thread-header">
-            <button type="button" class="chat-sidebar-toggle chat-sidebar-toggle--header" id="sidebarToggle" aria-expanded="true" aria-controls="sidebarScroll" aria-label="Thu gọn sidebar" title="Thu gọn / mở sidebar">
-              <span class="chat-sidebar-toggle-icon" aria-hidden="true">☰</span>
-            </button>
-            <div class="chat-thread-avatar" aria-hidden="true">NV</div>
-            <div class="chat-thread-meta">
-              <div class="chat-thread-title" id="activeThreadTitle">Nhân viên y tế</div>
-              <div class="chat-thread-status">Trò chuyện với nhân viên ảo · dùng công cụ bên trái để nhắc nhở · lưu cục bộ</div>
-            </div>
-            <button type="button" class="chat-clear-btn" id="deleteThreadBtn" title="Xóa cuộc trò chuyện hiện tại">
-              Xóa cuộc này
-            </button>
-          </header>
-          <div id="e2eReadinessBanner" class="readiness-banner hidden" role="status" aria-live="polite"></div>
-          <div id="chatMessages" class="chat-messages" role="log" aria-relevant="additions" aria-live="polite"></div>
-          <div class="chat-composer-bar">
-            <label class="sr-only" for="question">Nội dung tin nhắn</label>
-            <div class="chat-composer-pill">
-              <textarea
-                id="question"
-                class="chat-input"
-                rows="1"
-                placeholder="Hỏi về triệu chứng, thuốc hoặc kiến thức y khoa…"
-                autocomplete="off"
-              ></textarea>
-              <button type="button" class="chat-send" id="sendBtn" aria-label="Gửi tin nhắn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" />
-                </svg>
-              </button>
-            </div>
-            <div class="chat-backend-selector">
-              <label for="backendSelect" class="chat-backend-label">Mô hình:</label>
-              <select id="backendSelect" class="chat-backend-select" title="Chọn backend LLM">
-                <option value="auto">Tự động (theo cấu hình)</option>
-                <option value="ollama">Ollama (Local)</option>
-                <option value="openrouter">OpenRouter (Cloud)</option>
-              </select>
-            </div>
-            <div class="chat-backend-selector">
-              <label for="queryModeSelect" class="chat-backend-label">Chế độ:</label>
-              <select id="queryModeSelect" class="chat-backend-select" title="Chọn chế độ truy vấn">
-                <option value="agent">Agent (ReAct) — Trả lời tự nhiên</option>
-                <option value="neo4j-direct">Neo4j Trực tiếp — Dữ liệu thô từ graph</option>
-              </select>
-            </div>
-            <p class="chat-hint"><kbd>Enter</kbd> gửi · <kbd>Shift</kbd> + <kbd>Enter</kbd> xuống dòng</p>
-            <p class="chat-legal-hint" role="note">
-              Thông tin trò chuyện chỉ mang tính tham khảo, <strong>không thay thế</strong> khám và tư vấn trực tiếp của bác sĩ hay dược sĩ.
-            </p>
-          </div>
-        </section>
-      </main>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/ui/" aria-label="Trang chủ">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">
+          <span class="brand-name">DATN</span>
+          <span class="brand-tag brand-tag--soft">Hệ thống hỏi đáp y tế</span>
+        </span>
+      </a>
+      <nav class="tabs" role="navigation" aria-label="Điều hướng">
+        <a class="tab" href="/ui/">Trang chủ</a>
+        <a class="tab" href="/ui/dashboard.html">Dashboard</a>
+        <span class="tab is-active" aria-current="page">Nhân viên y tế</span>
+        <a class="tab" href="/ui/lich-nhac.html">Lịch thuốc</a>
+        <a class="tab" href="/ui/cong-cu.html">Công cụ</a>
+        <a class="tab" href="/ui/nhap-tai-lieu.html">Nhập tài liệu</a>
+        <a class="tab" href="/ui/tin-tuc-y-te.html">Tin tức y tế</a>
+      </nav>
+      <span class="auth-user" id="authUserLabel"></span>
+      <a class="btn ghost btn-auth" id="loginLink" href="/ui/login.html">Đăng nhập</a>
+      <button type="button" class="btn secondary btn-auth hidden" id="logoutBtn">Đăng xuất</button>
+      <button type="button" class="theme-btn" id="themeToggle" aria-label="Đổi giao diện sáng/tối">
+        <span class="icon-moon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg>
+        </span>
+        <span class="icon-sun hidden" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+          </svg>
+        </span>
+      </button>
     </div>
+  </header>
 
-    <dialog class="chat-dialog" id="reminderDialog" aria-labelledby="reminderDialogTitle">
-      <form class="chat-dialog-form" id="reminderForm">
-        <h2 class="chat-dialog-title" id="reminderDialogTitle">Đặt lịch nhắc uống thuốc / nhắc nhở</h2>
-        <p class="chat-dialog-desc">
-          Lưu cục bộ trên trình duyệt. Có thể chọn <strong>một lần</strong>, <strong>mỗi ngày</strong> (nhiều giờ) hoặc
-          <strong>cách mỗi X giờ</strong>. Thông báo đẩy cần bạn bật quyền trong trình duyệt.
-        </p>
-        <div class="chat-dialog-field">
-          <label for="reminderText">Nội dung (tên thuốc / việc cần nhớ)</label>
-          <textarea id="reminderText" rows="2" placeholder="Ví dụ: Uống Paracetamol 500mg sau ăn…" required></textarea>
+  <div class="chat-page-layout">
+    <aside class="chat-sidebar" id="chatSidebar" aria-label="Cuộc trò chuyện và công cụ">
+      <div class="chat-sidebar-scroll" id="sidebarScroll">
+        <button type="button" class="chat-new-thread-btn" id="newThreadBtn">
+          <span aria-hidden="true">+</span> Cuộc trò chuyện mới
+        </button>
+        <div class="chat-sidebar-section">
+          <h2 class="chat-sidebar-heading">Cuộc trò chuyện</h2>
+          <ul class="chat-thread-list" id="threadList" role="listbox" aria-label="Danh sách cuộc trò chuyện"></ul>
         </div>
-        <fieldset class="chat-dialog-field chat-dialog-fieldset">
-          <legend class="chat-dialog-legend">Kiểu lịch</legend>
-          <div class="chat-reminder-kind-row">
-            <label class="chat-radio-label"
-              ><input type="radio" name="reminderKind" value="once" checked /> Một lần (ngày &amp; giờ cụ thể)</label
-            >
+        <div class="chat-sidebar-section chat-tools-block">
+          <h2 class="chat-sidebar-heading">Công cụ (nhân viên hỗ trợ)</h2>
+          <p class="chat-tools-intro">
+            Nhân viên y tế trả lời dựa trên tri thức y khoa từ hệ thống; các công cụ bên dưới giúp bạn ghi nhớ và nhắc
+            việc ngay trên trình duyệt.
+          </p>
+          <div class="chat-tools-actions">
+            <button type="button" class="chat-tool-btn" id="openReminderDialogBtn">Đặt lịch nhắc</button>
+            <button type="button" class="chat-tool-btn chat-tool-btn--secondary" id="toggleRemindersPanelBtn">Lịch đã
+              lưu</button>
+            <a class="chat-tool-btn chat-tool-btn--secondary" href="/ui/lich-nhac.html">Xem trang lịch thuốc</a>
+            <a class="chat-tool-btn chat-tool-btn--secondary" href="/ui/cong-cu.html?tool=bmi">Tính chỉ số BMI</a>
+            <a class="chat-tool-btn chat-tool-btn--secondary" href="/ui/cong-cu.html?tool=egfr">Tính độ lọc eGFR</a>
+            <a class="chat-tool-btn chat-tool-btn--secondary" href="/ui/cong-cu.html?tool=interaction">Tương tác
+              thuốc</a>
           </div>
-          <div class="chat-reminder-kind-row">
-            <label class="chat-radio-label"
-              ><input type="radio" name="reminderKind" value="daily" /> Hằng ngày (lặp các giờ trong ngày)</label
-            >
-          </div>
-          <div class="chat-reminder-kind-row">
-            <label class="chat-radio-label"
-              ><input type="radio" name="reminderKind" value="interval" /> Cách mỗi vài giờ (từ mốc bắt đầu)</label
-            >
-          </div>
-        </fieldset>
-        <div class="chat-dialog-field chat-reminder-section" id="reminderFieldsOnce">
-          <label for="reminderWhen">Thời điểm</label>
-          <input type="datetime-local" id="reminderWhen" />
+          <div class="chat-reminders-panel hidden" id="remindersPanel" aria-live="polite"></div>
         </div>
-        <div class="chat-dialog-field chat-reminder-section hidden" id="reminderFieldsDaily">
-          <label for="reminderDailyTimes">Giờ uống trong ngày (24h)</label>
-          <input
-            type="text"
-            id="reminderDailyTimes"
-            placeholder="Ví dụ: 8:00, 13:00, 21:00"
-            autocomplete="off"
-          />
-          <p class="chat-dialog-hint">Nhiều giờ, cách nhau bằng dấu phẩy. Lặp mỗi ngày cho đến khi bạn xóa.</p>
-        </div>
-        <div class="chat-dialog-field chat-reminder-section hidden" id="reminderFieldsInterval">
-          <label for="reminderIntervalHours">Khoảng cách (giờ)</label>
-          <input type="number" id="reminderIntervalHours" min="1" max="72" step="1" value="6" />
-          <label for="reminderIntervalStart" class="chat-dialog-label-spaced">Bắt đầu từ</label>
-          <input type="datetime-local" id="reminderIntervalStart" />
-          <p class="chat-dialog-hint">Thích hợp nhắc liều cách đều (vd. kháng sinh 6h/lần). Lần nhắc tiếp theo được tính sau mỗi lần báo.</p>
-        </div>
-        <div class="chat-dialog-actions">
-          <button type="button" class="btn secondary" id="reminderCancelBtn">Hủy</button>
-          <button type="submit" class="btn primary">Lưu lịch</button>
-        </div>
-      </form>
-    </dialog>
+      </div>
+    </aside>
 
-    <div class="chat-toast hidden" id="reminderToast" role="status"></div>
+    <main class="main chat-main chat-main--with-sidebar">
+      <section class="card chat-shell" aria-label="Đoạn chat">
+        <header class="chat-thread-header">
+          <button type="button" class="chat-sidebar-toggle chat-sidebar-toggle--header" id="sidebarToggle"
+            aria-expanded="true" aria-controls="sidebarScroll" aria-label="Thu gọn sidebar"
+            title="Thu gọn / mở sidebar">
+            <span class="chat-sidebar-toggle-icon" aria-hidden="true">☰</span>
+          </button>
+          <div class="chat-thread-avatar" aria-hidden="true">NV</div>
+          <div class="chat-thread-meta">
+            <div class="chat-thread-title" id="activeThreadTitle">Nhân viên y tế</div>
+            <div class="chat-thread-status">Trò chuyện với nhân viên ảo · dùng công cụ bên trái để nhắc nhở · lưu cục bộ
+            </div>
+          </div>
+          <button type="button" class="chat-clear-btn" id="deleteThreadBtn" title="Xóa cuộc trò chuyện hiện tại">
+            Xóa cuộc này
+          </button>
+        </header>
+        <div id="e2eReadinessBanner" class="readiness-banner hidden" role="status" aria-live="polite"></div>
+        <div id="chatMessages" class="chat-messages" role="log" aria-relevant="additions" aria-live="polite"></div>
+        <div class="chat-composer-bar">
+          <label class="sr-only" for="question">Nội dung tin nhắn</label>
+          <div class="chat-composer-pill">
+            <textarea id="question" class="chat-input" rows="1"
+              placeholder="Hỏi về triệu chứng, thuốc hoặc kiến thức y khoa…" autocomplete="off"></textarea>
+            <button type="button" class="chat-send" id="sendBtn" aria-label="Gửi tin nhắn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"
+                aria-hidden="true">
+                <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" />
+              </svg>
+            </button>
+          </div>
+          <div class="chat-backend-selector">
+            <label for="backendSelect" class="chat-backend-label">Mô hình:</label>
+            <select id="backendSelect" class="chat-backend-select" title="Chọn backend LLM">
+              <option value="auto">Tự động (theo cấu hình)</option>
+              <option value="ollama">Ollama (Local)</option>
+              <option value="openrouter">OpenRouter (Cloud)</option>
+            </select>
+          </div>
+          <div class="chat-backend-selector">
+            <label for="queryModeSelect" class="chat-backend-label">Chế độ:</label>
+            <select id="queryModeSelect" class="chat-backend-select" title="Chọn chế độ truy vấn">
+              <option value="agent">Agent (ReAct) — Trả lời tự nhiên</option>
+              <option value="neo4j-direct">Neo4j Trực tiếp — Dữ liệu thô từ graph</option>
+            </select>
+          </div>
+          <p class="chat-hint"><kbd>Enter</kbd> gửi · <kbd>Shift</kbd> + <kbd>Enter</kbd> xuống dòng</p>
+          <p class="chat-legal-hint" role="note">
+            Thông tin trò chuyện chỉ mang tính tham khảo, <strong>không thay thế</strong> khám và tư vấn trực tiếp của
+            bác sĩ hay dược sĩ.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
 
-    <script src="auth.js?v=auth_v3"></script>
-    <script src="agent.js?v=warm1"></script>
-  </body>
+  <dialog class="chat-dialog" id="reminderDialog" aria-labelledby="reminderDialogTitle">
+    <form class="chat-dialog-form" id="reminderForm">
+      <h2 class="chat-dialog-title" id="reminderDialogTitle">Đặt lịch nhắc uống thuốc / nhắc nhở</h2>
+      <p class="chat-dialog-desc">
+        Lưu cục bộ trên trình duyệt. Có thể chọn <strong>một lần</strong>, <strong>mỗi ngày</strong> (nhiều giờ) hoặc
+        <strong>cách mỗi X giờ</strong>. Thông báo đẩy cần bạn bật quyền trong trình duyệt.
+      </p>
+      <div class="chat-dialog-field">
+        <label for="reminderText">Nội dung (tên thuốc / việc cần nhớ)</label>
+        <textarea id="reminderText" rows="2" placeholder="Ví dụ: Uống Paracetamol 500mg sau ăn…" required></textarea>
+      </div>
+      <fieldset class="chat-dialog-field chat-dialog-fieldset">
+        <legend class="chat-dialog-legend">Kiểu lịch</legend>
+        <div class="chat-reminder-kind-row">
+          <label class="chat-radio-label"><input type="radio" name="reminderKind" value="once" checked /> Một lần (ngày
+            &amp; giờ cụ thể)</label>
+        </div>
+        <div class="chat-reminder-kind-row">
+          <label class="chat-radio-label"><input type="radio" name="reminderKind" value="daily" /> Hằng ngày (lặp các
+            giờ trong ngày)</label>
+        </div>
+        <div class="chat-reminder-kind-row">
+          <label class="chat-radio-label"><input type="radio" name="reminderKind" value="interval" /> Cách mỗi vài giờ
+            (từ mốc bắt đầu)</label>
+        </div>
+      </fieldset>
+      <div class="chat-dialog-field chat-reminder-section" id="reminderFieldsOnce">
+        <label for="reminderWhen">Thời điểm</label>
+        <input type="datetime-local" id="reminderWhen" />
+      </div>
+      <div class="chat-dialog-field chat-reminder-section hidden" id="reminderFieldsDaily">
+        <label for="reminderDailyTimes">Giờ uống trong ngày (24h)</label>
+        <input type="text" id="reminderDailyTimes" placeholder="Ví dụ: 8:00, 13:00, 21:00" autocomplete="off" />
+        <p class="chat-dialog-hint">Nhiều giờ, cách nhau bằng dấu phẩy. Lặp mỗi ngày cho đến khi bạn xóa.</p>
+      </div>
+      <div class="chat-dialog-field chat-reminder-section hidden" id="reminderFieldsInterval">
+        <label for="reminderIntervalHours">Khoảng cách (giờ)</label>
+        <input type="number" id="reminderIntervalHours" min="1" max="72" step="1" value="6" />
+        <label for="reminderIntervalStart" class="chat-dialog-label-spaced">Bắt đầu từ</label>
+        <input type="datetime-local" id="reminderIntervalStart" />
+        <p class="chat-dialog-hint">Thích hợp nhắc liều cách đều (vd. kháng sinh 6h/lần). Lần nhắc tiếp theo được tính
+          sau mỗi lần báo.</p>
+      </div>
+      <div class="chat-dialog-actions">
+        <button type="button" class="btn secondary" id="reminderCancelBtn">Hủy</button>
+        <button type="submit" class="btn primary">Lưu lịch</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="chat-toast hidden" id="reminderToast" role="status"></div>
+
+  <script src="auth.js?v=auth_v3"></script>
+  <script src="agent.js?v=warm1"></script>
+</body>
+
 </html>

@@ -45,6 +45,12 @@ class Neo4jKGClient:
     """Neo4j client for custom KG (Document/Chunk/Entity)."""
 
     def __init__(self, cfg: dict[str, Any] | None = None) -> None:
+        if cfg is None:
+            try:
+                from llm_pipeline.neo4j_graphrag import load_neo4j_config
+                cfg = load_neo4j_config()
+            except Exception:
+                pass
         self._cfg = cfg
         self._driver = None
 
@@ -93,7 +99,7 @@ class Neo4jKGClient:
                 print(f"  - {stmt}... : {err}")
         return executed
 
-    def upsert_documents(self, docs: Iterable[DocumentRecord]) -> int:
+    def upsert_documents(self, docs: Iterable[DocumentRecord], batch_size: int = 1000) -> int:
         driver, db = self._connection()
         rows = []
         for d in docs:
@@ -111,10 +117,14 @@ class Neo4jKGClient:
             "    d.created_at = coalesce(d.created_at, r.created_at) "
             "RETURN count(d) AS n"
         )
+        total = 0
         with driver.session(database=db) as session:
-            return int(session.run(cypher, {"rows": rows}).single()["n"])
+            for i in range(0, len(rows), batch_size):
+                batch = rows[i : i + batch_size]
+                total += int(session.run(cypher, {"rows": batch}).single()["n"])
+        return total
 
-    def upsert_chunks(self, chunks: Iterable[ChunkRecord]) -> int:
+    def upsert_chunks(self, chunks: Iterable[ChunkRecord], batch_size: int = 1000) -> int:
         driver, db = self._connection()
         rows = []
         for c in chunks:
@@ -140,10 +150,14 @@ class Neo4jKGClient:
             "MERGE (d)-[:HAS_CHUNK]->(c) "
             "RETURN count(c) AS n"
         )
+        total = 0
         with driver.session(database=db) as session:
-            return int(session.run(cypher, {"rows": rows}).single()["n"])
+            for i in range(0, len(rows), batch_size):
+                batch = rows[i : i + batch_size]
+                total += int(session.run(cypher, {"rows": batch}).single()["n"])
+        return total
 
-    def upsert_entities(self, entities: Iterable[EntityRecord]) -> int:
+    def upsert_entities(self, entities: Iterable[EntityRecord], batch_size: int = 1000) -> int:
         driver, db = self._connection()
         rows = []
         for e in entities:
@@ -163,10 +177,14 @@ class Neo4jKGClient:
             "    e.created_at = coalesce(e.created_at, r.created_at) "
             "RETURN count(e) AS n"
         )
+        total = 0
         with driver.session(database=db) as session:
-            return int(session.run(cypher, {"rows": rows}).single()["n"])
+            for i in range(0, len(rows), batch_size):
+                batch = rows[i : i + batch_size]
+                total += int(session.run(cypher, {"rows": batch}).single()["n"])
+        return total
 
-    def upsert_mentions(self, mentions: Iterable[MentionRecord]) -> int:
+    def upsert_mentions(self, mentions: Iterable[MentionRecord], batch_size: int = 1000) -> int:
         driver, db = self._connection()
         rows = [asdict(m) for m in mentions]
         if not rows:
@@ -182,10 +200,14 @@ class Neo4jKGClient:
             "    m.end_char = r.end_char "
             "RETURN count(m) AS n"
         )
+        total = 0
         with driver.session(database=db) as session:
-            return int(session.run(cypher, {"rows": rows}).single()["n"])
+            for i in range(0, len(rows), batch_size):
+                batch = rows[i : i + batch_size]
+                total += int(session.run(cypher, {"rows": batch}).single()["n"])
+        return total
 
-    def upsert_relations(self, rels: Iterable[RelationRecord]) -> int:
+    def upsert_relations(self, rels: Iterable[RelationRecord], batch_size: int = 1000) -> int:
         driver, db = self._connection()
         raw_rows = [asdict(r) for r in rels]
         if not raw_rows:
@@ -207,8 +229,12 @@ class Neo4jKGClient:
             "    x.evidence_chunk_id = r.evidence_chunk_id "
             "RETURN count(x) AS n"
         )
+        total = 0
         with driver.session(database=db) as session:
-            return int(session.run(cypher, {"rows": rows}).single()["n"])
+            for i in range(0, len(rows), batch_size):
+                batch = rows[i : i + batch_size]
+                total += int(session.run(cypher, {"rows": batch}).single()["n"])
+        return total
 
     def fetch_chunks(
         self,

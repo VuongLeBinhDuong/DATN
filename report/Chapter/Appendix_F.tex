@@ -1,0 +1,47 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+This appendix provides core code snippets demonstrating the system's runtime behavior.
+
+\section*{ReAct Format Healer (Regex Parser)}
+\begin{lstlisting}[language=Python, breaklines=true]
+def extract_fallback_answer(self, text: str) -> str | None:
+    """Try to extract some answer if the strict ReAct format completely failed."""
+    import re
+    # Try to find anything after Final Answer regardless of formatting
+    match = re.search(r"Final\s*Answer\s*:\s*(.*)", text, re.IGNORECASE | re.DOTALL)
+    if match:
+        ans = match.group(1).strip()
+        ans = re.sub(r"^(```|['\"])+|['\"]+$", "", ans)
+        if ans:
+            return ans
+    
+    # Try to find a standalone observation-less response
+    if "graphrag_query" not in text and len(text) > 50:
+        clean = re.sub(r"\*+", "", text).strip()
+        if not clean.startswith("Thought:") and not clean.startswith("Action:"):
+            return clean
+            
+    return None
+\end{lstlisting}
+
+\section*{GraphRAG Retrieval Context Injection}
+\begin{lstlisting}[language=Python, breaklines=true]
+def _append_answer_source_note(answer: str, graph_context: str, retrieval_hits: list[dict[str, Any]]) -> str:
+    """Append source/method note under answer for UI transparency."""
+    base = (answer or "").strip()
+    marker = "Nguon tra loi:"
+    if marker in base:
+        return base
+
+    if (graph_context or "").strip() or retrieval_hits:
+        source_note = "RAG (GraphRAG + LLM tong hop)"
+    else:
+        source_note = "LLM truc tiep (khong dung RAG)"
+
+    if not base:
+        return f"{marker} {source_note}"
+    return f"{base}\n\n---\n{marker} {source_note}"
+\end{lstlisting}
+
+\end{document}

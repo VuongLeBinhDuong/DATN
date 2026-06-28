@@ -42,6 +42,11 @@ class TestComparativeMetrics:
         assert rec == 1.0
         assert len(miss) == 0
 
+        # Match using context_entities
+        rec, miss = esc._node_recall(expected, ["Cúm"], ["Paracetamol", "sốt"])
+        assert rec == 1.0
+        assert len(miss) == 0
+
     def test_edge_recall(self):
         """Test edge recall logic."""
         expected_edges = [

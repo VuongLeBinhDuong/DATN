@@ -41,7 +41,7 @@ def main() -> int:
         choices=["auto", "graph"],
         help="auto = LLM router; graph = luôn tra GraphRAG",
     )
-    parser.add_argument("--ollama-model", default=os.getenv("OLLAMA_MODEL", "llama3.1:8b"))
+    parser.add_argument("--ollama-model", default=os.getenv("OLLAMA_MODEL", "llama3.2:3b"))
     parser.add_argument(
         "--router-model",
         default=DEFAULT_ROUTER_MODEL,

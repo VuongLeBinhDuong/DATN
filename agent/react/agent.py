@@ -98,6 +98,7 @@ def _build_result_bundle(
     retrieval_hits: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Build standardized result bundle for API response."""
+    raw_graph_context = getattr(graph_context, "raw_context", graph_context)
     answer = _append_answer_source_note(answer, graph_context, retrieval_hits)
     confidence = compute_retrieval_confidence(retrieval_hits, graph_context)
 
@@ -106,9 +107,9 @@ def _build_result_bundle(
         "strategy": "react",
         "plan": {"type": "react", "steps": steps},
         "errors": errors,
-        "context_graphrag_preview": (graph_context[:800] + "…") if len(graph_context) > 800 else graph_context,
-        "context_graphrag_full": graph_context,
-        "context_graphrag_total_chars": len(graph_context),
+        "context_graphrag_preview": (raw_graph_context[:800] + "…") if len(raw_graph_context) > 800 else raw_graph_context,
+        "context_graphrag_full": raw_graph_context,
+        "context_graphrag_total_chars": len(raw_graph_context),
         "context_medication_preview": "",
         "drug_images": drug_image_urls,
         "medication_plan": [],
@@ -187,17 +188,27 @@ class ReActAgent:
             obs = run_medical_calculator_tool(tool_input)
             return obs, current_image_urls, []
 
+        if tool_name == "drug_interaction_checker":
+            from agent.react.tools import run_drug_interaction_checker_tool
+            obs = run_drug_interaction_checker_tool(tool_input)
+            return obs, current_image_urls, []
+
         if tool_name == "pill_image_lookup":
             obs, urls = run_pill_image_tool(tool_input)
             return obs, urls, []
 
         # graphrag_query (tắt Query Expansion trong ReAct để tối ưu hóa tốc độ)
         obs, hits = run_graphrag_tool(tool_input, original_question, use_expansion=False)
+        raw_context = getattr(obs, "raw_context", obs)
 
         # Merge with auto-detected pill images
         merged_obs, updated_urls = merge_pill_observation(
             original_question, obs, current_image_urls
         )
+
+        if raw_context:
+            from agent.react.tools import ToolObservationStr
+            merged_obs = ToolObservationStr(merged_obs, raw_context)
 
         return merged_obs, updated_urls, hits
 
@@ -275,11 +286,13 @@ class ReActAgent:
                 if _recovery_enabled() and iteration == 1 and not graph_context.strip():
                     # Force graphrag_query with original question
                     obs, hits = run_graphrag_tool(q, q)
+                    raw_context = getattr(obs, "raw_context", obs)
                     retrieval_hits = merge_retrieval_hits(retrieval_hits, hits)
                     obs, drug_image_urls = merge_pill_observation(q, obs, drug_image_urls)
 
                     if obs.strip():
-                        graph_context = obs
+                        from agent.react.tools import ToolObservationStr
+                        graph_context = ToolObservationStr(obs, raw_context)
 
                     synthetic = create_recovery_synthetic_message(q)
                     messages.append({"role": "assistant", "content": synthetic})
@@ -387,7 +400,8 @@ class ReActAgent:
                 last_action_signature = current_signature
 
                 messages.append({"role": "assistant", "content": assistant_text})
-                messages.append({"role": "user", "content": f"Observation:\n{obs}"})
+                reminder = "\n\n---\nReminder: Bạn đang ở trong quy trình ReAct. Dựa vào Observation trên, hãy tiếp tục bằng cách viết 'Thought:' và 'Final Answer:' để trả lời trực tiếp cho người dùng. Tuyệt đối không được viết tiếp hoặc lặp lại định dạng câu hỏi/trả lời của Observation."
+                messages.append({"role": "user", "content": f"Observation:\n{obs}{reminder}"})
                 continue
 
             # Error case
@@ -446,9 +460,12 @@ class ReActAgent:
 
             assistant_text = ""
             last_parse_err = ""
+            stream_buf = None
 
             for attempt in range(self.parse_retries):
                 parts: list[str] = []
+                from agent.react.stream_buffer import ReActStreamBuffer
+                stream_buf = ReActStreamBuffer()
 
                 try:
                     # Stream tokens from LLM
@@ -463,7 +480,12 @@ class ReActAgent:
                         stop=["Observation:"],
                     ):
                         parts.append(chunk)
-                        yield {"event": "reasoning_delta", "text": chunk}
+                        for event in stream_buf.feed(chunk):
+                            yield event
+
+                    # Flush remaining buffer
+                    for event in stream_buf.finalize():
+                        yield event
 
                     assistant_text = "".join(parts).strip()
 
@@ -507,11 +529,13 @@ class ReActAgent:
                 if _recovery_enabled() and iteration == 1 and not graph_context.strip():
                     # Recovery mode
                     obs, hits = run_graphrag_tool(q, q)
+                    raw_context = getattr(obs, "raw_context", obs)
                     retrieval_hits = merge_retrieval_hits(retrieval_hits, hits)
                     obs, drug_image_urls = merge_pill_observation(q, obs, drug_image_urls)
 
                     if obs.strip():
-                        graph_context = obs
+                        from agent.react.tools import ToolObservationStr
+                        graph_context = ToolObservationStr(obs, raw_context)
 
                     synthetic = create_recovery_synthetic_message(q)
                     messages.append({"role": "assistant", "content": synthetic})
@@ -586,10 +610,20 @@ class ReActAgent:
                     graph_context,
                     retrieval_hits,
                 )
-                yield {"event": "reasoning_end"}
-                yield {"event": "answer_start"}
-                for piece in _chunk_stream_answer(final_answer):
-                    yield {"event": "answer_delta", "text": piece}
+                if stream_buf and stream_buf.has_final_answer:
+                    # The main answer part was already streamed on the fly.
+                    # We only stream the appended source note extra text if present.
+                    ans_strip = (result.answer or "").strip()
+                    if final_answer.startswith(ans_strip):
+                        extra = final_answer[len(ans_strip):]
+                        if extra:
+                            for piece in _chunk_stream_answer(extra):
+                                yield {"event": "answer_delta", "text": piece}
+                else:
+                    yield {"event": "reasoning_end"}
+                    yield {"event": "answer_start"}
+                    for piece in _chunk_stream_answer(final_answer):
+                        yield {"event": "answer_delta", "text": piece}
                 bundle = _build_result_bundle(
                     q, final_answer, graph_context, steps, errors,
                     drug_image_urls, retrieval_hits
@@ -655,7 +689,8 @@ class ReActAgent:
 
                 yield {"event": "tool_done", "observation_chars": len(obs)}
                 messages.append({"role": "assistant", "content": assistant_text})
-                messages.append({"role": "user", "content": f"Observation:\n{obs}"})
+                reminder = "\n\n---\nReminder: Bạn đang ở trong quy trình ReAct. Dựa vào Observation trên, hãy tiếp tục bằng cách viết 'Thought:' và 'Final Answer:' để trả lời trực tiếp cho người dùng. Tuyệt đối không được viết tiếp hoặc lặp lại định dạng câu hỏi/trả lời của Observation."
+                messages.append({"role": "user", "content": f"Observation:\n{obs}{reminder}"})
                 continue
 
             errors.append(f"{result.kind}: {result.error_message}")

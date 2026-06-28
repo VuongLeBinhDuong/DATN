@@ -97,3 +97,9 @@ app.include_router(
     prefix="/api/medical-record",
     tags=["medical-record"],
 )
+
+# Trigger reload due to configuration change (model update to llama3.2:3b)
+
+
+
+

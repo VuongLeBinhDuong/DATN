@@ -145,7 +145,7 @@ def run_pure_llm_query(question: str) -> str:
     )
     
     host = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     try:
         return chat_ollama(
             prompt,
@@ -255,7 +255,7 @@ def main() -> int:
         "# Báo cáo So sánh Đối chiếu: Pure LLM vs. GraphRAG",
         "",
         f"**Tổng số câu hỏi đánh giá:** {len(queries)}",
-        f"**Mô hình LLM:** {os.getenv('OLLAMA_MODEL', 'llama3.1:8b')}",
+        f"**Mô hình LLM:** {os.getenv('OLLAMA_MODEL', 'llama3.2:3b')}",
         "",
         "## 1. Bảng So sánh Chỉ số Trung bình (Aggregate Comparison)",
         "",

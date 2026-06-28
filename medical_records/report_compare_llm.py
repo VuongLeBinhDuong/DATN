@@ -21,7 +21,7 @@ def llm_compare_result_to_reference_on_report(
     Output language: Vietnamese by default (for end users in Vietnam).
     """
     host = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     timeout = int(os.getenv("OLLAMA_TIMEOUT", "180"))
     body = (extracted_text or "")[:_MAX_CHARS]
     if len(extracted_text or "") > _MAX_CHARS:

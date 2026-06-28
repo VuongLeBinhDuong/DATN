@@ -25,7 +25,7 @@ def _entity_id(canonical_name: str, typ: str | None) -> str:
 
 def _llm_call(prompt: str) -> str:
     host = (os.getenv("OLLAMA_HOST") or "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL") or "llama3.1:8b"
+    model = os.getenv("OLLAMA_MODEL") or "llama3.2:3b"
     timeout = int(os.getenv("OLLAMA_TIMEOUT") or "120")
     temperature = float(os.getenv("KG_EXTRACT_TEMPERATURE") or "0.1")
     num_predict = int(os.getenv("KG_EXTRACT_NUM_PREDICT") or "2048")

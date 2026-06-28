@@ -28,7 +28,7 @@ class TestOllamaBackend:
         """Test default host, model and timeout initialization."""
         backend = OllamaBackend()
         assert backend.host == "http://localhost:11434"
-        assert backend.default_model == "llama3.1:8b"
+        assert backend.default_model == "llama3.2:3b"
         assert backend.timeout == 120
 
     def test_init_custom_values(self, clean_settings_cache):
@@ -78,7 +78,7 @@ class TestOllamaBackend:
             
             # Verify request parameters
             kwargs = mock_post.call_args[1]
-            assert kwargs["json"]["model"] == "llama3.1:8b"
+            assert kwargs["json"]["model"] == "llama3.2:3b"
             assert kwargs["json"]["options"]["temperature"] == 0.2
             assert kwargs["json"]["stream"] is False
 

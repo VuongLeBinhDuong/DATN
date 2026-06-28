@@ -38,13 +38,7 @@ class AgentService:
         history: list[dict[str, str]] | None = None,
     ) -> dict[str, Any]:
         """Execute agent query with ReAct strategy."""
-        # 1. 0ms Intent Router Check
-        from core.intent_router import detect_intent, execute_direct_db_query
-        intent = detect_intent(message)
-        if intent == "direct_db":
-            return execute_direct_db_query(message)
-
-        # 2. Social Shortcut: greetings, open-ended chit-chat, simple thanks
+        # 1. Social Shortcut: greetings, open-ended chit-chat, simple thanks
         from agent.router import is_obvious_pure_social, is_meta_conversational_opener
         if is_obvious_pure_social(message) or is_meta_conversational_opener(message):
             return self._run_direct_social(message)
@@ -58,37 +52,7 @@ class AgentService:
         history: list[dict[str, str]] | None = None,
     ) -> Iterator[dict[str, Any]]:
         """Execute agent query with streaming events."""
-        # 1. 0ms Intent Router Check
-        from core.intent_router import detect_intent, execute_direct_db_query
-        intent = detect_intent(message)
-        if intent == "direct_db":
-            res = execute_direct_db_query(message)
-            yield {
-                "event": "step",
-                "iteration": 1,
-                "thought": "Quyết định từ Intent Router: Chuyển hướng xử lý 0ms..."
-            }
-            yield {
-                "event": "reasoning_delta",
-                "text": "Phát hiện câu hỏi tra cứu chỉ số sinh học lâm sàng chuẩn. Đang đối chiếu khoảng tham chiếu Việt Nam/WHO (0ms)...\n"
-            }
-            yield {
-                "event": "answer_start"
-            }
-            yield {
-                "event": "answer_delta",
-                "text": res["answer"]
-            }
-            yield {
-                "event": "done",
-                "answer": res["answer"],
-                "sources": res.get("sources", []),
-                "context_graphrag_full": "",
-                "drug_images": []
-            }
-            return
-
-        # 2. Social Shortcut: greetings, open-ended chit-chat, simple thanks (Streaming)
+        # 1. Social Shortcut: greetings, open-ended chit-chat, simple thanks (Streaming)
         from agent.router import is_obvious_pure_social, is_meta_conversational_opener
         if is_obvious_pure_social(message) or is_meta_conversational_opener(message):
             yield {

@@ -6,3 +6,8 @@ Bạn là trợ lý cửa sổ chat y tế. Lượt này là **xã giao** (chào
 
 Tin nhắn người dùng:
 {question}
+
+---
+Hãy phản hồi tin nhắn của người dùng trực tiếp bằng tiếng Việt:
+
+Trả lời:

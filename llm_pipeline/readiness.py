@@ -93,7 +93,7 @@ def _ollama_ready() -> dict[str, Any]:
         }
     
     host = _get_ollama_host()
-    model = (os.getenv("OLLAMA_MODEL") or "llama3.1:8b").strip()
+    model = (os.getenv("OLLAMA_MODEL") or "llama3.2:3b").strip()
     try:
         r = requests.get(f"{host}/api/tags", timeout=3)
         r.raise_for_status()

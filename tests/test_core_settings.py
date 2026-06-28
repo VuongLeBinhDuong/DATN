@@ -26,7 +26,7 @@ class TestSettings:
             
             # Check default Ollama settings
             assert settings.ollama.host == "http://localhost:11434"
-            assert settings.ollama.model == "llama3.1:8b"
+            assert settings.ollama.model == "llama3.2:3b"
             assert settings.ollama.timeout == 120
             
             # Check default agent settings

@@ -4,66 +4,18 @@ This appendix provides detailed use case specifications for the core functions o
 
 \section{Use Case UC-01: Consult Medical Agent}
 \label{section:uc-01}
-\begin{itemize}
-    \item \textbf{Actor}: Clinician, Patient, or Administrative Staff.
-    \item \textbf{Description}: The user queries the intelligent agent in natural language. The agent executes a localized ReAct loop to search the custom Neo4j Knowledge Graph, retrieve clinical evidence chunks, inspect pill details, and construct a structured Vietnamese response with Vis.js network citations.
-    \item \textbf{Preconditions}:
-        \begin{enumerate}
-            \item The Docker Compose stack is running, and Neo4j is loaded with the pruned 25k medical nodes database.
-            \item The local Ollama backend is running and hosting the Llama-3.1-8B model.
-        \end{enumerate}
-    \item \textbf{Normal Flow}:
-        \begin{enumerate}
-            \item The user enters a clinical question (e.g., \textit{"Diabetes diet suggestions"}) in the chat interface.
-            \item The system detects the query intent. If it is a generic query, it invokes the ReAct agent pipeline.
-            \item The ReAct agent starts iteration 1: generates a thought and executes the \texttt{graphrag\_query} tool with appropriate inputs.
-            \item The system runs Cypher queries against Neo4j, retrieves matching entities and context paragraphs, and returns them as observations.
-            \item The agent starts iteration 2: synthesizes the retrieved evidence, determines that it has enough information, and outputs the \texttt{Final Answer}.
-            \item The Web UI streams the generated markdown tokens, renders the Vis.js subgraph map showing connected nodes, and provides an option to export the output as a PDF report.
-        \end{enumerate}
-    \item \textbf{Alternative Flows}:
-        \item \textbf{Format Recovery}: If the LLM generates a response missing mandatory ReAct tags, the parser triggers up to 3 repair cycles by appending prompt fixes.
-        \item \textbf{Loop Guard Trigger}: If the agent submits duplicate tool calls, the loop-guard terminates execution immediately, synthesizes the final answer using existing context, and prevents infinite token consumption.
-        \item \textbf{Intent Routing Fallback}: If the query asks for a quantitative lab indicator check, the router intercepts it in 0 ms, matches bounds, and displays a deterministic report.
-\end{itemize}
+Use Case UC‑01 – Consult Medical Agent: Actors include clinicians, patients, or administrative staff. The user queries the intelligent agent in natural language, triggering a localized ReAct loop that searches the custom Neo4j Knowledge Graph, retrieves clinical evidence chunks, inspects pill details, and constructs a structured Vietnamese response with Vis.js network citations. Preconditions are that the local Neo4j service is running with a KG of 12,942 entities and the local backend hosts the 3-billion parameter model. In the normal flow, the user enters a clinical question (e.g., "Diabetes diet suggestions"), the system detects intent and invokes the ReAct pipeline, the agent generates a thought and runs the \texttt{graphrag\_query} tool, Cypher queries retrieve matching entities and context paragraphs, the agent synthesizes evidence in a second iteration and outputs the \texttt{Final Answer}, and the Web UI streams markdown, renders a Vis.js subgraph, and offers PDF export. Alternative flows include format recovery (repairing missing ReAct tags), loop‑guard trigger (terminating duplicate tool calls), and intent routing fallback (direct quantitative lab checks).
 
 \section{Use Case UC-02: Import and Analyze Multi-format Lab Report}
 \label{section:uc-02}
-\begin{itemize}
-    \item \textbf{Actor}: Clinician or Patient.
-    \item \textbf{Description}: The user uploads a digital lab report in PDF or Excel (\texttt{.xlsx}, \texttt{.xlsm}) format. The system extracts the textual metrics, automatically compares them against on-form printed reference ranges, highlights abnormal parameters, and generates a personalized clinical consultation based on graph-derived recommendations.
-    \item \textbf{Preconditions}:
-        \begin{enumerate}
-            \item The user has a valid local file containing standard laboratory testing grids.
-        \end{enumerate}
-    \item \textbf{Normal Flow}:
-        \begin{enumerate}
-            \item The user drops a PDF or Excel report file onto the Web UI upload zone.
-            \item The FastAPI server delegates the file stream to the PyMuPDF or openpyxl extractor.
-            \item The extracted cell grids are sent to the \texttt{lab\_compare\_on\_form} module.
-            \item The system isolates boundary bounds, compares patient numbers, and flags indicators as \textit{Bình thường} (Within), \textit{Tăng cao} (Above), or \textit{Giảm thấp} (Below).
-            \item The system automatically extracts abnormal entities, queries Neo4j for clinical recommendations, and prompts the LLM to write a comprehensive advice plan.
-            \item The UI displays the side-by-side view with color-coded alerts and the generated advisory text.
-        \end{enumerate}
-\end{itemize}
+Use Case UC‑02 – Import and Analyze Multi‑format Lab Report: Actors are clinicians or patients. The user uploads a digital lab report in PDF or Excel format; the system extracts textual metrics, automatically compares them against on‑form reference ranges, highlights abnormal parameters, and generates a personalized clinical consultation using graph‑derived recommendations. The precondition is a valid local file containing standard laboratory grids. In the normal flow, the user drops the file onto the Web UI, the FastAPI server streams it to the PyMuPDF or openpyxl extractor, the extracted grids are processed by the \texttt{lab\_compare\_on\_form} module, the system flags indicators as normal, high, or low, extracts abnormal entities, queries Neo4j for recommendations, prompts the LLM for an advice plan, and the UI displays side‑by‑side color‑coded alerts and advisory text.
 
 \section{Use Case UC-03: Manage Medication Schedule and Reminder}
 \label{section:uc-03}
-\begin{itemize}
-    \item \textbf{Actor}: Patient or Caregiver.
-    \item \textbf{Description}: The user sets up daily intake schedules for suggested medications, visualizes the schedule blocks on a weekly calendar, and receives automated audio-visual reminders.
-    \item \textbf{Preconditions}:
-        \begin{enumerate}
-            \item The agent has generated a prescription plan or the user manually inputs drug names.
-        \end{enumerate}
-    \item \textbf{Normal Flow}:
-        \begin{enumerate}
-            \item The user opens the Reminder Calendar screen.
-            \item The user selects a medication card, defines the daily frequency (e.g., \textit{2 times/day}), specifies target times, and sets intake markers (e.g., \textit{after meals}).
-            \item The system stores the calendar block configuration in the local SQLite database.
-            \item The Web UI updates the weekly schedule grid, displaying colored blocks for each time slot.
-            \item When a time slot is reached, the browser triggers an alert notification badge and a audio tone.
-        \end{enumerate}
-\end{itemize}
+Use Case UC‑03 – Manage Medication Schedule and Reminder: Actors are patients or caregivers. The user sets up daily intake schedules for suggested medications, visualizes schedule blocks on a weekly calendar, and receives automated audio‑visual reminders. The precondition is that the agent has generated a prescription plan or the user manually inputs drug names. In the normal flow, the user opens the Reminder Calendar, selects a medication card, defines frequency, target times, and intake markers, the system stores the configuration in browser local storage, the Web UI updates the weekly schedule with colored blocks, and the browser triggers an alert badge and audio tone when a time slot is reached.
+
+\section{Use Case UC-04: Clinical Calculators and Interaction Safety Check}
+\label{section:uc-04}
+Use Case UC‑04 – Clinical Calculators and Interaction Safety Check: Actors are clinicians or patients. The user employs deterministic tools to calculate standard metrics (BMI, eGFR) or queries the Neo4j Knowledge Graph to check drug‑drug interaction safety. Preconditions are that the user has accessed the "Công cụ" page and the backend API is connected to Neo4j. In the normal flow, the user navigates to the clinical tools interface, inputs weight and height to calculate BMI (instant result with classification), inputs serum creatinine, age, and sex to compute eGFR using the CKD‑EPI (2021) equation, or selects two drug names to check interaction safety, where the backend queries Neo4j and returns clinical warning text and source evidence.
 
 \end{document}

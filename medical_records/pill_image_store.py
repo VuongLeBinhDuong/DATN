@@ -21,17 +21,33 @@ PILL_LOOKUP_ALIASES: dict[str, str] = {
 
 def resolve_pill_lookup_query(q: str) -> str | None:
     """
-    Nếu chuỗi có nhắc alias đã biết, trả về slug tra cứu (vd. paracetamol → acetaminophen).
-    Không khớp thì None — caller giữ nguyên query gốc.
+    Nếu chuỗi có nhắc alias đã biết hoặc tên hoạt chất gốc (slug), trả về slug tra cứu.
+    Không khớp thì None.
     """
     low = (q or "").strip().casefold()
     if not low:
         return None
+        
+    # 1. Check mapped aliases
     for alias, canonical in sorted(PILL_LOOKUP_ALIASES.items(), key=lambda x: -len(x[0])):
         if len(alias) < 4:
             continue
         if alias in low:
             return canonical
+            
+    # 2. Check canonical slugs directly (dynamic from records)
+    try:
+        flat = _load_all_records()
+        slugs = {rec["slug"].casefold() for rec in flat if rec.get("slug")}
+        for slug in sorted(slugs, key=lambda s: -len(s)):
+            if len(slug) < 4:
+                continue
+            slug_space = slug.replace("_", " ")
+            if slug in low or slug_space in low:
+                return slug
+    except Exception:
+        pass
+        
     return None
 
 

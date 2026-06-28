@@ -148,7 +148,7 @@ Mạch ReAct (Reason + Action) vận hành dựa trên cơ chế lặp để k�
 | `AGENT_USE_REACT` | `bool` | `true` | Kích hoạt vòng lặp nhận thức ReAct |
 | `AGENT_REACT_MAX_ITER` | `int` | `5` | Giới hạn vòng lặp ReAct tối đa để tránh lặp vô hạn |
 | `AGENT_REACT_PARSE_RETRIES`| `int` | `2` | Số lần thử lại nhắc định dạng nếu LLM sinh cú pháp lỗi |
-| `OLLAMA_MODEL` | `str` | `llama3.1:8b` | Mô hình ngôn ngữ nền tảng xử lý lập luận |
+| `OLLAMA_MODEL` | `str` | `llama3.2:3b` | Mô hình ngôn ngữ nền tảng xử lý lập luận |
 
 ---
 

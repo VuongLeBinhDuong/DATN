@@ -1,17 +1,41 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces General Use Case diagram for the Smart Medical Consultation System}}{5}{figure.caption.7}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Detailed Use Case diagram for UC-01: Consult Medical Agent}}{6}{figure.caption.9}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Detailed Use Case diagram for UC-02: Upload \& Analyze Medical Record}}{6}{figure.caption.11}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Detailed Use Case diagram for UC-03: Manage Medication Reminders}}{7}{figure.caption.13}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Detailed Use Case diagram for UC-04: Clinical Calculators and Interaction Safety Check}}{7}{figure.caption.15}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Detailed Use Case diagram for UC-05: View Medical News}}{7}{figure.caption.17}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Detailed Use Case diagram for UC-06: Manage Knowledge Graph}}{8}{figure.caption.19}%
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Sequence diagram of the complete medical record analysis and advice generation workflow}}{9}{figure.caption.20}%
+\contentsline {figure}{\numberline {2.9}{\ignorespaces Sequence diagram of the ReAct agent consultation and streaming workflow}}{9}{figure.caption.21}%
+\contentsline {figure}{\numberline {2.10}{\ignorespaces Sequence diagram of the browser-based medication reminder and notification scheduling workflow}}{10}{figure.caption.22}%
+\contentsline {figure}{\numberline {2.11}{\ignorespaces Sequence diagram of the drug-drug interaction safety check workflow}}{10}{figure.caption.23}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {3.1}{\ignorespaces Interactive Labeled Property Graph (LPG) subgraph visualization representing the clinical relationship path topology for COVID-19}}{12}{figure.caption.7}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces Detailed LPG Entity Nodes inside the Neo4j database storing attributes: canonical\_name, type, and aliases}}{12}{figure.caption.8}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces LPG Relationship edge (\texttt {REL}) storing properties: predicate, confidence, and source evidence\_chunk\_id}}{13}{figure.caption.9}%
-\contentsline {figure}{\numberline {3.4}{\ignorespaces Conceptual flow comparison between conventional Vector RAG and GraphRAG-based clinical retrieval}}{13}{figure.caption.10}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces LPG Database Schema Meta-Graph showing Node labels, Relationship types, and property schemas}}{17}{figure.caption.24}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Interactive Labeled Property Graph (LPG) subgraph visualization representing the clinical relationship path topology for COVID-19}}{18}{figure.caption.25}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Detailed LPG Entity Nodes inside the Neo4j database storing attributes: canonical\_name, type, and aliases}}{18}{figure.caption.26}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces LPG Relationship edge (\texttt {REL}) storing properties: predicate, confidence, and source evidence\_chunk\_id}}{19}{figure.caption.27}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Conceptual flow comparison between conventional Vector RAG and GraphRAG-based clinical retrieval}}{19}{figure.caption.28}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Detailed Flowchart of the Local Graph-First Retrieval Pipeline}}{24}{figure.caption.35}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Layered architecture of the Hybrid Intent Routing gateway}}{26}{figure.caption.36}%
+\contentsline {figure}{\numberline {3.8}{\ignorespaces ReAct reasoning loop workflow with parser healing and loop-guard safeguards}}{28}{figure.3.8}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {4.1}{\ignorespaces Runtime CDSS pipeline from user input to streamed, evidence-grounded response}}{21}{figure.caption.16}%
-\contentsline {figure}{\numberline {4.2}{\ignorespaces System overall package dependency architecture}}{21}{figure.caption.17}%
-\contentsline {figure}{\numberline {4.3}{\ignorespaces Agent query execution and streaming flow}}{23}{figure.caption.18}%
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Runtime CDSS pipeline from user input to streamed, evidence-grounded response}}{33}{figure.caption.40}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces System overall package dependency architecture}}{33}{figure.caption.41}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces UML Class Diagram of core business services and agent components}}{34}{figure.caption.42}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Sequence diagram illustrating the safeguarded ReAct reasoning loop with parsing format healer and loop-guard checks}}{35}{figure.caption.43}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Interactive landing page of the localized Smart Medical QA \& Consultation System}}{42}{figure.caption.51}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Real-time streamed chat interface showing the ReAct agent consultation and reasoning panel}}{42}{figure.caption.53}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Medical record upload interface showing Excel tabular benchmarking and PDF text analysis results}}{43}{figure.caption.55}%
+\contentsline {figure}{\numberline {4.8}{\ignorespaces Weekly medication intake scheduling calendar dashboard with background alarms}}{44}{figure.caption.57}%
+\contentsline {figure}{\numberline {4.9}{\ignorespaces Deterministic clinical calculators interface for BMI and kidney function benchmarking}}{44}{figure.caption.59}%
+\contentsline {figure}{\numberline {4.10}{\ignorespaces Health Dashboard and Medical News feed interface showing localized clinical advisories}}{45}{figure.caption.61}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {5.1}{\ignorespaces Contribution map of the proposed AI Agents and GraphRAG-based CDSS system}}{27}{figure.caption.24}%
-\contentsline {figure}{\numberline {5.2}{\ignorespaces Vis.js interactive subgraph rendered in the UI, mapping the clinical pathway surrounding COVID-19 to provide medical explainability (XAI)}}{35}{figure.caption.27}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \contentsfinish 

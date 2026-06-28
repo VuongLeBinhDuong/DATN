@@ -97,9 +97,11 @@
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \field{pages}{9459\bibrangedash 9474}
-    \field{title}{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}
+    \field{title}{Retrieval-Augmented Generation for Knowledge-Intensive NLP
+  Tasks}
     \field{volume}{33}
-    \field{journaltitle}{Advances in Neural Information Processing Systems (NeurIPS)}
+    \field{journaltitle}{Advances in Neural Information Processing Systems
+  (NeurIPS)}
     \field{year}{2020}
   \endentry
 
@@ -158,7 +160,8 @@
     \strng{fullhash}{EDTHCNBJCAMATSLJ1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{title}{From Local to Global: A Graph RAG Approach to Query-Focused Summarization}
+    \field{title}{From Local to Global: A Graph RAG Approach to Query-Focused
+  Summarization}
     \field{journaltitle}{arXiv preprint arXiv:2404.16130}
     \field{year}{2024}
   \endentry
@@ -245,7 +248,8 @@
     \strng{fullhash}{YSZJYDDNSINKCY1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{booktitle}{International Conference on Learning Representations (ICLR)}
+    \field{booktitle}{International Conference on Learning Representations
+  (ICLR)}
     \field{title}{ReAct: Synergizing Reasoning and Acting in Language Models}
     \field{year}{2023}
   \endentry
@@ -279,10 +283,832 @@
     \field{labeltitlesource}{title}
     \field{number}{1}
     \field{pages}{5233}
-    \field{title}{From Louvain to Leiden: guaranteeing well-connected communities}
+    \field{title}{From Louvain to Leiden: guaranteeing well-connected
+  communities}
     \field{volume}{9}
     \field{journaltitle}{Scientific Reports}
     \field{year}{2019}
+  \endentry
+
+  \entry{neo4j2023}{misc}{}{}
+    \name{author}{1}{}{%
+      {{hash=N}{%
+         family={{Neo4j, Inc.}},
+         familyi={N\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{N1}
+    \strng{fullhash}{N1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Neo4j Graph Database Platform}
+    \verb{url}
+    \verb https://neo4j.com/
+    \endverb
+    \field{year}{2023}
+    \field{urlday}{01}
+    \field{urlmonth}{05}
+    \field{urlyear}{2025}
+  \endentry
+
+  \entry{fastapi2018}{misc}{}{}
+    \name{author}{1}{}{%
+      {{hash=RS}{%
+         family={Ram{\'i}rez},
+         familyi={R\bibinitperiod},
+         given={Sebasti{\'a}n},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{RS1}
+    \strng{fullhash}{RS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{FastAPI: High Performance, Easy to Learn, Fast to Code, Ready
+  for Production}
+    \verb{url}
+    \verb https://github.com/tiangolo/fastapi
+    \endverb
+    \field{year}{2018}
+    \field{urlday}{01}
+    \field{urlmonth}{05}
+    \field{urlyear}{2025}
+  \endentry
+
+  \entry{ollama2023}{misc}{}{}
+    \name{author}{1}{}{%
+      {{hash=O}{%
+         family={{Ollama Team}},
+         familyi={O\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{O1}
+    \strng{fullhash}{O1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Ollama: Run Large Language Models Locally}
+    \verb{url}
+    \verb https://ollama.com/
+    \endverb
+    \field{year}{2023}
+    \field{urlday}{01}
+    \field{urlmonth}{05}
+    \field{urlyear}{2025}
+  \endentry
+
+  \entry{msft_graphrag2024}{misc}{}{}
+    \name{author}{1}{}{%
+      {{hash=M}{%
+         family={{Microsoft Research}},
+         familyi={M\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{M1}
+    \strng{fullhash}{M1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{GraphRAG: Unlocking LLM Discovery on Narrative Private Data}
+    \verb{url}
+    \verb https://microsoft.github.io/graphrag/
+    \endverb
+    \field{year}{2024}
+    \field{urlday}{01}
+    \field{urlmonth}{05}
+    \field{urlyear}{2025}
+  \endentry
+
+  \entry{scott2013sdn}{inproceedings}{}{}
+    \name{author}{3}{}{%
+      {{hash=SHS}{%
+         family={Scott-Hayward},
+         familyi={S\bibinithyphendelim H\bibinitperiod},
+         given={Sandra},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=OG}{%
+         family={O'Callaghan},
+         familyi={O\bibinitperiod},
+         given={Gemma},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=SS}{%
+         family={Sezer},
+         familyi={S\bibinitperiod},
+         given={Sakir},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{SHS+1}
+    \strng{fullhash}{SHSOGSS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{IEEE SDN for Future Networks and Services}
+    \field{title}{SDN security: A survey}
+    \field{year}{2013}
+  \endentry
+
+  \entry{ashton2009internet}{misc}{}{}
+    \name{author}{1}{}{%
+      {{hash=AK}{%
+         family={Ashton},
+         familyi={A\bibinitperiod},
+         given={Kevin},
+         giveni={K\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{AK1}
+    \strng{fullhash}{AK1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{note}{RFID Journal}
+    \field{title}{That Internet of Things Thing}
+    \field{year}{2009}
+  \endentry
+
+  \entry{singhal2023large}{article}{}{}
+    \true{moreauthor}
+    \true{morelabelname}
+    \name{author}{10}{}{%
+      {{hash=SK}{%
+         family={Singhal},
+         familyi={S\bibinitperiod},
+         given={Karan},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=AS}{%
+         family={Azizi},
+         familyi={A\bibinitperiod},
+         given={Shekoofeh},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=TT}{%
+         family={Tu},
+         familyi={T\bibinitperiod},
+         given={Tao},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=MSS}{%
+         family={Mahdavi},
+         familyi={M\bibinitperiod},
+         given={S.\bibnamedelima Sara},
+         giveni={S\bibinitperiod\bibinitdelim S\bibinitperiod},
+      }}%
+      {{hash=WJ}{%
+         family={Wei},
+         familyi={W\bibinitperiod},
+         given={Jason},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=CHW}{%
+         family={Chung},
+         familyi={C\bibinitperiod},
+         given={Hyung\bibnamedelima Won},
+         giveni={H\bibinitperiod\bibinitdelim W\bibinitperiod},
+      }}%
+      {{hash=SN}{%
+         family={Scales},
+         familyi={S\bibinitperiod},
+         given={Nathan},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=TA}{%
+         family={Tan},
+         familyi={T\bibinitperiod},
+         given={Ajay},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=CLH}{%
+         family={Cole-Lewis},
+         familyi={C\bibinithyphendelim L\bibinitperiod},
+         given={Heather},
+         giveni={H\bibinitperiod},
+      }}%
+      {{hash=PS}{%
+         family={Pfohl},
+         familyi={P\bibinitperiod},
+         given={Stephen},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Nature Publishing Group}%
+    }
+    \strng{namehash}{SK+1}
+    \strng{fullhash}{SKASTTMSSWJCHWSNTACLHPS+1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{number}{7972}
+    \field{pages}{172\bibrangedash 180}
+    \field{title}{Large language models encode clinical knowledge}
+    \field{volume}{620}
+    \field{journaltitle}{Nature}
+    \field{year}{2023}
+  \endentry
+
+  \entry{liu2024benchmarking}{article}{}{}
+    \true{moreauthor}
+    \true{morelabelname}
+    \name{author}{10}{}{%
+      {{hash=LZ}{%
+         family={Liu},
+         familyi={L\bibinitperiod},
+         given={Zhengliang},
+         giveni={Z\bibinitperiod},
+      }}%
+      {{hash=ZY}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Yi},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=LY}{%
+         family={Lai},
+         familyi={L\bibinitperiod},
+         given={Yutong},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=ZL}{%
+         family={Zhao},
+         familyi={Z\bibinitperiod},
+         given={Liang},
+         giveni={L\bibinitperiod},
+      }}%
+      {{hash=CY}{%
+         family={Chen},
+         familyi={C\bibinitperiod},
+         given={Yaosheng},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=ZJ}{%
+         family={Zhou},
+         familyi={Z\bibinitperiod},
+         given={Ji},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=WZ}{%
+         family={Wu},
+         familyi={W\bibinitperiod},
+         given={Zihao},
+         giveni={Z\bibinitperiod},
+      }}%
+      {{hash=CX}{%
+         family={Chen},
+         familyi={C\bibinitperiod},
+         given={Xinyu},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=HX}{%
+         family={He},
+         familyi={H\bibinitperiod},
+         given={Xiaoli},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=WY}{%
+         family={Wu},
+         familyi={W\bibinitperiod},
+         given={Yujia},
+         giveni={Y\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{LZ+1}
+    \strng{fullhash}{LZZYLYZLCYZJWZCXHXWY+1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Benchmarking retrieval-augmented generation for medicine}
+    \field{journaltitle}{arXiv preprint arXiv:2402.13178}
+    \field{year}{2024}
+  \endentry
+
+  \entry{es2023ragas}{article}{}{}
+    \true{moreauthor}
+    \true{morelabelname}
+    \name{author}{5}{}{%
+      {{hash=ES}{%
+         family={Es},
+         familyi={E\bibinitperiod},
+         given={Shahul},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=JJ}{%
+         family={James},
+         familyi={J\bibinitperiod},
+         given={Jithin},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=SA}{%
+         family={Sivaraman},
+         familyi={S\bibinitperiod},
+         given={Anirudh},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=KB}{%
+         family={Karthik},
+         familyi={K\bibinitperiod},
+         given={Binu},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=DY}{%
+         family={Du},
+         familyi={D\bibinitperiod},
+         given={Yan},
+         giveni={Y\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{ES+1}
+    \strng{fullhash}{ESJJSAKBDY+1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Ragas: Automated evaluation of retrieval augmented
+  generation}
+    \field{journaltitle}{arXiv preprint arXiv:2309.15217}
+    \field{year}{2023}
+  \endentry
+
+  \entry{chandak2023building}{article}{}{}
+    \name{author}{3}{}{%
+      {{hash=CP}{%
+         family={Chandak},
+         familyi={C\bibinitperiod},
+         given={Payal},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=HK}{%
+         family={Huang},
+         familyi={H\bibinitperiod},
+         given={Kexin},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=ZM}{%
+         family={Zitnik},
+         familyi={Z\bibinitperiod},
+         given={Marinka},
+         giveni={M\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Nature Publishing Group}%
+    }
+    \strng{namehash}{CP+1}
+    \strng{fullhash}{CPHKZM1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{number}{1}
+    \field{pages}{308}
+    \field{title}{Building a precision medicine knowledge graph for drug
+  repurposing and clinical decision support}
+    \field{volume}{10}
+    \field{journaltitle}{Scientific Data}
+    \field{year}{2023}
+  \endentry
+
+  \entry{wang2021milvus}{inproceedings}{}{}
+    \true{moreauthor}
+    \true{morelabelname}
+    \name{author}{3}{}{%
+      {{hash=WJ}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Jianguo},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=YX}{%
+         family={Yi},
+         familyi={Y\bibinitperiod},
+         given={Xiaomeng},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=GR}{%
+         family={Guo},
+         familyi={G\bibinitperiod},
+         given={Rentong},
+         giveni={R\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{WJ+1}
+    \strng{fullhash}{WJYXGR+1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Proceedings of the 2021 International Conference on
+  Management of Data (SIGMOD)}
+    \field{pages}{2614\bibrangedash 2627}
+    \field{title}{Milvus: A purpose-built vector data management system}
+    \field{year}{2021}
+  \endentry
+
+  \entry{rfc7519}{misc}{}{}
+    \name{author}{3}{}{%
+      {{hash=JM}{%
+         family={Jones},
+         familyi={J\bibinitperiod},
+         given={Michael},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Bradley},
+         familyi={B\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=SN}{%
+         family={Sakimura},
+         familyi={S\bibinitperiod},
+         given={Nat},
+         giveni={N\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {IETF}%
+    }
+    \strng{namehash}{JM+1}
+    \strng{fullhash}{JMBJSN1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{howpublished}{RFC 7519}
+    \field{number}{7519}
+    \field{series}{Request for Comments}
+    \field{title}{JSON Web Token (JWT)}
+    \field{year}{2015}
+  \endentry
+
+  \entry{langchain}{misc}{}{}
+    \name{author}{1}{}{%
+      {{hash=CH}{%
+         family={Chase},
+         familyi={C\bibinitperiod},
+         given={Harrison},
+         giveni={H\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{CH1}
+    \strng{fullhash}{CH1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{LangChain}
+    \verb{url}
+    \verb https://github.com/langchain-ai/langchain
+    \endverb
+    \field{year}{2022}
+  \endentry
+
+  \entry{jin2022survey}{article}{}{}
+    \true{moreauthor}
+    \true{morelabelname}
+    \name{author}{3}{}{%
+      {{hash=JS}{%
+         family={Jin},
+         familyi={J\bibinitperiod},
+         given={Shubo},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=ZY}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Yi},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=WY}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Yong},
+         giveni={Y\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{JS+1}
+    \strng{fullhash}{JSZYWY+1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{pages}{103975}
+    \field{title}{A survey on biomedical named entity recognition}
+    \field{volume}{125}
+    \field{journaltitle}{Journal of Biomedical Informatics}
+    \field{year}{2022}
+  \endentry
+
+  \entry{dettmers2022llm}{article}{}{}
+    \name{author}{4}{}{%
+      {{hash=DT}{%
+         family={Dettmers},
+         familyi={D\bibinitperiod},
+         given={Tim},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=LM}{%
+         family={Lewis},
+         familyi={L\bibinitperiod},
+         given={Mike},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=BY}{%
+         family={Belkada},
+         familyi={B\bibinitperiod},
+         given={Younes},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=ZL}{%
+         family={Zettlemoyer},
+         familyi={Z\bibinitperiod},
+         given={Luke},
+         giveni={L\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{DT+1}
+    \strng{fullhash}{DTLMBYZL1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{pages}{22183\bibrangedash 22196}
+    \field{title}{Llm.int8(): 8-bit matrix multiplication for transformers at
+  scale}
+    \field{volume}{35}
+    \field{journaltitle}{Advances in Neural Information Processing Systems
+  (NeurIPS)}
+    \field{year}{2022}
+  \endentry
+
+  \entry{francis2018cypher}{inproceedings}{}{}
+    \name{author}{10}{}{%
+      {{hash=FN}{%
+         family={Francis},
+         familyi={F\bibinitperiod},
+         given={Nadime},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=GA}{%
+         family={Green},
+         familyi={G\bibinitperiod},
+         given={Alastair},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=GP}{%
+         family={Guagliardo},
+         familyi={G\bibinitperiod},
+         given={Paolo},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=LL}{%
+         family={Libkin},
+         familyi={L\bibinitperiod},
+         given={Leonid},
+         giveni={L\bibinitperiod},
+      }}%
+      {{hash=LT}{%
+         family={Lindaaker},
+         familyi={L\bibinitperiod},
+         given={Tobias},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=MV}{%
+         family={Marsault},
+         familyi={M\bibinitperiod},
+         given={Victor},
+         giveni={V\bibinitperiod},
+      }}%
+      {{hash=PS}{%
+         family={Plantikow},
+         familyi={P\bibinitperiod},
+         given={Stefan},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=RM}{%
+         family={Rydberg},
+         familyi={R\bibinitperiod},
+         given={Mats},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=SP}{%
+         family={Selmer},
+         familyi={S\bibinitperiod},
+         given={Petra},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=TA}{%
+         family={Taylor},
+         familyi={T\bibinitperiod},
+         given={Andr{\'e}s},
+         giveni={A\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{FN+1}
+    \strng{fullhash}{FNGAGPLLLTMVPSRMSPTA1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Proceedings of the 2018 International Conference on
+  Management of Data (SIGMOD)}
+    \field{pages}{1433\bibrangedash 1445}
+    \field{title}{Cypher: An evolving query language for property graphs}
+    \field{year}{2018}
+  \endentry
+
+  \entry{blondel2008fast}{article}{}{}
+    \name{author}{4}{}{%
+      {{hash=BVD}{%
+         family={Blondel},
+         familyi={B\bibinitperiod},
+         given={Vincent\bibnamedelima D},
+         giveni={V\bibinitperiod\bibinitdelim D\bibinitperiod},
+      }}%
+      {{hash=GJL}{%
+         family={Guillaume},
+         familyi={G\bibinitperiod},
+         given={Jean-Loup},
+         giveni={J\bibinithyphendelim L\bibinitperiod},
+      }}%
+      {{hash=LR}{%
+         family={Lambiotte},
+         familyi={L\bibinitperiod},
+         given={Renaud},
+         giveni={R\bibinitperiod},
+      }}%
+      {{hash=LE}{%
+         family={Lefebvre},
+         familyi={L\bibinitperiod},
+         given={Etienne},
+         giveni={E\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{BVD+1}
+    \strng{fullhash}{BVDGJLLRLE1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{number}{10}
+    \field{pages}{P10008}
+    \field{title}{Fast unfolding of communities in large networks}
+    \field{volume}{2008}
+    \field{journaltitle}{Journal of statistical mechanics: theory and
+  experiment}
+    \field{year}{2008}
+  \endentry
+
+  \entry{lin2004rouge}{inproceedings}{}{}
+    \name{author}{1}{}{%
+      {{hash=LCY}{%
+         family={Lin},
+         familyi={L\bibinitperiod},
+         given={Chin-Yew},
+         giveni={C\bibinithyphendelim Y\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{LCY1}
+    \strng{fullhash}{LCY1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Text Summarization Branches Out}
+    \field{pages}{74\bibrangedash 81}
+    \field{title}{Rouge: A package for automatic evaluation of summaries}
+    \field{year}{2004}
+  \endentry
+
+  \entry{papineni2002bleu}{inproceedings}{}{}
+    \name{author}{4}{}{%
+      {{hash=PK}{%
+         family={Papineni},
+         familyi={P\bibinitperiod},
+         given={Kishore},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=RS}{%
+         family={Roukos},
+         familyi={R\bibinitperiod},
+         given={Salim},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=WTC}{%
+         family={Ward},
+         familyi={W\bibinitperiod},
+         given={Todd\bibnamedelima Caps},
+         giveni={T\bibinitperiod\bibinitdelim C\bibinitperiod},
+      }}%
+      {{hash=ZWJ}{%
+         family={Zhu},
+         familyi={Z\bibinitperiod},
+         given={Wei-Jing},
+         giveni={W\bibinithyphendelim J\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{PK+1}
+    \strng{fullhash}{PKRSWTCZWJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Proceedings of the 40th annual meeting of the Association
+  for Computational Linguistics (ACL)}
+    \field{pages}{311\bibrangedash 318}
+    \field{title}{Bleu: a method for automatic evaluation of machine
+  translation}
+    \field{year}{2002}
+  \endentry
+
+  \entry{vaswani2017attention}{article}{}{}
+    \name{author}{8}{}{%
+      {{hash=VA}{%
+         family={Vaswani},
+         familyi={V\bibinitperiod},
+         given={Ashish},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=SN}{%
+         family={Shazeer},
+         familyi={S\bibinitperiod},
+         given={Noam},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=PN}{%
+         family={Parmar},
+         familyi={P\bibinitperiod},
+         given={Niki},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=UJ}{%
+         family={Uszkoreit},
+         familyi={U\bibinitperiod},
+         given={Jakob},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=JL}{%
+         family={Jones},
+         familyi={J\bibinitperiod},
+         given={Llion},
+         giveni={L\bibinitperiod},
+      }}%
+      {{hash=GAN}{%
+         family={Gomez},
+         familyi={G\bibinitperiod},
+         given={Aidan\bibnamedelima N},
+         giveni={A\bibinitperiod\bibinitdelim N\bibinitperiod},
+      }}%
+      {{hash=KL}{%
+         family={Kaiser},
+         familyi={K\bibinitperiod},
+         given={{\L}ukasz},
+         giveni={{\L}\bibinitperiod},
+      }}%
+      {{hash=PI}{%
+         family={Polosukhin},
+         familyi={P\bibinitperiod},
+         given={Illia},
+         giveni={I\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{VA+1}
+    \strng{fullhash}{VASNPNUJJLGANKLPI1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Attention is all you need}
+    \field{volume}{30}
+    \field{journaltitle}{Advances in Neural Information Processing Systems
+  (NeurIPS)}
+    \field{year}{2017}
+  \endentry
+
+  \entry{devlin2018bert}{article}{}{}
+    \name{author}{4}{}{%
+      {{hash=DJ}{%
+         family={Devlin},
+         familyi={D\bibinitperiod},
+         given={Jacob},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=CMW}{%
+         family={Chang},
+         familyi={C\bibinitperiod},
+         given={Ming-Wei},
+         giveni={M\bibinithyphendelim W\bibinitperiod},
+      }}%
+      {{hash=LK}{%
+         family={Lee},
+         familyi={L\bibinitperiod},
+         given={Kenton},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=TK}{%
+         family={Toutanova},
+         familyi={T\bibinitperiod},
+         given={Kristina},
+         giveni={K\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{DJ+1}
+    \strng{fullhash}{DJCMWLKTK1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{BERT: Pre-training of Deep Bidirectional Transformers for
+  Language Understanding}
+    \field{journaltitle}{arXiv preprint arXiv:1810.04805}
+    \field{year}{2018}
+  \endentry
+
+  \entry{qwen2024qwen25}{article}{}{}
+    \name{author}{1}{}{%
+      {{hash=Q}{%
+         family={{Qwen Team}},
+         familyi={Q\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{Q1}
+    \strng{fullhash}{Q1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Qwen2.5 Technical Report}
+    \field{journaltitle}{arXiv preprint arXiv:2412.15115}
+    \field{year}{2024}
   \endentry
 \enddatalist
 \endinput
