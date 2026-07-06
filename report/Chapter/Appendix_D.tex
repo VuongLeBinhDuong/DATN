@@ -3,38 +3,92 @@
 
 This appendix outlines the steps required to deploy the system locally using Docker and Python.
 
-\section*{1. Prerequisites}
+\section*{1. Clone the Repository}
+Start by cloning the source code repository to your local machine and navigating into the project directory:
+\begin{lstlisting}[language=bash, breaklines=true]
+git clone <REPOSITORY_URL>
+cd DATN
+\end{lstlisting}
+
+\section*{2. System Prerequisites}
 To successfully deploy this system, several dependencies must be met: (i) Docker and Docker Compose must be installed for the database, (ii) Python 3.10 or higher is required for the backend services, and (iii) Ollama must be installed locally for LLM inference.
 
-\section*{2. Infrastructure Setup (Neo4j)}
-Start the Neo4j database using Docker Compose:
+\section*{3. Python Environment Setup}
+It is highly recommended to isolate dependencies using a Python virtual environment. Initialize and activate the environment, then install the required packages:
+\begin{lstlisting}[language=bash, breaklines=true]
+python -m venv .venv
+# On Windows (PowerShell):
+.\.venv\Scripts\Activate.ps1
+# On Linux/macOS:
+source .venv/bin/activate
+
+pip install --upgrade pip
+pip install -r requirements.txt
+\end{lstlisting}
+
+\section*{4. Environment Variables Configuration}
+Create a local environment file from the provided template:
+\begin{lstlisting}[language=bash, breaklines=true]
+cp config/.env.example config/.env
+\end{lstlisting}
+Modify the \texttt{config/.env} file if necessary (e.g., setting the Neo4j authentication credentials or LLM model configurations).
+
+\section*{5. Infrastructure Setup (Neo4j)}
+Start the Neo4j database using Docker Compose in detached mode. This provisions the database and required APOC plugins automatically:
 \begin{lstlisting}[language=bash, breaklines=true]
 docker-compose up -d
 \end{lstlisting}
 
-\section*{3. Install Python Dependencies}
-Navigate to the root directory and install dependencies:
+\section*{6. Knowledge Graph Ingestion}
+There are two alternative methods to populate the Neo4j Graph Database:
+
+\subsection*{Method A: Fast-Track Ingestion using Pre-extracted Dataset (Recommended)}
+To skip the computationally expensive LLM extraction phase, you can ingest the pre-extracted clinical knowledge graph directly:
+\begin{enumerate}
+    \item Download the pre-extracted dataset files (\texttt{*.jsonl}) from Kaggle at: \\
+    \url{https://www.kaggle.com/datasets/binhduongvuongle/knowledge-graph-data-about-medical-consultant}
+    \item Unzip and place all the downloaded files directly into the project directory at \texttt{kg/kg\_artifacts/}.
+    \item Run the schema and import scripts to populate Neo4j in less than a minute:
+\end{enumerate}
 \begin{lstlisting}[language=bash, breaklines=true]
-pip install -r requirements.txt
+python scripts/kg_apply_schema.py
+python scripts/kg_import_artifacts.py
 \end{lstlisting}
 
-\section*{4. Start Ollama and Pull Models}
-Ensure Ollama is running and pull the necessary models:
+\subsection*{Method B: Raw Extraction and Ingestion from Scratch}
+To extract clinical entities and relations from raw corpora using local LLMs:
+\begin{enumerate}
+    \item Download the raw datasets from Hugging Face:
+\end{enumerate}
+\begin{lstlisting}[language=bash, breaklines=true]
+python scripts/download_additional_medical_data.py
+python scripts/download_vietnamese_medical_qa.py
+python scripts/download_hf_dataset.py
+\end{lstlisting}
+\begin{enumerate}
+    \item Clean the data and start the incremental extraction and ingestion process:
+\end{enumerate}
+\begin{lstlisting}[language=bash, breaklines=true]
+python scripts/clean_vi_medical_data.py
+python scripts/clean_vi_qa_data.py
+python scripts/kg_apply_schema.py
+python scripts/kg_extract_entities.py --only-missing
+python scripts/kg_extract_relations.py --only-missing
+\end{lstlisting}
+
+\section*{7. Start Ollama and Pull Models}
+Ensure Ollama is running and pull the necessary local models for offline inference:
 \begin{lstlisting}[language=bash, breaklines=true]
 ollama serve
 ollama pull llama3.2:3b
-ollama pull qwen2.5:1.5b
+ollama pull qwen2.5:1.5b-instruct
 \end{lstlisting}
 
-\section*{5. Start the FastAPI Backend}
+\section*{8. Start the FastAPI Backend}
+Run the backend application server on the local network:
 \begin{lstlisting}[language=bash, breaklines=true]
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 \end{lstlisting}
-
-\section*{6. Start Knowledge Graph Extraction}
-To incrementally extract and ingest entities into Neo4j:
-\begin{lstlisting}[language=bash, breaklines=true]
-python scripts/kg_extract_entities.py --only-missing --limit 1000
-\end{lstlisting}
+The system Web UI is now accessible via the endpoints hosted on \texttt{http://127.0.0.1:8000/ui/}.
 
 \end{document}

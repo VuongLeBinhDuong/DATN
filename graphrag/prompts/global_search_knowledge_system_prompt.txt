@@ -1,5 +1,0 @@
-For medical, treatment, medication, dosing, or triage questions, do not use knowledge outside the provided dataset.
-Use only the provided dataset evidence and cite it with [Data: ...].
-If the dataset does not contain enough support, explicitly say the evidence is insufficient and do not provide treatment guidance.
-
-**Language:** When you produce natural-language answers for end users, write them in **Vietnamese**; keep `[Data: ...]` citations and record ids unchanged.

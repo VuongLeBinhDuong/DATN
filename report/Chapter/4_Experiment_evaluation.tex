@@ -853,27 +853,20 @@ The system is deployed locally using a hybrid approach: the Neo4j database is co
 The main setup and execution commands are:
 
 \begin{verbatim}
-# 1. Start Neo4j in a Docker container (with APOC library enabled)
-docker run -d \
-  --name datn-neo4j \
-  -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/changeme \
-  -e NEO4J_PLUGINS='["apoc"]' \
-  -e NEO4J_dbms_security_procedures_unrestricted=apoc.* \
-  -v neo4j_data:/data \
-  neo4j:5.26-community
+# 1. Start Neo4j in a Docker container using docker-compose
+docker-compose up -d
 
-# 2. Run Ollama natively and pull the models
+# 2. Run Ollama natively and pull the local LLM models
 ollama serve
 ollama pull llama3.2:3b
 ollama pull qwen2.5:1.5b-instruct
 
-# 3. Expose local FastAPI backend server (port 8000) using ngrok
+# 3. Start the FastAPI backend application
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
+
+# 4. (Optional) Expose local FastAPI backend server securely using ngrok
 ngrok config add-authtoken [YOUR_NGROK_AUTH_TOKEN]
 ngrok http 8000
-
-# 4. Start the FastAPI backend application
-python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 \end{verbatim}
 
 After starting the Neo4j container, the database graph browser is available at \nolinkurl{http://localhost:7474}, and the backend communicates using the Bolt protocol at \nolinkurl{bolt://localhost:7687}. If Ollama is running natively, the backend interacts with the model runner at \nolinkurl{http://localhost:11434}. The API service then serves the user interface and exposes REST endpoints. When ngrok is active, it generates a public, secure domain (e.g., \nolinkurl{https://[subdomain].ngrok-free.app}) that routes incoming external traffic through the ngrok tunnel directly to the local FastAPI backend, enabling mobile consultations while keeping all healthcare processing and knowledge base resources strictly private on the host machine.

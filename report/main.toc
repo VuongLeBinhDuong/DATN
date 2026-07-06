@@ -123,6 +123,6 @@
 \contentsline {section}{\numberline {A.4}Use Case UC-04: Clinical Calculators and Interaction Safety Check}{62}{section.A.4}%
 \contentsline {chapter}{\numberline {B}CORE SYSTEM PROMPTS}{63}{appendix.B}%
 \contentsline {chapter}{\numberline {C}DEPLOYMENT GUIDE}{65}{appendix.C}%
-\contentsline {chapter}{\numberline {D}DATABASE DICTIONARY}{66}{appendix.D}%
-\contentsline {chapter}{\numberline {E}CORE CODE SNIPPETS}{67}{appendix.E}%
+\contentsline {chapter}{\numberline {D}DATABASE DICTIONARY}{68}{appendix.D}%
+\contentsline {chapter}{\numberline {E}CORE CODE SNIPPETS}{69}{appendix.E}%
 \contentsfinish 

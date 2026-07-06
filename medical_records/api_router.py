@@ -132,11 +132,11 @@ async def analyze_medical_record(
             and llm_report_compare.strip().lower() in ("1", "true", "yes", "on")
         )
         rlang = (report_compare_language or "").strip() or "vi"
-        internal_ref = (
-            use_internal_reference is not None
-            and use_internal_reference.strip() != ""
-            and use_internal_reference.strip().lower() in ("1", "true", "yes", "on")
-        )
+        is_llm_disabled = os.getenv("MEDICAL_RECORD_DISABLE_LLM", "").strip().lower() in ("1", "true", "yes", "on")
+        if use_internal_reference is None or use_internal_reference.strip() == "":
+            internal_ref = (suffix == ".pdf") or is_llm_disabled
+        else:
+            internal_ref = use_internal_reference.strip().lower() in ("1", "true", "yes", "on")
         sheet = (sheet_name or "").strip() or None
         result = await asyncio.to_thread(
             analyze_medical_file,
